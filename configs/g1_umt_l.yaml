@@ -1,0 +1,6 @@
+base: g1_base.yaml
+run_dir: runs/g1_umt_l
+data:
+  size: [224, 224]
+model:
+  backbone: umt_l

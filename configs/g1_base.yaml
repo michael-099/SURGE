@@ -1,0 +1,7 @@
+# Phase 0, gate G1: backbone shoot-out. Stage 1 (frozen backbone), identical decoder, 10 epochs, seed 0.
+# Selection metric: internal holdout (60 DHF1K training videos), every 5th frame, CC (NSS reported).
+train:
+  stage: 1
+  epochs: 10
+  clips_per_video: 8
+  batch: 8

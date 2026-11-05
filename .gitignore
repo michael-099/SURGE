@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pt
+*.tmp
+runs/smoke*/
+SAFETY_STOP.txt
+runs/**/STOP
+runs/**/preds/

@@ -1,0 +1,15 @@
+# GPU smoke test: 20 training videos, 2 clips each, 1 epoch, 3 holdout videos.
+run_dir: runs/smoke
+data:
+  train_split: configs/splits/smoke_train20.txt
+  holdout_split: configs/splits/smoke_hold3.txt
+model:
+  backbone: vjepa2_l
+train:
+  epochs: 1
+  clips_per_video: 2
+  batch: 4
+  log_every: 2
+  ckpt_every: 5
+eval:
+  frame_step: 10

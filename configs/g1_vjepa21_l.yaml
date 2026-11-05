@@ -1,0 +1,6 @@
+base: g1_base.yaml
+run_dir: runs/g1_vjepa21_l
+data:
+  size: [256, 256]
+model:
+  backbone: vjepa21_l
