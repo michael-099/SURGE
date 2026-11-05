@@ -1,0 +1,19 @@
+2026-11-06T00:21:58+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/ucf_ft_s0 --dataset ucf --split holdout --frame-step 1 --out runs/final/ucf_sigma.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   3%|▎         | 15/587 [00:00<00:05, 109.06it/s]Loading weights:   4%|▍         | 26/587 [00:00<00:08, 69.45it/s] Loading weights:   7%|▋         | 43/587 [00:00<00:05, 101.09it/s]Loading weights:   9%|▉         | 55/587 [00:00<00:05, 103.55it/s]Loading weights:  11%|█▏        | 67/587 [00:00<00:05, 96.63it/s] Loading weights:  13%|█▎        | 78/587 [00:00<00:06, 73.73it/s]Loading weights:  15%|█▍        | 87/587 [00:01<00:08, 55.89it/s]Loading weights:  16%|█▌        | 94/587 [00:01<00:08, 58.54it/s]Loading weights:  17%|█▋        | 101/587 [00:01<00:09, 52.75it/s]Loading weights:  19%|█▉        | 112/587 [00:01<00:07, 64.57it/s]Loading weights:  25%|██▌       | 147/587 [00:01<00:03, 128.90it/s]Loading weights:  30%|██▉       | 176/587 [00:01<00:02, 164.11it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 319.11it/s]
+predicted Golf-Swing-Front-004
+predicted Golf-Swing-Front-008
+predicted Golf-Swing-Side-003
+predicted Run-Side-009
+predicted Swing-Bench-019
+predicted Swing-Bench-020
+predicted Swing-SideAngle-007
+predicted Swing-SideAngle-013
+predicted Walk-Front-020
+predicted Walk-Front-022
+sigma 0.0: cc=0.7679 nss=5.0579 sim=0.6032 kld=0.6939
+sigma 4.0: cc=0.7696 nss=5.0254 sim=0.6038 kld=0.6911
+sigma 8.0: cc=0.7727 nss=4.9301 sim=0.6039 kld=0.6861
+sigma 12.0: cc=0.7740 nss=4.7861 sim=0.6011 kld=0.6851
+sigma 16.0: cc=0.7715 nss=4.6122 sim=0.5933 kld=0.6928
+sigma 24.0: cc=0.7531 nss=4.2328 sim=0.5635 kld=0.7403
+BEST SIGMA 12.0

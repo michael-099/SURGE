@@ -1,1 +1,24 @@
 2026-11-06T00:14:51+03:00 .venv/Scripts/python.exe -u scripts/train.py --config configs/ucf_ft.yaml --set train.init_from=runs/main_b1_s0/best.pt train.stage=1 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256]
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 7/587 [00:00<00:08, 67.56it/s]Loading weights:   2%|▏         | 14/587 [00:00<00:15, 36.65it/s]Loading weights:   5%|▍         | 29/587 [00:00<00:08, 69.41it/s]Loading weights:   6%|▋         | 38/587 [00:00<00:08, 68.29it/s]Loading weights:   9%|▊         | 50/587 [00:00<00:08, 65.12it/s]Loading weights:  10%|▉         | 58/587 [00:00<00:08, 60.42it/s]Loading weights:  12%|█▏        | 68/587 [00:01<00:07, 65.48it/s]Loading weights:  13%|█▎        | 77/587 [00:01<00:08, 60.61it/s]Loading weights:  14%|█▍        | 85/587 [00:01<00:08, 60.78it/s]Loading weights:  16%|█▌        | 94/587 [00:01<00:07, 67.27it/s]Loading weights:  24%|██▍       | 140/587 [00:01<00:02, 158.17it/s]Loading weights:  29%|██▉       | 171/587 [00:01<00:02, 195.17it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 330.92it/s]
+2026-11-06 00:15:09 decoder initialized from runs/main_b1_s0/best.pt
+2026-11-06 00:15:09 params: decoder 6.99M, LoRA 0.00M, backbone 326.0M
+2026-11-06 00:16:29 ep 0 step 50/558 loss 1.3505 cc 0.6933 nss 3.727 5.0 clips/s mem 7.2G
+2026-11-06 00:16:55 ep 0 step 100/558 loss 1.2479 cc 0.7104 nss 3.845 7.6 clips/s mem 7.2G
+2026-11-06 00:17:21 ep 0 step 150/558 loss 1.1550 cc 0.7251 nss 3.959 9.2 clips/s mem 7.2G
+2026-11-06 00:17:40 epoch 0 done in 2.5 min
+2026-11-06 00:18:00 epoch 0 holdout cc=0.7529 nss=4.9247 sim=0.5921 kld=0.7272 (0.3 min)
+2026-11-06 00:18:00 new best holdout CC 0.7529 at epoch 0
+2026-11-06 00:18:10 ep 1 step 200/558 loss 0.7989 cc 0.7863 nss 4.334 11.4 clips/s mem 7.2G
+2026-11-06 00:18:36 ep 1 step 250/558 loss 0.7851 cc 0.7853 nss 4.432 14.2 clips/s mem 7.2G
+2026-11-06 00:19:03 ep 1 step 300/558 loss 0.7439 cc 0.7928 nss 4.525 14.6 clips/s mem 7.2G
+2026-11-06 00:19:29 ep 1 step 350/558 loss 0.7140 cc 0.7973 nss 4.583 14.8 clips/s mem 7.2G
+2026-11-06 00:19:41 epoch 1 done in 1.7 min
+2026-11-06 00:19:58 epoch 1 holdout cc=0.7616 nss=5.0269 sim=0.6004 kld=0.6974 (0.3 min)
+2026-11-06 00:19:58 new best holdout CC 0.7616 at epoch 1
+2026-11-06 00:20:15 ep 2 step 400/558 loss 0.5230 cc 0.8272 nss 4.916 13.0 clips/s mem 7.2G
+2026-11-06 00:20:41 ep 2 step 450/558 loss 0.5393 cc 0.8255 nss 4.911 14.3 clips/s mem 7.2G
+2026-11-06 00:21:08 ep 2 step 500/558 loss 0.5425 cc 0.8246 nss 4.903 14.6 clips/s mem 7.2G
+2026-11-06 00:21:35 ep 2 step 550/558 loss 0.5370 cc 0.8259 nss 4.894 14.7 clips/s mem 7.2G
+2026-11-06 00:21:39 epoch 2 done in 1.7 min
+2026-11-06 00:21:55 epoch 2 holdout cc=0.7610 nss=5.0453 sim=0.6038 kld=0.7007 (0.3 min)
+2026-11-06 00:21:55 training finished

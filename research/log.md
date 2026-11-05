@@ -178,3 +178,40 @@ Paired bootstrap over videos (10,000 resamples), SURGE-D − SalFoM, 95% CI:
 **Rule outcome: SURGE-D beats SalFoM on DHF1K val** (ΔCC CI above 0) as a single model and as an ensemble; the single
 model ties SalFoM on NSS, the ensemble is better on all six metrics. Published val references (other evaluators):
 TMFI-Net CC 0.554 / NSS 3.201, ViNet-E 0.549 / 3.134. Not a test-server result: DHF1K test labels are held out.
+
+### UCF Sports test (47 videos, 2,929 frames), scored once (2026-11-06 00:27)
+
+Fine-tuned from B1 seed 0 on 93 UCF training videos (Stage 1, 3 epochs, lr 1e-4), best epoch on the 10 holdout videos
+(CC 0.7616, epoch 1), σ = 12 px tuned on that holdout. `runs/final/ucf_test*.json`.
+
+| Model | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| SURGE-D zero-shot (DHF1K model, no UCF training) | 0.6077 | 3.128 | 0.5033 | 1.113 | 0.9223 | 0.7453 |
+| **SURGE-D fine-tuned** | **0.7252** | **3.916** | **0.5799** | **0.773** | **0.9406** | 0.8089 |
+| *Published (other evaluators):* ViNet-E | 0.744 | 4.156 | 0.587 | — | 0.941 | — |
+| ViNet-A | 0.734 | 4.108 | 0.586 | — | 0.940 | — |
+| STSANet | 0.721 | 3.927 | 0.560 | — | 0.936 | — |
+| THTD-Net | 0.711 | 3.840 | 0.565 | — | 0.933 | — |
+| TMFI-Net | 0.707 | 3.863 | 0.565 | — | 0.936 | — |
+| SalFoM | 0.631 | 3.543 | 0.516 | — | 0.928 | — |
+
+Reading: SURGE-D beats SalFoM (+0.094 CC) and TMFI-Net on UCF Sports, but **not** ViNet-E / ViNet-A (−0.019 / −0.009 CC),
+so it is not state of the art on UCF. Caveat: published numbers come from other evaluation code; this evaluator's CC
+matches TMFI-Net's code to 0.0003 (section 1), and the 47-video split is the standard one.
+
+## 6. Summary of the implementation (2026-11-06)
+
+1. **G1:** frozen V-JEPA 2 ViT-L beats V-JEPA 2.1 ViT-L (−0.009 CC) and UMT-L (−0.032) on the holdout; the proposal's
+   V-JEPA 2.1 choice was replaced by the pre-registered rule.
+2. **G2:** V-JEPA 2 predictor surprise is not a fixation cue (anti-correlated at 15 fps); SCM stays off.
+3. **LoRA** loses to the frozen backbone in 3/3 seeds (mean −0.0025 CC); the frozen model is the main model.
+4. **Ablations** (1 seed): center prior, aux heads, SALICON co-training: no measurable effect; stride 4: +0.0031 (borderline).
+5. **DHF1K val:** SURGE-D beats SalFoM, single model ΔCC +0.020 [+0.010, +0.031], 3-seed ensemble +0.027
+   [+0.017, +0.038]; the ensemble is better on all six metrics.
+6. **UCF Sports:** CC 0.725, above SalFoM and TMFI-Net, below ViNet-E/A.
+7. Safety: the monitor process (PID 21532) ran throughout and never tripped; no SAFETY_STOP.txt; no job was
+   force-killed. **Its log is silent from 13:05 to 00:30**: my own `tail -F` watcher processes (left behind when
+   their watches expired) held `runs/safety.log` open, so its writes failed. Temperatures after 13:05 are therefore
+   not recorded (last summary 84 °C, max 86 °C). Checked afterwards: Windows System log 12:50–00:30 has 0 nvlddmkm /
+   WHEA events and 0 unexpected-shutdown events. Fix: the monitor's log writes now retry, and the orphaned
+   watchers were stopped.

@@ -11,7 +11,14 @@ New-Item -ItemType Directory -Force $LogDir | Out-Null
 $Log = Join-Path $LogDir 'safety.log'
 $Start = Get-Date
 $maxT = 0
-function Write-Log($msg) { $line = "$(Get-Date -Format s) $msg"; Add-Content -Path $Log -Value $line -Encoding utf8 }
+function Write-Log($msg) {
+    # Retry: another process (e.g. a `tail -F` reader on Windows) can hold the file open without write sharing.
+    $line = "$(Get-Date -Format s) $msg"
+    for ($i = 0; $i -lt 10; $i++) {
+        try { Add-Content -Path $Log -Value $line -Encoding utf8 -ErrorAction Stop; return } catch { Start-Sleep -Milliseconds 500 }
+    }
+    try { Add-Content -Path "$Log.fallback" -Value $line -Encoding utf8 -ErrorAction Stop } catch {}
+}
 function Trip($why) {
     $txt = "SAFETY STOP $(Get-Date -Format s) (PID $PID): $why`r`nSURGE jobs exit cleanly when they see this file. Remove it only after checking the cause."
     Set-Content -Path $Stop -Value $txt -Encoding utf8

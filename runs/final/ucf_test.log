@@ -1,0 +1,50 @@
+2026-11-06T00:23:27+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/ucf_ft_s0 --dataset ucf --split val --metrics all --sigma 12.0 --out runs/final/ucf_test.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 5/587 [00:00<00:16, 35.61it/s]Loading weights:   3%|▎         | 18/587 [00:00<00:07, 78.42it/s]Loading weights:   5%|▌         | 30/587 [00:00<00:06, 91.20it/s]Loading weights:   7%|▋         | 40/587 [00:00<00:09, 55.46it/s]Loading weights:   9%|▉         | 53/587 [00:00<00:07, 70.21it/s]Loading weights:  11%|█         | 64/587 [00:00<00:06, 76.36it/s]Loading weights:  13%|█▎        | 75/587 [00:01<00:07, 72.30it/s]Loading weights:  14%|█▍        | 84/587 [00:01<00:08, 62.05it/s]Loading weights:  16%|█▌        | 91/587 [00:01<00:07, 63.58it/s]Loading weights:  17%|█▋        | 98/587 [00:01<00:07, 61.29it/s]Loading weights:  21%|██        | 123/587 [00:01<00:04, 103.35it/s]Loading weights:  27%|██▋       | 160/587 [00:01<00:02, 168.28it/s]Loading weights:  98%|█████████▊| 576/587 [00:01<00:00, 1203.51it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 324.86it/s] 
+[1/47] Diving-Side-001 cc=0.8424 nss=4.9336 sim=0.6889 kld=0.4427 auc_j=0.9720 sauc=0.8471
+[2/47] Diving-Side-002 cc=0.8797 nss=5.9825 sim=0.7170 kld=0.3185 auc_j=0.9861 sauc=0.9418
+[3/47] Diving-Side-003 cc=0.7828 nss=4.3463 sim=0.6394 kld=0.7087 auc_j=0.9610 sauc=0.8568
+[4/47] Diving-Side-004 cc=0.8616 nss=5.0455 sim=0.7062 kld=0.5113 auc_j=0.9667 sauc=0.9097
+[5/47] Golf-Swing-Back-001 cc=0.5887 nss=2.8330 sim=0.4678 kld=0.9701 auc_j=0.9348 sauc=0.8018
+[6/47] Golf-Swing-Back-002 cc=0.5814 nss=2.6454 sim=0.4876 kld=0.9133 auc_j=0.9293 sauc=0.8361
+[7/47] Golf-Swing-Back-003 cc=0.7617 nss=5.2615 sim=0.5203 kld=1.2565 auc_j=0.9141 sauc=0.7986
+[8/47] Golf-Swing-Back-004 cc=0.6778 nss=4.1254 sim=0.4404 kld=1.1707 auc_j=0.9344 sauc=0.8277
+[9/47] Golf-Swing-Back-005 cc=0.3722 nss=2.3373 sim=0.3373 kld=2.1045 auc_j=0.7997 sauc=0.6078
+[10/47] Golf-Swing-Front-001 cc=0.7480 nss=5.2068 sim=0.5814 kld=0.8252 auc_j=0.9557 sauc=0.8439
+[11/47] Kicking-Front-001 cc=0.6480 nss=2.9001 sim=0.5602 kld=0.7175 auc_j=0.9347 sauc=0.8411
+[12/47] Kicking-Front-002 cc=0.6428 nss=3.0129 sim=0.5314 kld=0.8213 auc_j=0.9316 sauc=0.7852
+[13/47] Kicking-Front-003 cc=0.7424 nss=5.3381 sim=0.5553 kld=0.6815 auc_j=0.9776 sauc=0.9041
+[14/47] Kicking-Front-004 cc=0.7029 nss=4.1174 sim=0.5563 kld=0.7297 auc_j=0.9654 sauc=0.8884
+[15/47] Kicking-Front-005 cc=0.5915 nss=3.0940 sim=0.4598 kld=1.1602 auc_j=0.9233 sauc=0.7141
+[16/47] Kicking-Front-006 cc=0.7423 nss=4.3604 sim=0.5730 kld=0.7429 auc_j=0.9601 sauc=0.8514
+[17/47] Lifting-001 cc=0.8859 nss=5.6067 sim=0.6502 kld=0.5342 auc_j=0.9610 sauc=0.8506
+[18/47] Lifting-002 cc=0.7766 nss=4.3749 sim=0.5995 kld=0.7046 auc_j=0.9410 sauc=0.7173
+[19/47] Riding-Horse-001 cc=0.7529 nss=3.3374 sim=0.5899 kld=0.6970 auc_j=0.9425 sauc=0.8930
+[20/47] Riding-Horse-002 cc=0.6438 nss=2.5910 sim=0.5461 kld=0.8032 auc_j=0.9246 sauc=0.8354
+[21/47] Riding-Horse-003 cc=0.7112 nss=3.1062 sim=0.5667 kld=0.7291 auc_j=0.9345 sauc=0.8319
+[22/47] Riding-Horse-004 cc=0.6237 nss=2.5867 sim=0.5256 kld=0.9040 auc_j=0.9124 sauc=0.8216
+[23/47] Run-Side-001 cc=0.8254 nss=5.0822 sim=0.6052 kld=0.8544 auc_j=0.9187 sauc=0.7913
+[24/47] Run-Side-002 cc=0.5857 nss=2.8603 sim=0.4892 kld=0.9705 auc_j=0.9345 sauc=0.7635
+[25/47] Run-Side-003 cc=0.6306 nss=2.9249 sim=0.5035 kld=0.9610 auc_j=0.9307 sauc=0.6891
+[26/47] Run-Side-004 cc=0.6830 nss=3.4244 sim=0.5351 kld=0.8384 auc_j=0.9464 sauc=0.7958
+[27/47] SkateBoarding-Front-001 cc=0.7381 nss=3.9261 sim=0.5894 kld=0.5733 auc_j=0.9600 sauc=0.8444
+[28/47] SkateBoarding-Front-002 cc=0.6900 nss=3.3437 sim=0.6084 kld=0.6296 auc_j=0.9380 sauc=0.8219
+[29/47] SkateBoarding-Front-003 cc=0.7253 nss=3.3334 sim=0.6157 kld=0.5761 auc_j=0.9516 sauc=0.8044
+[30/47] SkateBoarding-Front-004 cc=0.6398 nss=3.6329 sim=0.5451 kld=0.7908 auc_j=0.9578 sauc=0.8454
+[31/47] Swing-Bench-001 cc=0.7911 nss=3.4038 sim=0.6503 kld=0.4928 auc_j=0.9386 sauc=0.7657
+[32/47] Swing-Bench-002 cc=0.7650 nss=3.2601 sim=0.6361 kld=0.5602 auc_j=0.9411 sauc=0.6976
+[33/47] Swing-Bench-003 cc=0.7261 nss=3.0364 sim=0.6024 kld=0.6548 auc_j=0.9293 sauc=0.7185
+[34/47] Swing-Bench-004 cc=0.6304 nss=2.4728 sim=0.5616 kld=0.7334 auc_j=0.9142 sauc=0.6319
+[35/47] Swing-Bench-005 cc=0.6022 nss=2.3647 sim=0.5481 kld=0.7544 auc_j=0.9153 sauc=0.6888
+[36/47] Swing-Bench-006 cc=0.8152 nss=4.8839 sim=0.6348 kld=0.6329 auc_j=0.9616 sauc=0.8491
+[37/47] Swing-SideAngle-001 cc=0.8919 nss=5.3646 sim=0.7110 kld=0.3761 auc_j=0.9747 sauc=0.8628
+[38/47] Swing-SideAngle-002 cc=0.8612 nss=5.3193 sim=0.6916 kld=0.5349 auc_j=0.9645 sauc=0.8573
+[39/47] Swing-SideAngle-003 cc=0.8413 nss=5.1705 sim=0.6557 kld=0.6163 auc_j=0.9603 sauc=0.8358
+[40/47] Swing-SideAngle-004 cc=0.8391 nss=4.9008 sim=0.6569 kld=0.6049 auc_j=0.9559 sauc=0.8290
+[41/47] Walk-Front-001 cc=0.7109 nss=3.0869 sim=0.5945 kld=0.7809 auc_j=0.9205 sauc=0.6968
+[42/47] Walk-Front-002 cc=0.7884 nss=4.1584 sim=0.6271 kld=0.7400 auc_j=0.9379 sauc=0.8137
+[43/47] Walk-Front-003 cc=0.6977 nss=3.6358 sim=0.5543 kld=0.8488 auc_j=0.9316 sauc=0.8089
+[44/47] Walk-Front-004 cc=0.8099 nss=5.1132 sim=0.6233 kld=0.7464 auc_j=0.9435 sauc=0.8247
+[45/47] Walk-Front-005 cc=0.8523 nss=5.1160 sim=0.6657 kld=0.5210 auc_j=0.9673 sauc=0.8947
+[46/47] Walk-Front-006 cc=0.6954 nss=3.9965 sim=0.4850 kld=1.0529 auc_j=0.9397 sauc=0.8392
+[47/47] Walk-Front-007 cc=0.6864 nss=3.0925 sim=0.5662 kld=1.0171 auc_j=0.9125 sauc=0.8414
+MEAN cc=0.7252 nss=3.9159 sim=0.5799 kld=0.7725 auc_j=0.9406 sauc=0.8089
