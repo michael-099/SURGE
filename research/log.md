@@ -24,6 +24,17 @@ predictions on this machine (`D:/Research/baselines/salfom_val/maps`), whose per
 the TMFI-Net evaluation code (`scores/*.json`, keys `tmfi_*`). Pass: |ΔCC|, |ΔSIM| ≤ 0.002, |ΔNSS|, |ΔKLD| ≤ 0.01 on
 the mean over the 100 videos.
 
+**Result (2026-11-05 13:40): PASS.** SalFoM's DHF1K-val maps (100 videos, 60,273 frames) scored by `scripts/evaluate.py`
+(`runs/metric_check/`): CC 0.5639, NSS 3.3264, SIM 0.4130, KLD 1.2971, AUC-J 0.9243, sAUC 0.7406.
+- vs an independent evaluator on this machine (GRAFT-A's, run earlier on the same maps; used only as a reference):
+  CC, NSS, SIM, KLD identical per video (max |Δ| < 5e-5); AUC-J identical in mean (max per-video |Δ| 0.0007);
+  sAUC +0.0023 in mean (random negative sampling differs; sAUC is protocol-dependent, so compare it only within SURGE).
+- vs the TMFI-Net evaluation code (per-frame scores stored with the maps): CC 0.5642 (Δ −0.0003), NSS 3.3268
+  (Δ −0.0004); its SIM/KLD/AUC-J use other normalizations (0.4347 / 1.2552 / 0.9271).
+- The first version of AUC-J lacked AUC_Judd.m's tie-breaking jitter (−0.010 on these 8-bit PNG maps) and the first
+  sAUC pooled all negatives (0.7752); both were fixed to the MATLAB procedures before any model was scored.
+- SalFoM's val CC here, 0.564, is below its published *test* CC 0.569 (different split).
+
 ## 2. Phase 0, gate G1: backbone shoot-out (rules written 2026-11-05 12:58, before any G1 run)
 
 - Runs: `configs/g1_{vjepa2_l,umt_l,vjepa21_l}.yaml`. Stage 1 (frozen backbone), identical decoder (6.99M params),
@@ -69,3 +80,31 @@ Backbone = G1 winner (section 2). Seeds 0, 1, 2. All selection on the internal h
 - **UCF Sports:** fine-tune the main DHF1K model (seed 0) on the 93 UCF training videos (Stage of the main model,
   10 epochs, lr ×0.3), select on the 10 holdout videos, score the 47 test videos once. Published references:
   ViNet-E CC 0.744, TMFI-Net 0.707, SalFoM 0.631.
+
+Observation 2026-11-05 14:00 (G1 vjepa2_l, epochs 0–5): holdout CC 0.557, 0.573, **0.578**, 0.567, 0.565, 0.551 while
+training CC rises 0.573 → 0.759. The decoder overfits the 540 training videos after about 2–3 epochs. G1 is unaffected
+(best epoch per run). The main-program schedule/regularization will be fixed from the three G1 curves and written
+here before any main run starts.
+
+### G1 result (2026-11-05 17:30)
+
+Holdout (60 videos, every 5th frame, σ = 0), best epoch of each 10-epoch Stage-1 run, seed 0:
+
+| Backbone | Best epoch | CC | NSS | SIM | KLD | CC by epoch 0–9 |
+|---|---|---|---|---|---|---|
+| **V-JEPA 2 ViT-L** (HF, 256²) | 2 | **0.5782** | **3.314** | **0.4432** | **1.218** | .557 .573 .578 .567 .565 .551 .543 .539 .526 .522 |
+| V-JEPA 2.1 ViT-L (distilled, 256²) | 1 | 0.5692 | 3.295 | 0.4377 | 1.245 | .549 .569 .568 .563 .553 .544 .539 .535 .527 .522 |
+| UMT-L (K710→K400, 224²) | 1 | 0.5464 | 3.101 | 0.4157 | 1.323 | .527 .546 .542 .530 .516 .512 .504 .492 .484 .480 |
+
+**Decision: V-JEPA 2 ViT-L** is the backbone for all later steps. V-JEPA 2.1 is 0.009 CC behind, outside the 0.005
+margin, so the proposal's choice is not kept. Caveat: one seed per backbone; part of the gap may be seed noise.
+All three runs peak at epoch 1–2 and then overfit (training CC keeps rising).
+
+### Amendment to section 4, written 2026-11-05 17:32, before any main-program run
+
+- Schedule for all main-program runs (B1, M, ablations): **3 epochs**, cosine, warm-up 0.25 epoch, best epoch on the
+  holdout. Reason: every G1 curve peaks at epoch 1–2 of the 10-epoch schedule. Consequently the G1 run is *not* reused
+  as B1 seed 0; B1 seeds 0–2 are new 3-epoch runs.
+- The rectangular-input ablation is dropped (the HF V-JEPA 2 port assumes a square token grid).
+- Queue: `scripts/queue_main.sh` (BB=vjepa2_l, 256², EP=3): B1 s0–2, M s0–2, then ablations no-prior, no-aux,
+  stride 4, SALICON co-training. Starts after G2.

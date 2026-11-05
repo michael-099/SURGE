@@ -1,1 +1,5 @@
 2026-11-05T12:59:53+03:00 start configs/g1_vjepa2_l.yaml  -> runs/g1_vjepa2_l
+2026-11-05T14:25:34+03:00 end configs/g1_vjepa2_l.yaml rc=0
+2026-11-05T14:25:34+03:00 start configs/g1_umt_l.yaml  -> runs/g1_umt_l
+2026-11-05T16:09:00+03:00 end configs/g1_umt_l.yaml rc=0
+2026-11-05T16:09:00+03:00 chain finished
