@@ -108,3 +108,19 @@ All three runs peak at epoch 1–2 and then overfit (training CC keeps rising).
 - The rectangular-input ablation is dropped (the HF V-JEPA 2 port assumes a square token grid).
 - Queue: `scripts/queue_main.sh` (BB=vjepa2_l, 256², EP=3): B1 s0–2, M s0–2, then ablations no-prior, no-aux,
   stride 4, SALICON co-training. Starts after G2.
+
+### G2 result (2026-11-05 18:05): NO-GO
+
+`runs/g2/g2_results.json`; 60 holdout videos, first frame of each target tubelet, σ = 16 px, mean over videos.
+
+| Map | NSS ~4 fps (stride 8) | NSS 15 fps (stride 2) | CC 4 fps | CC 15 fps |
+|---|---|---|---|---|
+| Surprise, raw (V-JEPA 2-L predictor error) | −0.190 | −0.502 | −0.043 | −0.099 |
+| Surprise, contextual (true − other-video past) | 0.116 | −0.366 | 0.018 | −0.072 |
+| Token atypicality | 0.454 | 0.650 | 0.081 | 0.123 |
+| Frame difference | 0.810 | 0.803 | 0.149 | 0.148 |
+| Empirical center prior | 1.464 | 1.479 | 0.289 | 0.292 |
+
+No surprise variant beats atypicality or frame difference at either rate; raw surprise is *anti*-correlated with
+fixations (consistent with the replication's negative correlation with the screen center). Information gain over the
+prior is negative for every map on the full holdout (the 2-video CPU test was not representative). **SCM stays off.**

@@ -1,0 +1,124 @@
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 13/587 [00:00<00:04, 115.25it/s]Loading weights:   4%|▍         | 25/587 [00:00<00:12, 44.56it/s] Loading weights:   5%|▌         | 32/587 [00:00<00:13, 40.75it/s]Loading weights:   6%|▋         | 38/587 [00:00<00:14, 37.64it/s]Loading weights:   7%|▋         | 44/587 [00:01<00:14, 37.69it/s]Loading weights:   9%|▊         | 51/587 [00:01<00:12, 43.59it/s]Loading weights:  10%|█         | 59/587 [00:01<00:12, 43.47it/s]Loading weights:  12%|█▏        | 71/587 [00:01<00:09, 56.09it/s]Loading weights:  14%|█▍        | 83/587 [00:01<00:07, 68.56it/s]Loading weights:  18%|█▊        | 106/587 [00:01<00:04, 103.95it/s]Loading weights:  25%|██▍       | 145/587 [00:01<00:02, 164.93it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 314.05it/s]
+stride 8 [1/60] 0028 surprise_raw:nss=-0.633 surprise_ctx:nss=0.138 atypicality:nss=-0.034 frame_diff:nss=0.386 center_prior:nss=1.607
+stride 8 [2/60] 0031 surprise_raw:nss=-0.198 surprise_ctx:nss=0.108 atypicality:nss=-0.079 frame_diff:nss=0.792 center_prior:nss=0.597
+stride 8 [3/60] 0043 surprise_raw:nss=-0.454 surprise_ctx:nss=-0.882 atypicality:nss=1.170 frame_diff:nss=0.664 center_prior:nss=1.061
+stride 8 [4/60] 0048 surprise_raw:nss=-0.395 surprise_ctx:nss=0.072 atypicality:nss=0.278 frame_diff:nss=0.512 center_prior:nss=0.863
+stride 8 [5/60] 0050 surprise_raw:nss=-0.680 surprise_ctx:nss=-0.506 atypicality:nss=0.247 frame_diff:nss=-0.268 center_prior:nss=2.288
+stride 8 [6/60] 0056 surprise_raw:nss=0.588 surprise_ctx:nss=-0.201 atypicality:nss=1.365 frame_diff:nss=2.914 center_prior:nss=-0.020
+stride 8 [7/60] 0057 surprise_raw:nss=1.257 surprise_ctx:nss=0.840 atypicality:nss=1.506 frame_diff:nss=0.829 center_prior:nss=1.636
+stride 8 [8/60] 0070 surprise_raw:nss=0.186 surprise_ctx:nss=0.101 atypicality:nss=1.940 frame_diff:nss=0.400 center_prior:nss=2.659
+stride 8 [9/60] 0073 surprise_raw:nss=-1.009 surprise_ctx:nss=-0.663 atypicality:nss=-0.193 frame_diff:nss=0.310 center_prior:nss=1.611
+stride 8 [10/60] 0101 surprise_raw:nss=-0.386 surprise_ctx:nss=0.433 atypicality:nss=-0.529 frame_diff:nss=0.675 center_prior:nss=1.319
+stride 8 [11/60] 0112 surprise_raw:nss=0.239 surprise_ctx:nss=1.000 atypicality:nss=0.388 frame_diff:nss=2.276 center_prior:nss=0.726
+stride 8 [12/60] 0114 surprise_raw:nss=0.722 surprise_ctx:nss=1.108 atypicality:nss=0.854 frame_diff:nss=0.731 center_prior:nss=1.616
+stride 8 [13/60] 0131 surprise_raw:nss=0.110 surprise_ctx:nss=-0.048 atypicality:nss=0.340 frame_diff:nss=0.941 center_prior:nss=1.119
+stride 8 [14/60] 0132 surprise_raw:nss=-0.865 surprise_ctx:nss=-0.424 atypicality:nss=0.154 frame_diff:nss=0.732 center_prior:nss=1.961
+stride 8 [15/60] 0155 surprise_raw:nss=-0.467 surprise_ctx:nss=0.193 atypicality:nss=-0.574 frame_diff:nss=0.418 center_prior:nss=1.053
+stride 8 [16/60] 0160 surprise_raw:nss=-0.403 surprise_ctx:nss=0.151 atypicality:nss=-0.238 frame_diff:nss=0.371 center_prior:nss=0.661
+stride 8 [17/60] 0167 surprise_raw:nss=0.245 surprise_ctx:nss=1.301 atypicality:nss=1.323 frame_diff:nss=0.285 center_prior:nss=1.188
+stride 8 [18/60] 0174 surprise_raw:nss=-0.328 surprise_ctx:nss=0.111 atypicality:nss=1.152 frame_diff:nss=1.071 center_prior:nss=1.701
+stride 8 [19/60] 0175 surprise_raw:nss=0.417 surprise_ctx:nss=0.530 atypicality:nss=1.235 frame_diff:nss=0.297 center_prior:nss=-0.162
+stride 8 [20/60] 0189 surprise_raw:nss=-0.279 surprise_ctx:nss=-0.106 atypicality:nss=0.166 frame_diff:nss=0.721 center_prior:nss=1.203
+stride 8 [21/60] 0191 surprise_raw:nss=-0.634 surprise_ctx:nss=-0.511 atypicality:nss=0.293 frame_diff:nss=0.892 center_prior:nss=1.846
+stride 8 [22/60] 0208 surprise_raw:nss=0.609 surprise_ctx:nss=1.397 atypicality:nss=0.891 frame_diff:nss=1.237 center_prior:nss=2.330
+stride 8 [23/60] 0236 surprise_raw:nss=-0.365 surprise_ctx:nss=-0.032 atypicality:nss=0.108 frame_diff:nss=0.726 center_prior:nss=1.114
+stride 8 [24/60] 0251 surprise_raw:nss=-0.634 surprise_ctx:nss=-0.105 atypicality:nss=-0.461 frame_diff:nss=0.358 center_prior:nss=1.727
+stride 8 [25/60] 0258 surprise_raw:nss=-0.155 surprise_ctx:nss=-0.124 atypicality:nss=0.753 frame_diff:nss=0.705 center_prior:nss=1.234
+stride 8 [26/60] 0262 surprise_raw:nss=-0.004 surprise_ctx:nss=0.769 atypicality:nss=0.026 frame_diff:nss=0.882 center_prior:nss=2.675
+stride 8 [27/60] 0275 surprise_raw:nss=-1.529 surprise_ctx:nss=-1.223 atypicality:nss=0.178 frame_diff:nss=1.065 center_prior:nss=3.228
+stride 8 [28/60] 0280 surprise_raw:nss=0.069 surprise_ctx:nss=0.423 atypicality:nss=0.410 frame_diff:nss=0.529 center_prior:nss=0.487
+stride 8 [29/60] 0304 surprise_raw:nss=-0.354 surprise_ctx:nss=-0.370 atypicality:nss=0.536 frame_diff:nss=0.805 center_prior:nss=0.742
+stride 8 [30/60] 0305 surprise_raw:nss=-0.149 surprise_ctx:nss=0.059 atypicality:nss=0.748 frame_diff:nss=0.980 center_prior:nss=1.338
+stride 8 [31/60] 0315 surprise_raw:nss=-0.156 surprise_ctx:nss=0.282 atypicality:nss=-0.154 frame_diff:nss=-0.049 center_prior:nss=1.670
+stride 8 [32/60] 0321 surprise_raw:nss=0.039 surprise_ctx:nss=0.527 atypicality:nss=0.810 frame_diff:nss=0.505 center_prior:nss=1.463
+stride 8 [33/60] 0336 surprise_raw:nss=0.642 surprise_ctx:nss=0.946 atypicality:nss=1.196 frame_diff:nss=1.751 center_prior:nss=0.579
+stride 8 [34/60] 0346 surprise_raw:nss=0.025 surprise_ctx:nss=-0.285 atypicality:nss=0.471 frame_diff:nss=0.252 center_prior:nss=0.483
+stride 8 [35/60] 0356 surprise_raw:nss=0.271 surprise_ctx:nss=0.191 atypicality:nss=0.835 frame_diff:nss=0.358 center_prior:nss=0.253
+stride 8 [36/60] 0387 surprise_raw:nss=0.092 surprise_ctx:nss=0.542 atypicality:nss=0.462 frame_diff:nss=1.057 center_prior:nss=0.284
+stride 8 [37/60] 0404 surprise_raw:nss=-0.111 surprise_ctx:nss=0.682 atypicality:nss=0.701 frame_diff:nss=1.134 center_prior:nss=0.589
+stride 8 [38/60] 0411 surprise_raw:nss=-0.338 surprise_ctx:nss=-0.433 atypicality:nss=0.417 frame_diff:nss=0.474 center_prior:nss=1.721
+stride 8 [39/60] 0421 surprise_raw:nss=0.352 surprise_ctx:nss=0.864 atypicality:nss=0.732 frame_diff:nss=0.950 center_prior:nss=2.334
+stride 8 [40/60] 0434 surprise_raw:nss=1.001 surprise_ctx:nss=1.189 atypicality:nss=1.669 frame_diff:nss=0.419 center_prior:nss=1.494
+stride 8 [41/60] 0442 surprise_raw:nss=-1.121 surprise_ctx:nss=-0.982 atypicality:nss=0.053 frame_diff:nss=0.958 center_prior:nss=1.281
+stride 8 [42/60] 0447 surprise_raw:nss=-0.387 surprise_ctx:nss=-0.357 atypicality:nss=-0.313 frame_diff:nss=0.492 center_prior:nss=1.864
+stride 8 [43/60] 0457 surprise_raw:nss=0.008 surprise_ctx:nss=0.937 atypicality:nss=0.434 frame_diff:nss=0.128 center_prior:nss=2.279
+stride 8 [44/60] 0459 surprise_raw:nss=-0.340 surprise_ctx:nss=0.230 atypicality:nss=0.056 frame_diff:nss=1.108 center_prior:nss=1.112
+stride 8 [45/60] 0468 surprise_raw:nss=0.320 surprise_ctx:nss=0.630 atypicality:nss=0.362 frame_diff:nss=0.925 center_prior:nss=1.213
+stride 8 [46/60] 0481 surprise_raw:nss=-0.105 surprise_ctx:nss=-0.034 atypicality:nss=0.570 frame_diff:nss=1.560 center_prior:nss=1.066
+stride 8 [47/60] 0485 surprise_raw:nss=0.250 surprise_ctx:nss=0.442 atypicality:nss=1.239 frame_diff:nss=1.684 center_prior:nss=2.627
+stride 8 [48/60] 0490 surprise_raw:nss=-0.184 surprise_ctx:nss=-0.827 atypicality:nss=0.822 frame_diff:nss=1.452 center_prior:nss=0.309
+stride 8 [49/60] 0492 surprise_raw:nss=-0.238 surprise_ctx:nss=-0.740 atypicality:nss=0.606 frame_diff:nss=1.126 center_prior:nss=2.772
+stride 8 [50/60] 0498 surprise_raw:nss=-0.075 surprise_ctx:nss=-0.082 atypicality:nss=0.380 frame_diff:nss=0.784 center_prior:nss=0.530
+stride 8 [51/60] 0510 surprise_raw:nss=-0.927 surprise_ctx:nss=-0.660 atypicality:nss=-0.191 frame_diff:nss=0.472 center_prior:nss=1.854
+stride 8 [52/60] 0516 surprise_raw:nss=-1.292 surprise_ctx:nss=-0.719 atypicality:nss=0.578 frame_diff:nss=0.720 center_prior:nss=2.856
+stride 8 [53/60] 0522 surprise_raw:nss=-0.524 surprise_ctx:nss=0.044 atypicality:nss=0.138 frame_diff:nss=-0.080 center_prior:nss=2.163
+stride 8 [54/60] 0529 surprise_raw:nss=1.120 surprise_ctx:nss=1.374 atypicality:nss=1.031 frame_diff:nss=1.088 center_prior:nss=2.652
+stride 8 [55/60] 0531 surprise_raw:nss=-0.516 surprise_ctx:nss=-0.472 atypicality:nss=-0.605 frame_diff:nss=0.567 center_prior:nss=1.333
+stride 8 [56/60] 0548 surprise_raw:nss=-0.548 surprise_ctx:nss=0.153 atypicality:nss=0.129 frame_diff:nss=1.112 center_prior:nss=2.023
+stride 8 [57/60] 0560 surprise_raw:nss=-1.436 surprise_ctx:nss=-1.154 atypicality:nss=0.351 frame_diff:nss=1.907 center_prior:nss=2.495
+stride 8 [58/60] 0574 surprise_raw:nss=-0.752 surprise_ctx:nss=0.370 atypicality:nss=0.057 frame_diff:nss=0.258 center_prior:nss=1.484
+stride 8 [59/60] 0578 surprise_raw:nss=-0.757 surprise_ctx:nss=0.355 atypicality:nss=0.060 frame_diff:nss=1.530 center_prior:nss=1.761
+stride 8 [60/60] 0583 surprise_raw:nss=-0.226 surprise_ctx:nss=0.413 atypicality:nss=0.389 frame_diff:nss=0.706 center_prior:nss=1.879
+STRIDE 8 MEAN {"surprise_raw": {"nss": -0.18980492300736998, "cc": -0.042788649112505864, "ig": -0.2727812887856108}, "surprise_ctx": {"nss": 0.11607891461092108, "cc": 0.017972786269626475, "ig": -0.2545571320543962}, "atypicality": {"nss": 0.4539595892116948, "cc": 0.08081537768936653, "ig": -0.18963670656235806}, "frame_diff": {"nss": 0.8097698608970408, "cc": 0.14906693464239634, "ig": -0.04541165324341851}, "center_prior": {"nss": 1.4638949223666198, "cc": 0.2888802981910041, "ig": 0.0}}
+stride 2 [1/60] 0028 surprise_raw:nss=-0.736 surprise_ctx:nss=-0.374 atypicality:nss=0.462 frame_diff:nss=0.501 center_prior:nss=1.727
+stride 2 [2/60] 0031 surprise_raw:nss=-0.344 surprise_ctx:nss=-0.351 atypicality:nss=0.350 frame_diff:nss=0.819 center_prior:nss=0.629
+stride 2 [3/60] 0043 surprise_raw:nss=-0.504 surprise_ctx:nss=-0.815 atypicality:nss=1.408 frame_diff:nss=0.569 center_prior:nss=0.936
+stride 2 [4/60] 0048 surprise_raw:nss=-0.576 surprise_ctx:nss=-0.417 atypicality:nss=0.466 frame_diff:nss=0.465 center_prior:nss=0.765
+stride 2 [5/60] 0050 surprise_raw:nss=-0.892 surprise_ctx:nss=-0.865 atypicality:nss=0.533 frame_diff:nss=-0.209 center_prior:nss=2.320
+stride 2 [6/60] 0056 surprise_raw:nss=0.231 surprise_ctx:nss=-0.849 atypicality:nss=1.442 frame_diff:nss=2.817 center_prior:nss=0.042
+stride 2 [7/60] 0057 surprise_raw:nss=0.371 surprise_ctx:nss=0.002 atypicality:nss=1.545 frame_diff:nss=0.840 center_prior:nss=1.636
+stride 2 [8/60] 0070 surprise_raw:nss=-0.444 surprise_ctx:nss=-0.543 atypicality:nss=1.747 frame_diff:nss=0.311 center_prior:nss=2.442
+stride 2 [9/60] 0073 surprise_raw:nss=-1.097 surprise_ctx:nss=-0.963 atypicality:nss=-0.004 frame_diff:nss=0.457 center_prior:nss=1.455
+stride 2 [10/60] 0101 surprise_raw:nss=-0.617 surprise_ctx:nss=-0.085 atypicality:nss=-0.312 frame_diff:nss=0.570 center_prior:nss=1.512
+stride 2 [11/60] 0112 surprise_raw:nss=0.068 surprise_ctx:nss=0.827 atypicality:nss=0.558 frame_diff:nss=1.835 center_prior:nss=0.729
+stride 2 [12/60] 0114 surprise_raw:nss=0.081 surprise_ctx:nss=0.159 atypicality:nss=1.103 frame_diff:nss=0.766 center_prior:nss=1.804
+stride 2 [13/60] 0131 surprise_raw:nss=-0.564 surprise_ctx:nss=-0.326 atypicality:nss=0.476 frame_diff:nss=1.185 center_prior:nss=1.334
+stride 2 [14/60] 0132 surprise_raw:nss=-0.999 surprise_ctx:nss=-0.624 atypicality:nss=0.528 frame_diff:nss=0.648 center_prior:nss=2.037
+stride 2 [15/60] 0155 surprise_raw:nss=-0.710 surprise_ctx:nss=-0.443 atypicality:nss=-0.081 frame_diff:nss=0.508 center_prior:nss=1.055
+stride 2 [16/60] 0160 surprise_raw:nss=-0.465 surprise_ctx:nss=-0.253 atypicality:nss=0.028 frame_diff:nss=0.395 center_prior:nss=0.625
+stride 2 [17/60] 0167 surprise_raw:nss=-0.257 surprise_ctx:nss=0.970 atypicality:nss=1.333 frame_diff:nss=0.497 center_prior:nss=1.168
+stride 2 [18/60] 0174 surprise_raw:nss=-0.852 surprise_ctx:nss=-0.910 atypicality:nss=1.240 frame_diff:nss=1.011 center_prior:nss=1.784
+stride 2 [19/60] 0175 surprise_raw:nss=0.534 surprise_ctx:nss=0.290 atypicality:nss=1.183 frame_diff:nss=0.298 center_prior:nss=-0.157
+stride 2 [20/60] 0189 surprise_raw:nss=-0.704 surprise_ctx:nss=-0.519 atypicality:nss=0.247 frame_diff:nss=0.915 center_prior:nss=1.389
+stride 2 [21/60] 0191 surprise_raw:nss=-0.657 surprise_ctx:nss=-0.529 atypicality:nss=0.491 frame_diff:nss=0.877 center_prior:nss=1.892
+stride 2 [22/60] 0208 surprise_raw:nss=-0.334 surprise_ctx:nss=0.789 atypicality:nss=0.623 frame_diff:nss=1.116 center_prior:nss=2.320
+stride 2 [23/60] 0236 surprise_raw:nss=-0.756 surprise_ctx:nss=0.531 atypicality:nss=0.239 frame_diff:nss=0.517 center_prior:nss=1.256
+stride 2 [24/60] 0251 surprise_raw:nss=-0.750 surprise_ctx:nss=-0.269 atypicality:nss=-0.214 frame_diff:nss=0.330 center_prior:nss=1.634
+stride 2 [25/60] 0258 surprise_raw:nss=-0.596 surprise_ctx:nss=-0.612 atypicality:nss=0.897 frame_diff:nss=0.598 center_prior:nss=1.430
+stride 2 [26/60] 0262 surprise_raw:nss=-0.521 surprise_ctx:nss=-0.117 atypicality:nss=0.646 frame_diff:nss=0.709 center_prior:nss=2.685
+stride 2 [27/60] 0275 surprise_raw:nss=-1.344 surprise_ctx:nss=-0.802 atypicality:nss=0.482 frame_diff:nss=1.046 center_prior:nss=3.176
+stride 2 [28/60] 0280 surprise_raw:nss=-0.379 surprise_ctx:nss=-0.039 atypicality:nss=0.335 frame_diff:nss=0.481 center_prior:nss=0.508
+stride 2 [29/60] 0304 surprise_raw:nss=-0.273 surprise_ctx:nss=-0.391 atypicality:nss=0.571 frame_diff:nss=0.935 center_prior:nss=0.698
+stride 2 [30/60] 0305 surprise_raw:nss=-0.357 surprise_ctx:nss=-0.690 atypicality:nss=0.990 frame_diff:nss=0.937 center_prior:nss=1.401
+stride 2 [31/60] 0315 surprise_raw:nss=-0.201 surprise_ctx:nss=0.115 atypicality:nss=0.051 frame_diff:nss=-0.007 center_prior:nss=1.485
+stride 2 [32/60] 0321 surprise_raw:nss=-0.249 surprise_ctx:nss=-0.124 atypicality:nss=1.087 frame_diff:nss=0.502 center_prior:nss=1.420
+stride 2 [33/60] 0336 surprise_raw:nss=0.327 surprise_ctx:nss=0.608 atypicality:nss=0.922 frame_diff:nss=1.554 center_prior:nss=0.600
+stride 2 [34/60] 0346 surprise_raw:nss=-0.296 surprise_ctx:nss=-0.648 atypicality:nss=0.451 frame_diff:nss=0.387 center_prior:nss=0.521
+stride 2 [35/60] 0356 surprise_raw:nss=0.134 surprise_ctx:nss=-0.193 atypicality:nss=1.064 frame_diff:nss=0.255 center_prior:nss=0.344
+stride 2 [36/60] 0387 surprise_raw:nss=-0.774 surprise_ctx:nss=-0.934 atypicality:nss=0.559 frame_diff:nss=0.894 center_prior:nss=0.365
+stride 2 [37/60] 0404 surprise_raw:nss=-0.421 surprise_ctx:nss=-0.070 atypicality:nss=0.963 frame_diff:nss=1.227 center_prior:nss=0.575
+stride 2 [38/60] 0411 surprise_raw:nss=-0.584 surprise_ctx:nss=-0.806 atypicality:nss=0.843 frame_diff:nss=0.367 center_prior:nss=1.611
+stride 2 [39/60] 0421 surprise_raw:nss=-0.317 surprise_ctx:nss=-0.517 atypicality:nss=0.944 frame_diff:nss=0.924 center_prior:nss=2.299
+stride 2 [40/60] 0434 surprise_raw:nss=-0.036 surprise_ctx:nss=0.295 atypicality:nss=1.548 frame_diff:nss=0.372 center_prior:nss=1.717
+stride 2 [41/60] 0442 surprise_raw:nss=-1.252 surprise_ctx:nss=-1.530 atypicality:nss=0.174 frame_diff:nss=1.139 center_prior:nss=1.320
+stride 2 [42/60] 0447 surprise_raw:nss=-0.017 surprise_ctx:nss=0.008 atypicality:nss=0.177 frame_diff:nss=0.382 center_prior:nss=1.518
+stride 2 [43/60] 0457 surprise_raw:nss=-0.456 surprise_ctx:nss=0.047 atypicality:nss=0.634 frame_diff:nss=0.279 center_prior:nss=2.416
+stride 2 [44/60] 0459 surprise_raw:nss=-0.680 surprise_ctx:nss=0.023 atypicality:nss=0.402 frame_diff:nss=1.092 center_prior:nss=1.045
+stride 2 [45/60] 0468 surprise_raw:nss=0.492 surprise_ctx:nss=0.478 atypicality:nss=0.798 frame_diff:nss=0.975 center_prior:nss=1.178
+stride 2 [46/60] 0481 surprise_raw:nss=-0.407 surprise_ctx:nss=-0.444 atypicality:nss=0.700 frame_diff:nss=1.632 center_prior:nss=1.232
+stride 2 [47/60] 0485 surprise_raw:nss=-0.532 surprise_ctx:nss=-1.105 atypicality:nss=1.393 frame_diff:nss=1.535 center_prior:nss=2.538
+stride 2 [48/60] 0490 surprise_raw:nss=-0.381 surprise_ctx:nss=-0.997 atypicality:nss=0.954 frame_diff:nss=1.623 center_prior:nss=0.312
+stride 2 [49/60] 0492 surprise_raw:nss=-0.619 surprise_ctx:nss=-1.191 atypicality:nss=0.685 frame_diff:nss=0.934 center_prior:nss=2.727
+stride 2 [50/60] 0498 surprise_raw:nss=-0.228 surprise_ctx:nss=-0.437 atypicality:nss=0.497 frame_diff:nss=0.742 center_prior:nss=0.504
+stride 2 [51/60] 0510 surprise_raw:nss=-0.841 surprise_ctx:nss=-0.467 atypicality:nss=0.156 frame_diff:nss=0.480 center_prior:nss=1.831
+stride 2 [52/60] 0516 surprise_raw:nss=-1.680 surprise_ctx:nss=-1.349 atypicality:nss=0.784 frame_diff:nss=0.762 center_prior:nss=2.899
+stride 2 [53/60] 0522 surprise_raw:nss=-0.846 surprise_ctx:nss=-0.496 atypicality:nss=0.390 frame_diff:nss=-0.033 center_prior:nss=2.200
+stride 2 [54/60] 0529 surprise_raw:nss=-0.037 surprise_ctx:nss=-0.235 atypicality:nss=1.355 frame_diff:nss=1.017 center_prior:nss=2.701
+stride 2 [55/60] 0531 surprise_raw:nss=-0.691 surprise_ctx:nss=-0.704 atypicality:nss=-0.236 frame_diff:nss=0.548 center_prior:nss=1.334
+stride 2 [56/60] 0548 surprise_raw:nss=-1.029 surprise_ctx:nss=-0.366 atypicality:nss=0.440 frame_diff:nss=1.128 center_prior:nss=2.078
+stride 2 [57/60] 0560 surprise_raw:nss=-1.570 surprise_ctx:nss=-1.238 atypicality:nss=0.521 frame_diff:nss=2.075 center_prior:nss=2.585
+stride 2 [58/60] 0574 surprise_raw:nss=-0.658 surprise_ctx:nss=0.378 atypicality:nss=0.261 frame_diff:nss=0.274 center_prior:nss=1.450
+stride 2 [59/60] 0578 surprise_raw:nss=-1.267 surprise_ctx:nss=-1.492 atypicality:nss=0.448 frame_diff:nss=1.348 center_prior:nss=1.842
+stride 2 [60/60] 0583 surprise_raw:nss=-0.566 surprise_ctx:nss=-0.335 atypicality:nss=0.696 frame_diff:nss=1.022 center_prior:nss=1.843
+STRIDE 2 MEAN {"surprise_raw": {"nss": -0.5021175652708812, "cc": -0.09937803881409694, "ig": -0.3289612145940939}, "surprise_ctx": {"nss": -0.3657084309777784, "cc": -0.07219493523206164, "ig": -0.3330198467786631}, "atypicality": {"nss": 0.6495768457784716, "cc": 0.12296753304751748, "ig": -0.17506066594535055}, "frame_diff": {"nss": 0.8028165970860637, "cc": 0.1482894185111772, "ig": -0.06464912358869865}, "center_prior": {"nss": 1.478670812857716, "cc": 0.2917672346001098, "ig": 0.0}}
+VERDICT {"stride_8/surprise_raw": false, "stride_8/surprise_ctx": false, "stride_2/surprise_raw": false, "stride_2/surprise_ctx": false} NO-GO
