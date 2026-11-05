@@ -87,9 +87,12 @@ def main():
         log(f"LoRA on {len(names)} linears")
     model = SurgeD(bb, use_scm=md["scm"], prior=md["prior"], aux=md["aux"], c=md["channels"]).to(device)
     if tr.get("init_from"):
-        sd = torch.load(ROOT / tr["init_from"], map_location="cpu", weights_only=True)["decoder"]
-        model.decoder.load_state_dict(sd)
+        ck0 = torch.load(ROOT / tr["init_from"], map_location="cpu", weights_only=False)
+        model.decoder.load_state_dict(ck0["decoder"])
         log(f"decoder initialized from {tr['init_from']}")
+        if stage2 and "lora" in ck0:
+            bb.load_state_dict(ck0["lora"], strict=False)
+            log("LoRA weights initialized from the same checkpoint")
 
     n_dec = sum(p.numel() for p in model.decoder.parameters())
     n_lora = sum(p.numel() for p in lora_parameters(bb))

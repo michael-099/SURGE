@@ -1,0 +1,43 @@
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 11/587 [00:00<00:08, 70.05it/s]Loading weights:   3%|▎         | 19/587 [00:00<00:07, 71.16it/s]Loading weights:   5%|▍         | 27/587 [00:00<00:08, 69.54it/s]Loading weights:   6%|▌         | 36/587 [00:00<00:07, 73.99it/s]Loading weights:   7%|▋         | 44/587 [00:00<00:09, 54.56it/s]Loading weights:   9%|▊         | 51/587 [00:00<00:12, 44.18it/s]Loading weights:  11%|█▏        | 67/587 [00:01<00:07, 67.75it/s]Loading weights:  13%|█▎        | 76/587 [00:01<00:09, 54.89it/s]Loading weights:  14%|█▍        | 83/587 [00:01<00:09, 53.32it/s]Loading weights:  16%|█▌        | 91/587 [00:01<00:08, 55.68it/s]Loading weights:  20%|█▉        | 116/587 [00:01<00:04, 95.40it/s]Loading weights:  24%|██▍       | 142/587 [00:01<00:03, 130.90it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 311.32it/s]
+2026-11-05 18:59:39 params: decoder 6.99M, LoRA 0.00M, backbone 326.0M
+2026-11-05 19:01:02 ep 0 step 50/1620 loss 3.0671 cc 0.4492 nss 2.493 5.0 clips/s mem 7.2G
+2026-11-05 19:01:28 ep 0 step 100/1620 loss 2.6872 cc 0.5029 nss 2.807 7.5 clips/s mem 7.2G
+2026-11-05 19:01:53 ep 0 step 150/1620 loss 2.5226 cc 0.5267 nss 2.965 9.1 clips/s mem 7.2G
+2026-11-05 19:02:19 ep 0 step 200/1620 loss 2.4244 cc 0.5412 nss 3.069 10.2 clips/s mem 7.2G
+2026-11-05 19:02:44 ep 0 step 250/1620 loss 2.3567 cc 0.5513 nss 3.145 10.9 clips/s mem 7.2G
+2026-11-05 19:03:10 ep 0 step 300/1620 loss 2.2940 cc 0.5599 nss 3.204 11.5 clips/s mem 7.2G
+2026-11-05 19:03:36 ep 0 step 350/1620 loss 2.2525 cc 0.5651 nss 3.238 11.9 clips/s mem 7.2G
+2026-11-05 19:04:02 ep 0 step 400/1620 loss 2.2220 cc 0.5693 nss 3.266 12.3 clips/s mem 7.2G
+2026-11-05 19:04:28 ep 0 step 450/1620 loss 2.1989 cc 0.5728 nss 3.286 12.6 clips/s mem 7.2G
+2026-11-05 19:04:53 ep 0 step 500/1620 loss 2.1822 cc 0.5755 nss 3.301 12.8 clips/s mem 7.2G
+2026-11-05 19:05:15 epoch 0 done in 5.6 min
+2026-11-05 19:08:21 epoch 0 holdout cc=0.5723 nss=3.2645 sim=0.4345 kld=1.2397 (3.1 min)
+2026-11-05 19:08:22 new best holdout CC 0.5723 at epoch 0
+2026-11-05 19:08:29 ep 1 step 550/1620 loss 1.8982 cc 0.6152 nss 3.492 11.0 clips/s mem 7.2G
+2026-11-05 19:08:55 ep 1 step 600/1620 loss 1.8441 cc 0.6258 nss 3.611 14.5 clips/s mem 7.2G
+2026-11-05 19:09:21 ep 1 step 650/1620 loss 1.8114 cc 0.6304 nss 3.663 14.9 clips/s mem 7.2G
+2026-11-05 19:09:47 ep 1 step 700/1620 loss 1.8045 cc 0.6321 nss 3.664 15.0 clips/s mem 7.2G
+2026-11-05 19:10:13 ep 1 step 750/1620 loss 1.7780 cc 0.6367 nss 3.705 15.1 clips/s mem 7.2G
+2026-11-05 19:10:39 ep 1 step 800/1620 loss 1.7755 cc 0.6369 nss 3.706 15.1 clips/s mem 7.2G
+2026-11-05 19:11:05 ep 1 step 850/1620 loss 1.7882 cc 0.6346 nss 3.689 15.2 clips/s mem 7.2G
+2026-11-05 19:11:31 ep 1 step 900/1620 loss 1.7822 cc 0.6358 nss 3.694 15.2 clips/s mem 7.2G
+2026-11-05 19:11:57 ep 1 step 950/1620 loss 1.7781 cc 0.6361 nss 3.695 15.2 clips/s mem 7.2G
+2026-11-05 19:12:23 ep 1 step 1000/1620 loss 1.7694 cc 0.6375 nss 3.711 15.2 clips/s mem 7.2G
+2026-11-05 19:12:49 ep 1 step 1050/1620 loss 1.7608 cc 0.6391 nss 3.723 15.2 clips/s mem 7.2G
+2026-11-05 19:13:06 epoch 1 done in 4.7 min
+2026-11-05 19:16:07 epoch 1 holdout cc=0.5776 nss=3.3219 sim=0.4446 kld=1.2245 (3.0 min)
+2026-11-05 19:16:07 new best holdout CC 0.5776 at epoch 1
+2026-11-05 19:16:19 ep 2 step 1100/1620 loss 1.4950 cc 0.6844 nss 4.049 13.1 clips/s mem 7.2G
+2026-11-05 19:16:45 ep 2 step 1150/1620 loss 1.5364 cc 0.6769 nss 4.016 14.7 clips/s mem 7.2G
+2026-11-05 19:17:11 ep 2 step 1200/1620 loss 1.5256 cc 0.6777 nss 4.012 15.0 clips/s mem 7.2G
+2026-11-05 19:17:37 ep 2 step 1250/1620 loss 1.5026 cc 0.6816 nss 4.049 15.1 clips/s mem 7.2G
+2026-11-05 19:18:03 ep 2 step 1300/1620 loss 1.5026 cc 0.6823 nss 4.057 15.1 clips/s mem 7.2G
+2026-11-05 19:18:29 ep 2 step 1350/1620 loss 1.5077 cc 0.6813 nss 4.046 15.2 clips/s mem 7.2G
+2026-11-05 19:18:55 ep 2 step 1400/1620 loss 1.5075 cc 0.6820 nss 4.037 15.2 clips/s mem 7.2G
+2026-11-05 19:19:21 ep 2 step 1450/1620 loss 1.5100 cc 0.6813 nss 4.033 15.2 clips/s mem 7.2G
+2026-11-05 19:19:47 ep 2 step 1500/1620 loss 1.5083 cc 0.6810 nss 4.031 15.3 clips/s mem 7.2G
+2026-11-05 19:20:13 ep 2 step 1550/1620 loss 1.5088 cc 0.6809 nss 4.027 15.3 clips/s mem 7.2G
+2026-11-05 19:20:40 ep 2 step 1600/1620 loss 1.4984 cc 0.6827 nss 4.044 15.3 clips/s mem 7.2G
+2026-11-05 19:20:50 epoch 2 done in 4.7 min
+2026-11-05 19:23:53 epoch 2 holdout cc=0.5735 nss=3.3010 sim=0.4407 kld=1.2332 (3.0 min)
+2026-11-05 19:23:53 training finished

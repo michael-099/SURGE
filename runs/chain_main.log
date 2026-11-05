@@ -1,0 +1,11 @@
+2026-11-05T18:09:12+03:00 start configs/main_b1.yaml run_dir=runs/main_b1_s0 train.seed=0 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256] -> runs/main_b1_s0
+2026-11-05T18:33:38+03:00 end configs/main_b1.yaml rc=0
+2026-11-05T18:33:38+03:00 start configs/main_b1.yaml run_dir=runs/main_b1_s1 train.seed=1 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256] -> runs/main_b1_s1
+2026-11-05T18:58:47+03:00 end configs/main_b1.yaml rc=0
+2026-11-05T18:58:47+03:00 start configs/main_b1.yaml run_dir=runs/main_b1_s2 train.seed=2 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256] -> runs/main_b1_s2
+2026-11-05T19:23:55+03:00 end configs/main_b1.yaml rc=0
+2026-11-05T19:23:56+03:00 start configs/main_m.yaml run_dir=runs/main_m_s0 train.seed=0 train.epochs=3 model.backbone=vjepa2_l data.size=[256,256] train.init_from=runs/main_b1_s0/best.pt -> runs/main_m_s0
+2026-11-05T20:00:11+03:00 end configs/main_m.yaml rc=0
+2026-11-05T20:00:11+03:00 start configs/main_m.yaml run_dir=runs/main_m_s1 train.seed=1 train.epochs=3 model.backbone=vjepa2_l data.size=[256,256] train.init_from=runs/main_b1_s1/best.pt -> runs/main_m_s1
+2026-11-05T20:36:27+03:00 end configs/main_m.yaml rc=0
+2026-11-05T20:36:27+03:00 start configs/main_m.yaml run_dir=runs/main_m_s2 train.seed=2 train.epochs=3 model.backbone=vjepa2_l data.size=[256,256] train.init_from=runs/main_b1_s2/best.pt -> runs/main_m_s2

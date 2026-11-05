@@ -124,3 +124,16 @@ All three runs peak at epoch 1–2 and then overfit (training CC keeps rising).
 No surprise variant beats atypicality or frame difference at either rate; raw surprise is *anti*-correlated with
 fixations (consistent with the replication's negative correlation with the screen center). Information gain over the
 prior is negative for every map on the full holdout (the 2-video CPU test was not representative). **SCM stays off.**
+
+### B1 and LoRA (M) results, holdout CC at each run's best epoch (2026-11-05 20:40)
+
+| Seed | B1 (frozen) | M (LoRA, from B1 of the same seed) | M − B1 |
+|---|---|---|---|
+| 0 | 0.5772 (ep 1) | 0.5743 (ep 0) | −0.0029 |
+| 1 | 0.5801 (ep 1) | 0.5791 (ep 0) | −0.0010 |
+| 2 | 0.5776 (ep 1) | (running) | |
+
+**LoRA rule outcome (decided now, because it cannot change):** M must win in ≥ 2 of 3 seeds; it has lost 2 of 2, so
+**B1 (frozen V-JEPA 2 ViT-L) is the main model**; seed 2 of M is still run and reported. The proposal's "LoRA belongs
+in the main plan" is not supported here. Final evaluation is queued as `MAIN=main_b1 scripts/final_eval.sh` (waits for
+the ablations).
