@@ -9,3 +9,13 @@
 2026-11-05T20:00:11+03:00 start configs/main_m.yaml run_dir=runs/main_m_s1 train.seed=1 train.epochs=3 model.backbone=vjepa2_l data.size=[256,256] train.init_from=runs/main_b1_s1/best.pt -> runs/main_m_s1
 2026-11-05T20:36:27+03:00 end configs/main_m.yaml rc=0
 2026-11-05T20:36:27+03:00 start configs/main_m.yaml run_dir=runs/main_m_s2 train.seed=2 train.epochs=3 model.backbone=vjepa2_l data.size=[256,256] train.init_from=runs/main_b1_s2/best.pt -> runs/main_m_s2
+2026-11-05T21:12:38+03:00 end configs/main_m.yaml rc=0
+2026-11-05T21:12:38+03:00 start configs/main_b1.yaml run_dir=runs/abl_noprior train.seed=0 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256] model.prior=false -> runs/abl_noprior
+2026-11-05T21:37:00+03:00 end configs/main_b1.yaml rc=0
+2026-11-05T21:37:01+03:00 start configs/main_b1.yaml run_dir=runs/abl_noaux train.seed=0 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256] model.aux=false -> runs/abl_noaux
+2026-11-05T22:01:11+03:00 end configs/main_b1.yaml rc=0
+2026-11-05T22:01:11+03:00 start configs/main_b1.yaml run_dir=runs/abl_stride4 train.seed=0 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256] data.stride=4 -> runs/abl_stride4
+2026-11-05T22:21:51+03:00 end configs/main_b1.yaml rc=0
+2026-11-05T22:21:51+03:00 start configs/main_b1.yaml run_dir=runs/abl_salicon train.seed=0 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256] data.salicon=true -> runs/abl_salicon
+2026-11-05T23:19:16+03:00 end configs/main_b1.yaml rc=0
+2026-11-05T23:19:16+03:00 chain finished

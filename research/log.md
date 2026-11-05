@@ -137,3 +137,20 @@ prior is negative for every map on the full holdout (the 2-video CPU test was no
 **B1 (frozen V-JEPA 2 ViT-L) is the main model**; seed 2 of M is still run and reported. The proposal's "LoRA belongs
 in the main plan" is not supported here. Final evaluation is queued as `MAIN=main_b1 scripts/final_eval.sh` (waits for
 the ablations).
+
+### LoRA seed 2 and ablations (2026-11-05 23:20)
+
+M seed 2: best holdout CC 0.5739 (B1 seed 2 0.5776, Δ -0.0037). **M loses in all 3 seeds; mean Δ -0.0025.**
+
+Ablations (Stage 1, seed 0, 3 epochs; vs B1 seed 0 = CC 0.5772, NSS 3.329; a difference needs |ΔCC| ≥ 0.003):
+
+| Variant | Best epoch | CC | ΔCC | NSS | SIM | KLD | Verdict |
+|---|---|---|---|---|---|---|---|
+| No center prior | 1 | 0.5772 | -0.0000 | 3.337 | 0.4556 | 1.241 | no difference |
+| No auxiliary heads | 1 | 0.5757 | -0.0015 | 3.330 | 0.4537 | 1.242 | no difference |
+| Stride 4 (≈7.5 fps, 2-s window) | 1 | 0.5803 | +0.0031 | 3.333 | 0.4524 | 1.217 | difference |
+| + SALICON co-training (10k images/epoch) | 2 | 0.5801 | +0.0028 | 3.350 | 0.4471 | 1.211 | no difference |
+
+Readings: the learned prior, the auxiliary heads and SALICON co-training add nothing measurable on top of frozen
+V-JEPA 2 features (single seed). Stride 4 is +0.0031, exactly at the threshold, with half the inference cost per
+frame: a candidate for a multi-seed follow-up, not a claim. The main model is unchanged (B1, stride 2).
