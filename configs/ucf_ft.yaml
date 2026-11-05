@@ -1,0 +1,15 @@
+# UCF Sports fine-tune from the main DHF1K model (rules: research/log.md section 4).
+base: g1_base.yaml
+run_dir: runs/ucf_ft_s0
+data:
+  dataset: ucf
+  root: D:/Datasets/UCF_Sports
+  holdout_split: configs/splits/ucf_holdout10.txt
+train:
+  epochs: 10
+  clips_per_video: 16
+  lr: 1.0e-4
+  lr_prior: 3.0e-4
+  init_from: runs/main_b1_s0/best.pt
+eval:
+  frame_step: 2

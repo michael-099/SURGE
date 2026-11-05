@@ -1,0 +1,15 @@
+# Main program, M: Stage 2 (LoRA r=16 on q/k/v/proj of the last 12 blocks), decoder initialized from B1 (same seed).
+base: g1_base.yaml
+run_dir: runs/main_m_s0
+model:
+  backbone: vjepa21_l
+train:
+  stage: 2
+  batch: 4
+  lr: 1.0e-5
+  lr_prior: 1.0e-4
+  lr_lora: 1.0e-4
+  warmup_epochs: 0.25
+  init_from: runs/main_b1_s0/best.pt
+  log_every: 100
+  ckpt_every: 1000

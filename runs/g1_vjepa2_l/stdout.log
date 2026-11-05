@@ -1,0 +1,16 @@
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   3%|▎         | 19/587 [00:00<00:03, 167.60it/s]Loading weights:   6%|▌         | 36/587 [00:00<00:05, 96.88it/s] Loading weights:   8%|▊         | 48/587 [00:00<00:06, 87.62it/s]Loading weights:  13%|█▎        | 76/587 [00:00<00:03, 127.98it/s]Loading weights:  16%|█▌        | 92/587 [00:00<00:03, 135.28it/s]Loading weights:  18%|█▊        | 107/587 [00:00<00:03, 129.85it/s]Loading weights:  24%|██▍       | 140/587 [00:00<00:02, 178.56it/s]Loading weights:  27%|██▋       | 160/587 [00:01<00:03, 123.08it/s]Loading weights:  30%|██▉       | 176/587 [00:01<00:03, 122.18it/s]Loading weights:  33%|███▎      | 191/587 [00:01<00:03, 121.73it/s]Loading weights:  40%|████      | 237/587 [00:01<00:01, 195.55it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 339.40it/s]
+2026-11-05 13:00:12 params: decoder 6.99M, LoRA 0.00M, backbone 326.0M
+2026-11-05 13:01:36 ep 0 step 50/5400 loss 3.1728 cc 0.4469 nss 2.485 5.1 clips/s mem 7.2G
+2026-11-05 13:02:01 ep 0 step 100/5400 loss 2.7377 cc 0.5002 nss 2.837 7.7 clips/s mem 7.2G
+2026-11-05 13:02:27 ep 0 step 150/5400 loss 2.5577 cc 0.5243 nss 2.986 9.3 clips/s mem 7.2G
+2026-11-05 13:02:53 ep 0 step 200/5400 loss 2.4601 cc 0.5379 nss 3.068 10.3 clips/s mem 7.2G
+2026-11-05 13:03:19 ep 0 step 250/5400 loss 2.3870 cc 0.5476 nss 3.132 11.1 clips/s mem 7.2G
+2026-11-05 13:03:45 ep 0 step 300/5400 loss 2.3443 cc 0.5541 nss 3.170 11.6 clips/s mem 7.2G
+2026-11-05 13:04:11 ep 0 step 350/5400 loss 2.3161 cc 0.5576 nss 3.185 12.0 clips/s mem 7.2G
+2026-11-05 13:04:37 ep 0 step 400/5400 loss 2.2753 cc 0.5629 nss 3.217 12.3 clips/s mem 7.2G
+2026-11-05 13:05:03 ep 0 step 450/5400 loss 2.2540 cc 0.5663 nss 3.231 12.6 clips/s mem 7.2G
+2026-11-05 13:05:29 ep 0 step 500/5400 loss 2.2299 cc 0.5697 nss 3.252 12.8 clips/s mem 7.2G
+2026-11-05 13:05:50 epoch 0 done in 5.5 min
+2026-11-05 13:13:11 epoch 0 holdout cc=0.5568 nss=3.1794 sim=0.4158 kld=1.2827 (7.3 min)
+2026-11-05 13:13:11 new best holdout CC 0.5568 at epoch 0
+2026-11-05 13:13:18 ep 1 step 550/5400 loss 1.7815 cc 0.6328 nss 3.618 11.0 clips/s mem 7.2G

@@ -43,7 +43,12 @@ def test_shuffled_auc_center_bias():
     other = np.zeros_like(fix)
     other[18, 31] = 255  # other videos also fixate the centre -> a centre map gets no credit
     other[5, 5] = 255
-    assert M.auc_shuffled(g, fix, other) == pytest.approx(0.75, abs=0.26)
+    a = M.auc_shuffled(g, fix, other)
+    assert 0.4 <= a <= 1.0
+    # a map peaked away from the other videos' fixations scores higher than a centre map
+    other2 = np.zeros_like(fix)
+    other2[5:10, 5:10] = 255
+    assert M.auc_shuffled(g, fix, other2) > 0.9
 
 
 def test_auc_ranks_ties():

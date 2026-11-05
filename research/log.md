@@ -44,3 +44,28 @@ the mean over the 100 videos.
 - Scores: NSS and information gain (bits/fixation) over the center prior, on target frames.
 - **Go** if some surprise variant beats *both* atypicality and frame difference on NSS *and* has positive information
   gain over the center prior. Otherwise SCM stays off (default) and the result is reported as a negative finding.
+
+Note added 2026-11-05 13:10, before the real G2 run: a CPU test of `scripts/g2_surprise.py` on 2 holdout videos
+(0028, 0031; stride 8) showed positive information gain for *every* map, including maps with negative NSS, so the
+information-gain condition does not discriminate (the 50/50 mixture already beats the sharply peaked empirical prior).
+The rule is unchanged; in practice the NSS conditions (beat both atypicality and frame difference) are binding.
+
+## 4. Main program (rules written 2026-11-05 13:25, before G1 has finished)
+
+Backbone = G1 winner (section 2). Seeds 0, 1, 2. All selection on the internal holdout; DHF1K val is scored once.
+
+- **B1** (Stage 1, frozen): the G1 run is seed 0; seeds 1, 2 are added with the same config.
+- **M** (Stage 2, LoRA r=16 on q/k/v/proj of the last 12 blocks, lr 1e-4; decoder lr 1e-5, initialized from B1 of the
+  same seed; 10 epochs, batch 4).
+- **LoRA rule:** M replaces B1 as the main model if the 3-seed mean holdout CC gain is ≥ +0.003 and M wins in at least
+  2 of 3 seeds. Otherwise B1 is the main model and LoRA is reported as not helping.
+- **Ablations** (Stage 1, seed 0, 10 epochs, vs B1 seed 0, descriptive): no center prior; no auxiliary heads;
+  SALICON co-training (10,000 images per epoch); stride 4 (≈7.5 fps); rectangular 256×448 input (V-JEPA 2.1 only).
+  An ablation is called a difference only if |ΔCC| ≥ 0.003 on the holdout.
+- **Blur:** σ tuned on the holdout for the final model (`scripts/tune_sigma.py`), then frozen.
+- **Final DHF1K val scoring, once:** main model seed 0 (single) and the 3-seed ensemble (mean of probabilities), all six
+  metrics. Reference: SalFoM's val maps scored by the same evaluator (section 1); paired bootstrap over the 100 videos
+  (10,000 resamples) for ΔCC and ΔNSS. A "beats SalFoM" claim needs the 95% CI of ΔCC above 0.
+- **UCF Sports:** fine-tune the main DHF1K model (seed 0) on the 93 UCF training videos (Stage of the main model,
+  10 epochs, lr ×0.3), select on the 10 holdout videos, score the 47 test videos once. Published references:
+  ViNet-E CC 0.744, TMFI-Net 0.707, SalFoM 0.631.

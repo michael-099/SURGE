@@ -1,0 +1,5 @@
+# Main program, B1: Stage 1 (frozen backbone). Backbone set by the G1 decision (override model.backbone/data.size).
+base: g1_base.yaml
+run_dir: runs/main_b1_s0
+model:
+  backbone: vjepa21_l

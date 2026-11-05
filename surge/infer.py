@@ -12,6 +12,9 @@ import torch
 from .data import Video, inference_windows, load_gray, load_rgb
 from .losses import log_softmax2d
 from .metrics import all_metrics
+from concurrent.futures import ThreadPoolExecutor
+
+_IO_POOL = ThreadPoolExecutor(8)  # frame decoding (OpenCV releases the GIL)
 
 
 @torch.no_grad()
@@ -23,14 +26,10 @@ def predict_video(model, video: Video, T: int, stride: int, size, device, batch:
     cache = {}
     for b0 in range(0, len(wins), batch):
         chunk = wins[b0:b0 + batch]
-        x = []
-        for idx, _ in chunk:
-            fr = []
-            for j in idx:
-                if j not in cache:
-                    cache[j] = load_rgb(video.frames[j], size)
-                fr.append(cache[j])
-            x.append(np.stack(fr))
+        need = sorted({j for idx, _ in chunk for j in idx if j not in cache})
+        for j, im in zip(need, _IO_POOL.map(lambda j: load_rgb(video.frames[j], size), need)):
+            cache[j] = im
+        x = [np.stack([cache[j] for j in idx]) for idx, _ in chunk]
         lo = min(min(i) for i, _ in chunk)
         for k in [k for k in cache if k < lo]:
             del cache[k]

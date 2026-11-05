@@ -76,6 +76,7 @@ def auc_judd(pred: np.ndarray, fix: np.ndarray) -> float:
     with s >= t. The curve is built from the sorted fixation values, as in AUC_Judd.m.
     """
     s = pred.astype(np.float64).ravel()
+    s = s + np.random.default_rng(0).random(s.size) / 1e7  # AUC_Judd.m jitter: breaks ties of quantized maps
     s = (s - s.min()) / (s.max() - s.min() + EPS)
     f = (fix.ravel() > 0)
     nfix = int(f.sum())
@@ -92,17 +93,32 @@ def auc_judd(pred: np.ndarray, fix: np.ndarray) -> float:
     return float(np.trapezoid(tp, fp))
 
 
-def auc_shuffled(pred: np.ndarray, fix: np.ndarray, other_fix: np.ndarray) -> float:
-    """Shuffled AUC: saliency at this frame's fixations vs at fixation locations from other videos.
+def auc_shuffled(pred: np.ndarray, fix: np.ndarray, other_fix: np.ndarray, n_splits: int = 100,
+                 step: float = 0.1, seed: int = 0) -> float:
+    """Shuffled AUC, following AUC_shuffled.m (MIT saliency benchmark / DHF1K evaluation code).
 
-    `other_fix` is a binary map (same size) holding fixations pooled from other videos; locations that
-    are also fixated in this frame are removed from the negative set.
+    Saliency is rescaled to [0, 1]. Negatives: for each of `n_splits` splits, as many locations as there are
+    fixations, drawn without replacement from the fixated pixels of `other_fix` (fixations of other videos).
+    ROC from thresholds 0:step:max, area by the trapezoid rule; the result is the mean over splits.
     """
-    s = pred.astype(np.float64)
+    s = pred.astype(np.float64).ravel()
     s = (s - s.min()) / (s.max() - s.min() + EPS)
-    pos_m = fix > 0
-    neg_m = (other_fix > 0) & ~pos_m
-    return _auc_from_scores(s[pos_m], s[neg_m])
+    sth = s[fix.ravel() > 0]
+    ind = np.flatnonzero(other_fix.ravel() > 0)
+    nf = len(sth)
+    if nf == 0 or len(ind) == 0:
+        return float("nan")
+    no = min(nf, len(ind))
+    rng = np.random.default_rng(seed)
+    sth_sorted = np.sort(sth)
+    aucs = []
+    for _ in range(n_splits):
+        cur = np.sort(s[rng.permutation(ind)[:no]])
+        th = np.arange(0, max(sth.max(), cur.max()) + 1e-12, step)[::-1]
+        tp = np.concatenate([[0.0], (nf - np.searchsorted(sth_sorted, th, side="left")) / nf, [1.0]])
+        fp = np.concatenate([[0.0], (no - np.searchsorted(cur, th, side="left")) / no, [1.0]])
+        aucs.append(np.trapezoid(tp, fp))
+    return float(np.mean(aucs))
 
 
 def all_metrics(pred: np.ndarray, gt: np.ndarray, fix: np.ndarray, other_fix: np.ndarray | None = None,
