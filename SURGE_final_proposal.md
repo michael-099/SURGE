@@ -18,7 +18,7 @@ No saliency result in this document is a real experimental result. Every number 
 | Question | Answer |
 |---|---|
 | **What is the current SOTA to beat?** | **DHF1K test** (official leaderboard): **SalFoM**, CC 0.5692, NSS 3.3536, AUC-J 0.9222, SIM 0.4208, sAUC 0.7352 [Verified]. **DHF1K val**: TMFI-Net, CC 0.554, NSS 3.201 [Verified]. **Hollywood-2**: ViNet-E, CC 0.766, NSS 4.168 [Verified]. **UCF-Sports**: ViNet-E, CC 0.744, NSS 4.156 [Verified]. A 2026 journal paper (DcF-Net) reports DHF1K CC 0.570 but does not say which split, and it is not on the leaderboard [Unverified]. |
-| **Does the original SURGE idea survive?** | **Not as the headline.** It used the V-JEPA 2 predictor's error ("surprise") as a fixation cue. My independent replication on 11 clips (§2) confirms the reality check's negative finding: [Replicated] the per-token error **does not grow with prediction horizon**, and it **mostly tracks how atypical each target token is**, not what the past predicted. Surprise therefore becomes an **optional plug-in** that must pass a go/no-go test; it is not the core of the model. |
+| **Does the original SURGE idea survive?** | **Not as the headline.** It used the V-JEPA 2 predictor's error ("surprise") as a fixation cue. My independent replication on 11 clips (§2) confirms the reality check's negative finding, with corrections: [Replicated] the per-token error **grows only weakly with prediction horizon**, it **mostly tracks how atypical each target token is** (r ≈ 0.60) and barely depends on the past (r ≈ 0.62 with a wrong-past map), and it is **lower at the screen center**, the opposite of human center bias. Surprise therefore becomes an **optional plug-in** that must pass a go/no-go test; it is not the core of the model. |
 | **What is the distilled architecture?** | **SURGE-D**: the components with the best evidence behind them. (1) A **V-JEPA 2.1 ViT-L** backbone (dense-feature video world model, 2026), **LoRA-tuned**; (2) multi-level taps into a light **3D FPN decoder with deep supervision**; (3) **multi-frame (MIMO) output**, 16 frames per forward pass; (4) a **learned center prior**; (5) KL + CC + NSS loss; (6) a **zero-initialized surprise slot** that is turned on only if Phase 0 passes. About 7–9M trainable decoder parameters, plus about 1.6M LoRA parameters. |
 | **Why should it beat SalFoM?** | [Hypothesis, with evidence] Saliency maps are a *dense* prediction task. SalFoM uses UMT-L, a Kinetics-supervised ViT-L. V-JEPA 2.1's distilled ViT-L reaches **46.7 mIoU on ADE20K with a linear probe**, versus about 22–24 for V-JEPA 2 [Verified], and V-JEPA 2 alone already placed 2nd at NTIRE 2026 (PredJSal, CC 0.8272, vs. 0.8280 for a 6B InternVideo2 model) [Verified]. SURGE-D pairs the best-evidenced dense video features with the proven decoder, prior and LoRA recipe. **This is not guaranteed.** The first gate (Phase 0) is a cheap head-to-head of the backbones. |
 | **Compute** | [Estimate] Phase 0 (backbone shoot-out + surprise gate): **8–15 T4-hours**. Main result (LoRA, 3 seeds, DHF1K + Hollywood-2 + UCF): **about 80–160 T4-hours**, or about 30–60 L4-hours. Inference: about **0.11 TFLOPs per output frame**, about 5× less than TMFI-Net's backbone alone (§6). |
@@ -102,16 +102,51 @@ Every factual claim in the originals was checked. ✅ = confirmed, ⚠️ = part
 | Claim | Verdict | Evidence |
 |---|---|---|
 | Encoder 1.656 TFLOPs (16×256²), context 0.725, predictor 0.166 | ✅ [Replicated] | §2.3 |
-| Predictor error does not grow with horizon | ✅ [Replicated] | §2 |
-| Error map tracks target atypicality (r ≈ 0.5–0.73) and is largely context-independent | ✅ [Replicated] | §2 |
-| Leaky vs. leak-free maps correlate at 0.78–0.95 | ✅ [Replicated] | §2 |
+| Predictor error is flat over horizons, "within ±0.008 in every clip" | ⚠️ [Replicated, partly] | §2: mean growth +0.03 from horizon 1 to 4; per clip −0.01 to +0.09. Weak, but not flat |
+| Error map tracks target atypicality (r ≈ 0.5–0.73) and is largely context-independent | ✅ [Replicated] | §2: r = 0.60 (0.38–0.80); wrong-past map r = 0.62 |
+| The predictor beats predicting zeros | ⚠️ [Replicated, partly] | §2: in only 7/11 (4 fps) and 9/11 (15 fps) clips, by a small margin |
+| Leaky vs. leak-free maps correlate at 0.78–0.95 | ✅ [Replicated] | §2: 0.82 (4 fps), 0.88 (15 fps) |
 | GPU-hour budgets (T4 12–25 effective TFLOPS, etc.) | ❓ | Assumptions, not measurements. Kept as ranges; calibrate on the GPU first (§6) |
 
 ---
 
 ## 2. Independent replication of the surprise diagnostics
 
-REPLICATION_PLACEHOLDER
+**Why redo it.** The reality check's negative result rested on 3 clips, and its scripts were not in this folder. I re-implemented the diagnostics from scratch (`bench/replicate_surprise.py`) and ran them on **11 clips**: 10 Kinetics-mini validation clips (2 each of archery, bowling, flying kite, high jump, marching) and the Sintel trailer (CC BY), at **4 fps** (the pretraining rate) and **15 fps**.
+
+**Setup.** `facebook/vjepa2-vitl-fpc64-256`, fp32, CPU. 16 frames squashed to 256×256; frames 1–8 are context, frames 9–16 (4 tubelets) are targets. The context prefix is encoded **separately** (leak-free). Error = mean over channels of |LN(prediction) − LN(target)|, where LN is parameter-free layer norm. **No fixation data are involved**: this checks how the signal behaves, not whether it predicts gaze.
+
+### 2.1 Results [Replicated]
+
+Mean over 11 clips, with the range in brackets:
+
+| Diagnostic | 4 fps | 15 fps | What a real expectation-violation map should show | Verdict |
+|---|---|---|---|---|
+| Error with the clip's true past | 0.644 [0.613–0.684] | 0.626 [0.601–0.661] | — | — |
+| … with **another clip's** past | 0.731 [0.677–0.785] | 0.734 [0.686–0.766] | Higher | ✅ **11/11 clips** at both rates: the predictor uses the past |
+| … predicting zeros (the LN mean) | 0.652 | 0.652 | Higher | ⚠️ Only **7/11** (4 fps) and **9/11** (15 fps) clips beat it, by a small margin |
+| … copying the last context tubelet forward | 0.771 | 0.752 | Higher | ✅ 11/11 |
+| Error at horizons 1 → 4 (mean) | 0.633 → 0.664 | 0.616 → 0.639 | Should grow with horizon | ⚠️ **Weak growth** (+0.03 on average; per clip −0.01 to +0.09). The reality check's "flat in every clip (±0.008)" is **too strong** |
+| Spatial corr. of error map with **target atypicality** | **0.60** [0.39–0.73] | **0.60** [0.38–0.80] | Low | ❌ The map is dominated by how unusual each target token is |
+| Spatial corr. with the map computed from the **wrong** past | **0.62** [0.45–0.85] | **0.62** [0.45–0.81] | Low | ❌ The spatial pattern is largely independent of the past |
+| Spatial corr. with pixel motion | 0.03 [−0.23–0.19] | 0.06 [−0.19–0.25] | — | Not a motion detector |
+| Spatial corr. with a central Gaussian | **−0.11** [−0.39–0.12] | **−0.12** [−0.37–0.11] | — | ❌ **New finding:** error is *lower* at the screen center, the opposite of human center bias |
+| Leaky (HF default) vs. leak-free map | 0.82 [0.65–0.94] | 0.88 [0.71–0.96] | — | ✅ Matches the reality check (0.78–0.95) |
+| "Contextual" map (true-past − wrong-past error) vs. atypicality | 0.25 [−0.03–0.52] | 0.33 [0.02–0.58] | Low | ⚠️ Less atypicality-driven than the raw map. It is the only variant worth testing against fixations |
+
+Also confirmed: `hidden_states` has 25 entries for ViT-L (index 0 = patch embedding), and `last_hidden_state` equals the encoder's final LayerNorm applied to `hidden_states[-1]` (max difference 0.0).
+
+**Caution on absolute values.** My errors (about 0.63–0.64) are higher than the reality check's (about 0.57), because I layer-normalize the prediction as well as the target; the reality check used the raw prediction. The *relative* diagnostics agree.
+
+### 2.2 What this means
+
+1. **The predictor is a real forecaster in aggregate.** The true past beats a wrong past in every clip.
+2. **Its per-token error map is not an expectation-violation map.** About 60% of its spatial structure is shared with token atypicality, and it barely changes when the past is replaced with another video's. Horizon growth is weak.
+3. **It anti-correlates with the center.** A cue that fights the strongest known fixation prior is unlikely to help as a raw input. It may help after spatial z-scoring, but that is untested.
+4. **The pretraining recipe explains this.** [Verified] V-JEPA 2 and 2.1 both pretrain with masks spanning the *whole* clip in time, so the predictor learned to fill in scene content, not to extrapolate dynamics.
+5. **Consequence for the design.** Surprise is demoted to an optional, zero-initialized plug-in, guarded by gate G2 (§5.1). The only variant worth testing is the **contextual** map (true-past − shuffled-past error), which is the least atypicality-driven.
+
+Caveats: 11 clips, one window each, Kinetics and animation content, no fixations. This is strong evidence about *what the signal is*, not proof that it is useless for gaze. Gate G2 decides that on DHF1K.
 
 ---
 
