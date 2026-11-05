@@ -1,0 +1,71 @@
+2026-11-05T23:25:07+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/main_b1_s0 --run runs/main_b1_s1 --run runs/main_b1_s2 --out runs/final/sigma_ens3.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 7/587 [00:00<00:09, 62.80it/s]Loading weights:   4%|▎         | 21/587 [00:00<00:05, 102.90it/s]Loading weights:   5%|▌         | 32/587 [00:00<00:07, 73.47it/s] Loading weights:   7%|▋         | 41/587 [00:00<00:07, 77.20it/s]Loading weights:   9%|▊         | 50/587 [00:00<00:07, 70.45it/s]Loading weights:  10%|█         | 59/587 [00:00<00:07, 69.53it/s]Loading weights:  11%|█▏        | 67/587 [00:00<00:07, 65.19it/s]Loading weights:  13%|█▎        | 74/587 [00:01<00:07, 64.85it/s]Loading weights:  14%|█▍        | 81/587 [00:01<00:09, 55.36it/s]Loading weights:  16%|█▋        | 96/587 [00:01<00:06, 73.19it/s]Loading weights:  18%|█▊        | 104/587 [00:01<00:06, 70.26it/s]Loading weights:  19%|█▉        | 112/587 [00:01<00:07, 65.74it/s]Loading weights:  22%|██▏       | 131/587 [00:01<00:04, 95.53it/s]Loading weights:  26%|██▋       | 155/587 [00:01<00:03, 129.80it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 308.33it/s]
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 6/587 [00:00<00:12, 48.24it/s]Loading weights:   2%|▏         | 11/587 [00:00<00:13, 42.57it/s]Loading weights:   3%|▎         | 16/587 [00:00<00:17, 32.39it/s]Loading weights:   3%|▎         | 20/587 [00:00<00:17, 31.95it/s]Loading weights:   4%|▍         | 26/587 [00:00<00:14, 38.55it/s]Loading weights:   5%|▌         | 31/587 [00:00<00:20, 26.89it/s]Loading weights:   6%|▌         | 35/587 [00:01<00:19, 28.01it/s]Loading weights:   7%|▋         | 39/587 [00:01<00:17, 30.55it/s]Loading weights:   8%|▊         | 45/587 [00:01<00:16, 33.27it/s]Loading weights:  10%|█         | 59/587 [00:01<00:09, 55.44it/s]Loading weights:  16%|█▌        | 95/587 [00:01<00:03, 127.54it/s]Loading weights:  22%|██▏       | 132/587 [00:01<00:02, 188.63it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 337.50it/s]
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   3%|▎         | 16/587 [00:00<00:04, 125.16it/s]Loading weights:   5%|▍         | 29/587 [00:00<00:05, 109.34it/s]Loading weights:   7%|▋         | 40/587 [00:00<00:05, 106.34it/s]Loading weights:   9%|▊         | 51/587 [00:00<00:10, 51.00it/s] Loading weights:  10%|█         | 59/587 [00:01<00:13, 38.50it/s]Loading weights:  14%|█▍        | 82/587 [00:01<00:07, 67.49it/s]Loading weights:  39%|███▉      | 228/587 [00:01<00:01, 313.88it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 422.39it/s]
+predicted 0028
+predicted 0031
+predicted 0043
+predicted 0048
+predicted 0050
+predicted 0056
+predicted 0057
+predicted 0070
+predicted 0073
+predicted 0101
+predicted 0112
+predicted 0114
+predicted 0131
+predicted 0132
+predicted 0155
+predicted 0160
+predicted 0167
+predicted 0174
+predicted 0175
+predicted 0189
+predicted 0191
+predicted 0208
+predicted 0236
+predicted 0251
+predicted 0258
+predicted 0262
+predicted 0275
+predicted 0280
+predicted 0304
+predicted 0305
+predicted 0315
+predicted 0321
+predicted 0336
+predicted 0346
+predicted 0356
+predicted 0387
+predicted 0404
+predicted 0411
+predicted 0421
+predicted 0434
+predicted 0442
+predicted 0447
+predicted 0457
+predicted 0459
+predicted 0468
+predicted 0481
+predicted 0485
+predicted 0490
+predicted 0492
+predicted 0498
+predicted 0510
+predicted 0516
+predicted 0522
+predicted 0529
+predicted 0531
+predicted 0548
+predicted 0560
+predicted 0574
+predicted 0578
+predicted 0583
+sigma 0.0: cc=0.5860 nss=3.3654 sim=0.4484 kld=1.1962
+sigma 4.0: cc=0.5865 nss=3.3604 sim=0.4477 kld=1.1947
+sigma 8.0: cc=0.5871 nss=3.3422 sim=0.4450 kld=1.1925
+sigma 12.0: cc=0.5864 nss=3.3076 sim=0.4395 kld=1.1940
+sigma 16.0: cc=0.5833 nss=3.2554 sim=0.4309 kld=1.2023
+sigma 24.0: cc=0.5689 nss=3.1089 sim=0.4059 kld=1.2441
+BEST SIGMA 8.0

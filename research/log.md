@@ -154,3 +154,27 @@ Ablations (Stage 1, seed 0, 3 epochs; vs B1 seed 0 = CC 0.5772, NSS 3.329; a dif
 Readings: the learned prior, the auxiliary heads and SALICON co-training add nothing measurable on top of frozen
 V-JEPA 2 features (single seed). Stride 4 is +0.0031, exactly at the threshold, with half the inference cost per
 frame: a candidate for a multi-seed follow-up, not a claim. The main model is unchanged (B1, stride 2).
+
+## 5. Final results
+
+### DHF1K val (official 100 videos, 60,273 frames), scored once (2026-11-06 00:15)
+
+Main model = B1 (frozen V-JEPA 2 ViT-L + SURGE-D decoder, 16 frames at stride 2, 256²). Blur tuned on the holdout:
+σ = 12 px (single), σ = 8 px (ensemble). Same evaluator for all rows. `runs/final/`.
+
+| Model | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| SalFoM (its released DHF1K weights, maps from this machine) | 0.5639 | 3.326 | 0.4130 | 1.297 | 0.9243 | 0.7406 |
+| **SURGE-D, seed 0** | **0.5836** | **3.349** | **0.4492** | **1.222** | **0.9283** | **0.7636** |
+| **SURGE-D, 3-seed ensemble** | **0.5910** | **3.418** | **0.4486** | **1.187** | **0.9302** | **0.7614** |
+
+Paired bootstrap over videos (10,000 resamples), SURGE-D − SalFoM, 95% CI:
+
+| | ΔCC | ΔNSS | ΔSIM | ΔKLD | ΔAUC-J | ΔsAUC |
+|---|---|---|---|---|---|---|
+| Seed 0 | +0.0197 [+0.0095, +0.0305] | +0.0225 [−0.0499, +0.0967] | +0.0362 [+0.0291, +0.0436] | −0.0747 [−0.1021, −0.0486] | +0.0040 [+0.0022, +0.0060] | +0.0230 [+0.0166, +0.0298] |
+| Ensemble | +0.0271 [+0.0171, +0.0376] | +0.0910 [+0.0218, +0.1637] | +0.0356 [+0.0285, +0.0430] | −0.1101 [−0.1359, −0.0858] | +0.0060 [+0.0042, +0.0079] | +0.0208 [+0.0143, +0.0277] |
+
+**Rule outcome: SURGE-D beats SalFoM on DHF1K val** (ΔCC CI above 0) as a single model and as an ensemble; the single
+model ties SalFoM on NSS, the ensemble is better on all six metrics. Published val references (other evaluators):
+TMFI-Net CC 0.554 / NSS 3.201, ViNet-E 0.549 / 3.134. Not a test-server result: DHF1K test labels are held out.

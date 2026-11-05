@@ -1,0 +1,1 @@
+2026-11-06T00:14:51+03:00 .venv/Scripts/python.exe -u scripts/train.py --config configs/ucf_ft.yaml --set train.init_from=runs/main_b1_s0/best.pt train.stage=1 train.epochs=3 train.warmup_epochs=0.25 model.backbone=vjepa2_l data.size=[256,256]
