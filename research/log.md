@@ -280,3 +280,29 @@ that scored best on DHF1K val (section 5). No choice is made on test feedback.
 1–700 every frame count equals the annotation count (checked 2026-11-06, 0 mismatches). Script:
 `scripts/predict_dhf1k_test.py`. **Format check before sending:** the same script on val videos 601–605, scored with
 `scripts/evaluate.py --maps`, must reproduce the ensemble's val per-video CC to within PNG rounding (≤ 0.002).
+
+## 9. Hollywood-2 with the Vig, Dorr & Cox gaze data (rules written 2026-11-06, before any map was built)
+
+The standard Hollywood-2 saliency ground truth (Mathe & Sminchisescu, 16–19 viewers, shot-split by the DHF1K authors)
+is still unavailable (site login fails to send verification email; DHF1K Drive link 404; the user has emailed the
+authors). The user asked to use, until then, the open **Vig, Dorr & Cox (ECCV 2012)** gaze recordings
+(figshare 93951, CC BY; md5 of every file checked against figshare): 4 viewers who watched all 1,707 clips plus a
+pooled fifth "subject" (6 people, non-overlapping parts), 1000 Hz, recorded during the action-recognition task.
+**These numbers are not comparable to published Hollywood-2 results** (different and fewer viewers, whole clips not
+shots) and are reported only as "Hollywood-2 (Vig gaze)".
+
+**Frames.** Every decoded frame of the 823 train + 884 test action clips (`scripts/prep_hollywood_frames.py`; 487,556
+frames; OpenCV decoding). Gaze files state the same resolution as the clips.
+
+**Maps** (`scripts/prep_hollywood_gaze.py`). Frame f (1-based) covers [(f−1)/fps, f/fps) s. Per viewer and frame: gaze
+samples with confidence 1.0 that are not inside a saccade (onset–offset from the `.sacc` file); if any remain, the
+viewer contributes one fixation point = the median x, y of those samples (rounded, clipped to the frame). Fixation map:
+binary, native resolution, ≤ 5 points. Density map: that binary map blurred with a Gaussian of σ = 20 px (the
+ACLNet / DHF1K recipe), stored as 8-bit PNG scaled to max 255. Frames with no point are excluded from scoring
+(`skip_empty`), as for the STAViS data.
+
+**Protocol.** Split = the official one (823 train, 884 test). Holdout: 10 % of the training clips (82), drawn with
+`random.Random("20261106-hollywood-vig")`. A. Zero-shot: B1 seed 0, σ = 12. B. Fine-tuned: the section 7 recipe
+(Stage 1, 3 epochs, warmup 0.25, lr 1e-4, clips_per_video = ceil(1500 / training clips), best epoch by holdout CC on
+every 5th frame, σ tuned on the holdout). The 884 test clips are scored once per model. Runs after the STAViS queue and
+the DHF1K test maps (one GPU job at a time).
