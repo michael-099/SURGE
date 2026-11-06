@@ -248,3 +248,22 @@ fold is scored **once**, after training of that fold has finished.
 they are reported side by side, each re-checked in its source paper before it enters the table. A claim "beats X on
 dataset D" needs a higher fold-mean CC than X's published CC. Visual-only and audio-visual published models are
 listed separately: the audio-visual ones use information SURGE-D does not see.
+
+**Published references, re-checked in the papers' own tables on 2026-11-06 (before any SURGE-D number on these data
+was seen).** CC / NSS / AUC-J / SIM, fold means. Sources: DiffSal (CVPR 2024) Table 6, arXiv 2403.01226;
+ViNet-S/A/E (arXiv 2502.00397) Tables II–III; DTFSal (arXiv 2504.10070) Table 1, which also reports a visual-only
+variant DTFSal(V). Only the strongest rows are copied; the full tables are in the papers.
+
+| Dataset | Best visual-only (published) | Best audio-visual (published) |
+|---|---|---|
+| DIEM | ViNet-E 0.701 / 2.840 / 0.913 / 0.566 | RAVF 0.685 / 2.78 / 0.911 / 0.559; DTFSal 0.682 / 2.98 / 0.921 / 0.562 |
+| Coutrot1 | DTFSal(V) 0.623 / 3.21 / 0.904 / 0.505; ViNet-E 0.614 / 3.085 / 0.905 / 0.465 | DTFSal 0.661 / 3.31 / 0.911 / 0.523 |
+| Coutrot2 | ViNet-A 0.862 / 6.8 / 0.961 / 0.638 | DTFSal 0.845 / 6.72 / 0.971 / 0.649 |
+| ETMD | DTFSal(V) 0.653 / 3.57 / 0.939 / 0.499; ViNet-E 0.632 / 3.437 / 0.943 / 0.468 | DTFSal 0.667 / 3.82 / 0.957 / 0.531 |
+| AVAD | DTFSal(V) 0.742 / 4.21 / 0.938 / 0.559; ViNet-E 0.729 / 4.167 / 0.938 / 0.547 | DTFSal 0.746 / 4.36 / 0.939 / 0.595 |
+| SumMe | DTFSal(V) 0.561 / 2.91 / 0.911 / 0.441 (ViNet-S/A/E do not report SumMe) | DTFSal 0.573 / 3.20 / 0.927 / 0.449; DiffSal 0.572 / 3.14 / 0.921 / 0.447 |
+
+Caveats found while checking: the papers disagree on baselines they both copy (STAViS on Coutrot2: 0.734 in DiffSal and
+DTFSal, 0.652 in ViNet-S/A; ViNet on Coutrot2: 0.754 vs 0.724), so cross-paper numbers carry evaluator and protocol
+noise of a few hundredths. ViNet-S/A state 3-fold averages for Coutrot1/2, AVAD, ETMD and the standard DIEM split;
+DiffSal and DTFSal follow the STAViS protocol. None of these papers reports sAUC or KLD on these datasets.
