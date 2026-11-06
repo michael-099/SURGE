@@ -349,3 +349,11 @@ Fold means (DIEM: its one split). Every test fold scored once. Fine-tuned σ per
   datasets even where its CC is higher.
 - Coutrot2 (4-person meetings, gaze follows the speaker) is where the gap is largest and where fine-tuning helped most
   (+0.171 CC over zero-shot); a visual-only model cannot know who is talking.
+
+### Section 8 outcome (2026-11-06)
+
+Format check passed: maps written by `predict_dhf1k_test.py` for val videos 601–605 reproduce the ensemble's val
+per-video CC within 0.0001 (`runs/dhf1k_submission/format_check.*`). Test maps: 300 folders 0701–1000, 176,192 PNGs
+(8-bit, 640 × 360), frame names identical to `D:/DHF1K/frames` for every video. Archive `D:/DHF1K_submission/SURGE-D.zip`,
+3,472,705,435 bytes, zip test passed, SHA-256 68794038688eb9e4efdff01e68d19229755d676e5cc1853c36d6f1fa8950e20b.
+Sending is done by the user (upload + email to the DHF1K authors).

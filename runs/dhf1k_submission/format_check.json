@@ -1,0 +1,48 @@
+{
+ "mean": {
+  "cc": 0.619840603925296,
+  "nss": 3.71838592778927
+ },
+ "per_video": {
+  "0601": {
+   "cc": 0.7562447258278214,
+   "nss": 5.599098233362275
+  },
+  "0602": {
+   "cc": 0.6443096961053864,
+   "nss": 3.600238818830417
+  },
+  "0603": {
+   "cc": 0.39404676211832596,
+   "nss": 1.9179274328150582
+  },
+  "0604": {
+   "cc": 0.7061736484246937,
+   "nss": 4.215224621058474
+  },
+  "0605": {
+   "cc": 0.5984281871502526,
+   "nss": 3.2594405328801224
+  }
+ },
+ "frames": 3606,
+ "videos": 5,
+ "seconds": 66.16797542572021,
+ "args": {
+  "run": [],
+  "ckpt": "best.pt",
+  "maps": "D:/DHF1K_submission/format_check",
+  "dataset": "dhf1k",
+  "root": null,
+  "split": "val",
+  "metrics": "cc,nss",
+  "sigma": 0.0,
+  "frame_step": 1,
+  "flip_tta": false,
+  "max_videos": 5,
+  "workers": 16,
+  "batch": 4,
+  "save_maps": null,
+  "out": "runs/dhf1k_submission/format_check.json"
+ }
+}
