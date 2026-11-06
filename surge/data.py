@@ -3,6 +3,8 @@
 DHF1K      D:/DHF1K/frames/NNNN/NNNN.jpg, D:/DHF1K/annotations/annotation/NNNN/{maps,fixation}/NNNN.png
 UCF Sports D:/Datasets/UCF_Sports/extracted/{training,testing}/<video>/{images,maps,fixation}/*.png
 SALICON    D:/Datasets/SALICON/extracted/{images,maps,fixations}/{train,val}/...
+STAViS     D:/Datasets/<DB>/extracted/{video_frames,annotations}/<name>/<video>/... (DIEM, Coutrot1/2, ETMD, AVAD, SumMe),
+           folds from D:/Datasets/STAViS_folds/fold_lists_x/fold_lists/<name>_list_{train,test}[_k]_fps.txt
 """
 from __future__ import annotations
 
@@ -29,6 +31,7 @@ class Video:
     frames: list[str]
     maps: list[str] = field(default_factory=list)
     fixations: list[str] = field(default_factory=list)
+    skip_empty: bool = False  # score only frames with at least one fixation (STAViS datasets; research/log.md section 7)
 
     def __len__(self) -> int:
         n = len(self.frames)
@@ -69,6 +72,62 @@ def ucf_videos(root: str, split: str) -> list[Video]:
     return out
 
 
+# key -> (folder under D:/Datasets, STAViS name, number of folds)
+STAVIS = {
+    "diem": ("DIEM", "DIEM", 1), "coutrot1": ("Coutrot1", "Coutrot_db1", 3), "coutrot2": ("Coutrot2", "Coutrot_db2", 3),
+    "etmd": ("ETMD", "ETMD_av", 3), "avad": ("AVAD", "AVAD", 3), "summe": ("SumMe", "SumMe", 3),
+}
+STAVIS_FOLDS = "D:/Datasets/STAViS_folds/fold_lists_x/fold_lists"
+
+
+def stavis_list(key: str, fold: int, part: str) -> list[tuple[str, int]]:
+    """(video, listed frame count) from the STAViS fold list; part is 'train' or 'test'."""
+    _, name, nf = STAVIS[key]
+    f = f"{name}_list_{part}_fps.txt" if nf == 1 else f"{name}_list_{part}_{fold}_fps.txt"
+    out = []
+    for line in open(Path(STAVIS_FOLDS) / f):
+        t = line.split()
+        if t:
+            out.append((t[0], int(t[1])))
+    return out
+
+
+def stavis_videos(key: str, fold: int, part: str, root: str = "D:/Datasets") -> list[Video]:
+    """Videos of one STAViS fold. Frames 1..min(listed count, frames that have image, map and fixation file)."""
+    folder, name, _ = STAVIS[key]
+    base = Path(root) / folder / "extracted"
+    out = []
+    for v, listed in stavis_list(key, fold, part):
+        fr = _sorted_files(base / "video_frames" / name / v, (".jpg",))
+        a = base / "annotations" / name / v
+        mp = _sorted_files(a / "maps", (".jpg",))
+        fx = sorted(str(p) for p in a.glob("fixMap_*.mat"))
+        n = min(listed, len(fr), len(mp), len(fx))
+        out.append(Video(v, fr[:n], mp[:n], fx[:n], skip_empty=True))
+    return out
+
+
+def parse_stavis(dataset: str):
+    """'avad_f2' -> ('avad', 2); None if not a STAViS dataset name."""
+    import re
+    m = re.fullmatch(r"(%s)_f(\d)" % "|".join(STAVIS), dataset)
+    return (m.group(1), int(m.group(2))) if m else None
+
+
+def stavis_holdout_file(key: str, fold: int, splits_dir) -> Path:
+    return Path(splits_dir) / f"stavis_{key}_f{fold}_holdout.txt"
+
+
+def stavis_split_videos(dataset: str, split: str, splits_dir) -> list[Video]:
+    """split: 'val' (= the fold's test list), 'train' or 'holdout' (the fold's train list minus / only the holdout)."""
+    key, fold = parse_stavis(dataset)
+    if split in ("val", "test"):
+        return stavis_videos(key, fold, "test")
+    hold = set(open(stavis_holdout_file(key, fold, splits_dir)).read().split())
+    vids = stavis_videos(key, fold, "train")
+    return [v for v in vids if (v.name in hold) == (split == "holdout")]
+
+
 def read_split_file(path: str) -> list[int]:
     with open(path) as f:
         return [int(x) for x in f.read().split()]
@@ -86,6 +145,10 @@ def load_rgb(path: str, size: tuple[int, int]) -> np.ndarray:
 
 
 def load_gray(path: str) -> np.ndarray:
+    if path.endswith(".mat"):  # STAViS fixMap_*.mat: binary 'eyeMap' (0/1)
+        import scipy.io as sio
+        m = sio.loadmat(path)["eyeMap"]
+        return ((m > 0) * 255).astype(np.uint8)
     im = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     if im is None:
         raise IOError(path)

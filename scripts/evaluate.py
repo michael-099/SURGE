@@ -21,7 +21,7 @@ import cv2  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
-from surge.data import dhf1k_videos, read_split_file, ucf_videos  # noqa: E402
+from surge.data import dhf1k_videos, parse_stavis, read_split_file, stavis_split_videos, ucf_videos  # noqa: E402
 from surge.infer import other_fixations, predict_video, to_native  # noqa: E402
 from surge.metrics import all_metrics  # noqa: E402
 from surge.data import load_gray  # noqa: E402
@@ -39,13 +39,17 @@ def get_videos(dataset: str, split: str, root: str | None):
             hold = set(open(ROOT / "configs/splits/ucf_holdout10.txt").read().split())
             vids = [v for v in vids if (v.name in hold) == (split == "holdout")]
         return vids
+    if parse_stavis(dataset):
+        return stavis_split_videos(dataset, split, ROOT / "configs/splits")
     raise ValueError(dataset)
 
 
 def score_frame(args):
-    pred, mp, fp, of, which = args
+    pred, mp, fp, of, which, skip_empty = args
     gt = load_gray(mp).astype(np.float64)
     fix = load_gray(fp)
+    if skip_empty and not (fix > 0).any():
+        return {k: float("nan") for k in which if k != "sauc" or of is not None}
     if pred.shape != gt.shape:
         pred = cv2.resize(pred, (gt.shape[1], gt.shape[0]), interpolation=cv2.INTER_LINEAR)
     if of is not None and of.shape != gt.shape:
@@ -125,7 +129,8 @@ def main():
                     for f in range(n):
                         pm = to_native(acc[f], hw, a.sigma)
                         cv2.imwrite(str(od / f"{f + 1:04d}.png"), np.round(255 * pm / pm.max()).astype(np.uint8))
-            jobs = [(preds[f], v.maps[f], v.fixations[f], sauc[v.name] if sauc else None, which) for f in sorted(preds)]
+            jobs = [(preds[f], v.maps[f], v.fixations[f], sauc[v.name] if sauc else None, which, v.skip_empty)
+                    for f in sorted(preds)]
             res = list(ex.map(score_frame, jobs, chunksize=8))
             nframes += len(res)
             per_video[v.name] = {k: float(np.nanmean([r[k] for r in res])) for k in res[0]}

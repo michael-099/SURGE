@@ -215,3 +215,36 @@ matches TMFI-Net's code to 0.0003 (section 1), and the 47-video split is the sta
    not recorded (last summary 84 °C, max 86 °C). Checked afterwards: Windows System log 12:50–00:30 has 0 nvlddmkm /
    WHEA events and 0 unexpected-shutdown events. Fix: the monitor's log writes now retry, and the orphaned
    watchers were stopped.
+
+## 7. STAViS audio-visual datasets: DIEM, Coutrot1, Coutrot2, ETMD, AVAD, SumMe (rules written 2026-11-06, before any run)
+
+Requested by the user after section 6 ("what about the others?"). Not evaluated before because the proposal's plan named
+only DHF1K, Hollywood-2 and UCF; that omission was not written down at the time. Other datasets on disk:
+**Hollywood-2** has no gaze data here, so it cannot be scored. **MVVA** has no official split (and video 343 has no
+maps), so any number would not be comparable to published ones; not run now. **AViMoS** is mouse tracking; not run now.
+
+**Data.** Original STAViS-preprocessed layouts only (`D:/Datasets/<DB>/extracted/`): frames `img_NNNNN.jpg`
+(256 × 340), maps `eyeMap_NNNNN.jpg` and fixations `fixMap_NNNNN.mat` (binary `eyeMap`, 480 × 640). The GRAFT `graft/`
+layouts are not used. Folds: the official STAViS fold lists (`D:/Datasets/STAViS_folds`): 3 folds per dataset, DIEM a
+single 64 / 17 split. Per video, frames 1 … min(listed count, frames that have image, map and fixation file) are used
+(the lists sometimes say fewer frames than are on disk; one AVAD video has one frame without a map).
+
+**Scoring.** Same evaluator as sections 1–5, all six metrics, every frame. Frames whose fixation map is empty (no gaze
+recorded) are excluded from all metrics (`Video.skip_empty`; the DHF1K and UCF results are unaffected). sAUC negatives
+come from other videos of the same test fold. Per-video mean, then mean over the fold's test videos; a dataset's
+number is the **mean over its folds** (DIEM: its one split). Audio is never used: SURGE-D is a visual-only model.
+
+**A. Zero-shot.** The main DHF1K model (B1 seed 0, `runs/main_b1_s0/best.pt`), σ = 12 px (its DHF1K-holdout σ), no
+training on these datasets. Each fold's test list is scored, so every test video is seen once.
+
+**B. Fine-tuned, per fold.** Initialized from B1 seed 0; Stage 1 (frozen backbone), 3 epochs, warmup 0.25, lr 1e-4,
+center-prior lr 3e-4 (the UCF recipe of section 5). Training clips per epoch ≈ 1,500: clips_per_video =
+ceil(1500 / number of training videos). Holdout: 10 % of the fold's training list (at least 1 video), drawn with
+`random.Random("20261106-<db>-<fold>")` (`configs/splits/stavis_*_holdout.txt`, written before training). Best epoch
+by holdout CC (every 2nd frame; DIEM every 5th); σ tuned on the same holdout (grid 0,4,8,12,16,24; CC). Each test
+fold is scored **once**, after training of that fold has finished.
+
+**Comparison.** Published numbers on these folds come from other evaluation code and cannot be bootstrapped against;
+they are reported side by side, each re-checked in its source paper before it enters the table. A claim "beats X on
+dataset D" needs a higher fold-mean CC than X's published CC. Visual-only and audio-visual published models are
+listed separately: the audio-visual ones use information SURGE-D does not see.

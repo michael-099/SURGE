@@ -54,9 +54,11 @@ def to_native(m: np.ndarray, hw, sigma: float = 0.0) -> np.ndarray:
 
 
 def _score_one(args):
-    pred_small, map_path, fix_path, other_fix, sigma, which = args
+    pred_small, map_path, fix_path, other_fix, sigma, which, skip_empty = args
     gt = load_gray(map_path).astype(np.float64)
     fix = load_gray(fix_path)
+    if skip_empty and not (fix > 0).any():
+        return {k: float("nan") for k in which if k != "sauc" or other_fix is not None}
     pred = to_native(pred_small, gt.shape, sigma)
     of = None
     if other_fix is not None and other_fix.shape != gt.shape:
@@ -102,7 +104,7 @@ def evaluate(model, videos: list[Video], T, stride, size, device, sigma: float =
                 if f % frame_step:
                     continue
                 of = sauc_maps.get(v.name) if sauc_maps is not None else None
-                jobs.append((m, v.maps[f], v.fixations[f], of, sigma, which))
+                jobs.append((m, v.maps[f], v.fixations[f], of, sigma, which, v.skip_empty))
                 frames.append(f)
             if save_small is not None:
                 save_small[v.name] = np.stack([preds[i] for i in range(len(v))])
@@ -122,7 +124,7 @@ def score_saved(small: dict, videos: list[Video], sigma: float, frame_step: int 
     with ProcessPoolExecutor(workers) as ex:
         for v in videos:
             jobs = [(small[v.name][f].astype(np.float32), v.maps[f], v.fixations[f],
-                     sauc_maps.get(v.name) if sauc_maps else None, sigma, which)
+                     sauc_maps.get(v.name) if sauc_maps else None, sigma, which, v.skip_empty)
                     for f in range(0, len(v), frame_step)]
             res = list(ex.map(_score_one, jobs, chunksize=8))
             per_video[v.name] = {k: float(np.nanmean([r[k] for r in res])) for k in res[0]}

@@ -25,7 +25,8 @@ from torch.utils.data import ConcatDataset, DataLoader  # noqa: E402
 
 from surge.backbones import add_lora, build_backbone  # noqa: E402
 from surge.config import load_config  # noqa: E402
-from surge.data import ClipDataset, SaliconDataset, dhf1k_videos, read_split_file, ucf_videos  # noqa: E402
+from surge.data import (ClipDataset, SaliconDataset, dhf1k_videos, parse_stavis, read_split_file,  # noqa: E402
+                        stavis_split_videos, ucf_videos)
 from surge.infer import evaluate  # noqa: E402
 from surge.lora import lora_parameters  # noqa: E402
 from surge.losses import saliency_loss  # noqa: E402
@@ -50,6 +51,8 @@ def videos_for(cfg, part: str):
             hold = set(open(ROOT / d["holdout_split"]).read().split())
             vids = [v for v in vids if (v.name in hold) == (part == "holdout")]
         return vids
+    if parse_stavis(d["dataset"]):
+        return stavis_split_videos(d["dataset"], "val" if part == "val" else part, ROOT / "configs/splits")
     raise ValueError(d["dataset"])
 
 

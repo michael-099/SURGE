@@ -125,3 +125,24 @@ def test_loss_prefers_correct_map():
 def test_central():
     x = torch.arange(16).view(1, 16)
     assert central(x, 16).tolist() == [list(range(4, 12))]
+
+
+def test_stavis_layout_and_mat_fixations():
+    import os
+    import pytest
+    if not os.path.isdir("D:/Datasets/AVAD/extracted"):
+        pytest.skip("STAViS data not on this machine")
+    from surge.data import load_gray, parse_stavis, stavis_split_videos
+    assert parse_stavis("avad_f2") == ("avad", 2) and parse_stavis("dhf1k") is None
+    root = os.path.join(os.path.dirname(__file__), "..", "configs", "splits")
+    test = stavis_split_videos("avad_f1", "val", root)
+    train = stavis_split_videos("avad_f1", "train", root)
+    hold = stavis_split_videos("avad_f1", "holdout", root)
+    assert len(test) == 15 and len(train) + len(hold) == 30 and not {v.name for v in hold} & {v.name for v in train}
+    assert not {v.name for v in test} & {v.name for v in train + hold}
+    v = test[0]
+    assert v.skip_empty and len(v.frames) == len(v.maps) == len(v.fixations) == len(v)
+    for a, b, c in zip(v.frames[:3], v.maps[:3], v.fixations[:3]):  # same frame number in all three files
+        assert a[-9:-4] == b[-9:-4] == c[-9:-4]
+    f = load_gray(v.fixations[10])
+    assert f.dtype == np.uint8 and set(np.unique(f)) <= {0, 255} and f.shape == load_gray(v.maps[10]).shape
