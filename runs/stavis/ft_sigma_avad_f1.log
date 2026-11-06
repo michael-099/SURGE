@@ -1,0 +1,12 @@
+2026-11-06T12:12:58+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/stavis_ft_avad_f1 --dataset avad_f1 --split holdout --frame-step 2 --out runs/stavis/ft_sigma_avad_f1.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 14/587 [00:00<00:04, 125.46it/s]Loading weights:   5%|▍         | 27/587 [00:00<00:05, 103.23it/s]Loading weights:   6%|▋         | 38/587 [00:00<00:05, 99.36it/s] Loading weights:   8%|▊         | 49/587 [00:00<00:07, 72.30it/s]Loading weights:  10%|▉         | 58/587 [00:00<00:08, 64.09it/s]Loading weights:  11%|█         | 65/587 [00:00<00:10, 50.44it/s]Loading weights:  13%|█▎        | 76/587 [00:01<00:08, 61.98it/s]Loading weights:  14%|█▍        | 84/587 [00:01<00:07, 63.11it/s]Loading weights:  16%|█▋        | 96/587 [00:01<00:06, 74.54it/s]Loading weights:  18%|█▊        | 105/587 [00:01<00:07, 64.28it/s]Loading weights:  20%|█▉        | 117/587 [00:01<00:06, 74.69it/s]Loading weights:  23%|██▎       | 137/587 [00:01<00:04, 101.96it/s]Loading weights:  26%|██▌       | 154/587 [00:01<00:03, 114.26it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 308.17it/s]
+predicted V42_Violin2
+predicted V28_Dog1
+predicted V39_Guitar4
+sigma 0.0: cc=0.7626 nss=4.9811 sim=0.5997 kld=0.7403
+sigma 4.0: cc=0.7646 nss=4.9630 sim=0.6005 kld=0.7365
+sigma 8.0: cc=0.7684 nss=4.9002 sim=0.6009 kld=0.7286
+sigma 12.0: cc=0.7710 nss=4.7937 sim=0.5981 kld=0.7225
+sigma 16.0: cc=0.7698 nss=4.6522 sim=0.5900 kld=0.7236
+sigma 24.0: cc=0.7538 nss=4.3094 sim=0.5581 kld=0.7562
+BEST SIGMA 12.0

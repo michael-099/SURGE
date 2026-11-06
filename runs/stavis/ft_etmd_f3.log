@@ -1,0 +1,7 @@
+2026-11-06T11:59:28+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/stavis_ft_etmd_f3 --dataset etmd_f3 --split val --metrics all --sigma 16.0 --out runs/stavis/ft_etmd_f3.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 11/587 [00:00<00:06, 86.45it/s]Loading weights:   3%|▎         | 20/587 [00:00<00:06, 84.89it/s]Loading weights:   5%|▌         | 30/587 [00:00<00:06, 87.74it/s]Loading weights:   7%|▋         | 39/587 [00:00<00:06, 78.69it/s]Loading weights:   9%|▉         | 53/587 [00:00<00:05, 93.74it/s]Loading weights:  11%|█         | 63/587 [00:00<00:05, 93.27it/s]Loading weights:  13%|█▎        | 77/587 [00:00<00:05, 98.77it/s]Loading weights:  16%|█▌        | 93/587 [00:00<00:04, 103.70it/s]Loading weights:  18%|█▊        | 104/587 [00:01<00:04, 100.70it/s]Loading weights:  20%|█▉        | 115/587 [00:01<00:05, 92.86it/s] Loading weights:  21%|██▏       | 125/587 [00:01<00:05, 89.35it/s]Loading weights:  25%|██▍       | 144/587 [00:01<00:03, 112.02it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 383.62it/s]
+[1/4] DEP_1_color cc=0.7301 nss=4.0832 sim=0.5648 kld=0.8341 auc_j=0.9590 sauc=0.7927
+[2/4] DEP_2_color cc=0.6797 nss=3.4174 sim=0.5350 kld=0.9386 auc_j=0.9429 sauc=0.7112
+[3/4] LOR_1_color cc=0.6582 nss=3.9711 sim=0.4938 kld=1.0258 auc_j=0.9411 sauc=0.8278
+[4/4] LOR_2_color cc=0.6314 nss=3.3937 sim=0.4786 kld=1.0336 auc_j=0.9359 sauc=0.7592
+MEAN cc=0.6748 nss=3.7164 sim=0.5180 kld=0.9580 auc_j=0.9447 sauc=0.7727

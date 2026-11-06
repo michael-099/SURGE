@@ -1,0 +1,11 @@
+2026-11-06T13:33:44+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/stavis_ft_summe_f3 --dataset summe_f3 --split holdout --frame-step 2 --out runs/stavis/ft_sigma_summe_f3.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 10/587 [00:00<00:08, 70.02it/s]Loading weights:   3%|▎         | 18/587 [00:00<00:08, 70.32it/s]Loading weights:   4%|▍         | 26/587 [00:00<00:09, 57.15it/s]Loading weights:   5%|▌         | 32/587 [00:00<00:11, 49.12it/s]Loading weights:   7%|▋         | 39/587 [00:00<00:10, 52.15it/s]Loading weights:   8%|▊         | 45/587 [00:00<00:11, 47.66it/s]Loading weights:   9%|▊         | 51/587 [00:00<00:10, 48.91it/s]Loading weights:  10%|▉         | 56/587 [00:01<00:13, 40.26it/s]Loading weights:  11%|█         | 63/587 [00:01<00:11, 44.10it/s]Loading weights:  12%|█▏        | 70/587 [00:01<00:10, 50.02it/s]Loading weights:  15%|█▍        | 86/587 [00:01<00:06, 77.30it/s]Loading weights:  17%|█▋        | 99/587 [00:01<00:05, 88.55it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 348.37it/s]
+predicted Bus_in_Rock_Tunnel
+predicted St_Maarten_Landing
+sigma 0.0: cc=0.6142 nss=4.2240 sim=0.4617 kld=1.1839
+sigma 4.0: cc=0.6157 nss=4.1753 sim=0.4618 kld=1.1815
+sigma 8.0: cc=0.6177 nss=4.0484 sim=0.4607 kld=1.1782
+sigma 12.0: cc=0.6172 nss=3.8754 sim=0.4566 kld=1.1790
+sigma 16.0: cc=0.6130 nss=3.6857 sim=0.4486 kld=1.1867
+sigma 24.0: cc=0.5943 nss=3.3187 sim=0.4242 kld=1.2232
+BEST SIGMA 8.0

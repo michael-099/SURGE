@@ -1,0 +1,11 @@
+2026-11-06T12:46:38+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/stavis_ft_summe_f1 --dataset summe_f1 --split val --metrics all --sigma 12.0 --out runs/stavis/ft_summe_f1.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 12/587 [00:00<00:05, 107.68it/s]Loading weights:   4%|▍         | 23/587 [00:00<00:06, 82.07it/s] Loading weights:   5%|▌         | 32/587 [00:00<00:07, 73.05it/s]Loading weights:   7%|▋         | 40/587 [00:00<00:08, 63.45it/s]Loading weights:   9%|▊         | 50/587 [00:00<00:07, 71.24it/s]Loading weights:  10%|▉         | 58/587 [00:00<00:08, 65.86it/s]Loading weights:  11%|█         | 65/587 [00:00<00:09, 56.40it/s]Loading weights:  13%|█▎        | 79/587 [00:01<00:07, 67.91it/s]Loading weights:  15%|█▍        | 86/587 [00:01<00:07, 67.59it/s]Loading weights:  16%|█▌        | 93/587 [00:01<00:07, 64.05it/s]Loading weights:  17%|█▋        | 100/587 [00:01<00:07, 61.01it/s]Loading weights:  22%|██▏       | 127/587 [00:01<00:04, 110.72it/s]Loading weights:  24%|██▍       | 142/587 [00:01<00:03, 119.37it/s]Loading weights:  88%|████████▊ | 514/587 [00:01<00:00, 1076.82it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 321.40it/s] 
+[1/8] Valparaiso_Downhill cc=0.6898 nss=4.3162 sim=0.4918 kld=0.9184 auc_j=0.9611 sauc=0.9037
+[2/8] Car_railcrossing cc=0.4571 nss=2.2301 sim=0.3774 kld=1.4918 auc_j=0.9043 sauc=0.7472
+[3/8] Bearpark_climbing cc=0.6595 nss=3.8211 sim=0.5089 kld=1.0087 auc_j=0.9510 sauc=0.8293
+[4/8] Playing_on_water_slide cc=0.5495 nss=2.6672 sim=0.4367 kld=1.1616 auc_j=0.9250 sauc=0.7731
+[5/8] Fire_Domino cc=0.5430 nss=2.2647 sim=0.4553 kld=1.0898 auc_j=0.9301 sauc=0.7023
+[6/8] Cockpit_Landing cc=0.5126 nss=2.2332 sim=0.3998 kld=1.2831 auc_j=0.8937 sauc=0.7132
+[7/8] Saving_dolphines cc=0.6229 nss=3.5384 sim=0.4687 kld=0.9962 auc_j=0.9535 sauc=0.8278
+[8/8] Notre_Dame cc=0.4561 nss=1.9031 sim=0.3747 kld=1.4111 auc_j=0.8791 sauc=0.6856
+MEAN cc=0.5613 nss=2.8717 sim=0.4392 kld=1.1701 auc_j=0.9247 sauc=0.7728

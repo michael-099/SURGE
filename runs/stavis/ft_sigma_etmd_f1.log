@@ -1,0 +1,10 @@
+2026-11-06T11:24:08+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/stavis_ft_etmd_f1 --dataset etmd_f1 --split holdout --frame-step 2 --out runs/stavis/ft_sigma_etmd_f1.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 14/587 [00:00<00:05, 114.33it/s]Loading weights:   4%|▍         | 26/587 [00:00<00:08, 67.41it/s] Loading weights:   6%|▌         | 34/587 [00:00<00:09, 55.78it/s]Loading weights:   7%|▋         | 44/587 [00:00<00:08, 62.97it/s]Loading weights:   9%|▉         | 54/587 [00:00<00:07, 67.79it/s]Loading weights:  11%|█         | 62/587 [00:00<00:07, 68.80it/s]Loading weights:  12%|█▏        | 70/587 [00:01<00:09, 52.79it/s]Loading weights:  13%|█▎        | 76/587 [00:01<00:09, 53.14it/s]Loading weights:  14%|█▍        | 84/587 [00:01<00:09, 53.10it/s]Loading weights:  15%|█▌        | 90/587 [00:01<00:09, 52.46it/s]Loading weights:  18%|█▊        | 108/587 [00:01<00:05, 81.91it/s]Loading weights:  21%|██▏       | 125/587 [00:01<00:04, 103.14it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 325.08it/s]
+predicted DEP_2_color
+sigma 0.0: cc=0.6722 nss=3.5104 sim=0.5302 kld=0.9496
+sigma 4.0: cc=0.6731 nss=3.5007 sim=0.5303 kld=0.9467
+sigma 8.0: cc=0.6751 nss=3.4718 sim=0.5301 kld=0.9400
+sigma 12.0: cc=0.6766 nss=3.4258 sim=0.5284 kld=0.9332
+sigma 16.0: cc=0.6765 nss=3.3661 sim=0.5240 kld=0.9299
+sigma 24.0: cc=0.6693 nss=3.2187 sim=0.5062 kld=0.9427
+BEST SIGMA 12.0

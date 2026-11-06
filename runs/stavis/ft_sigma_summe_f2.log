@@ -1,0 +1,11 @@
+2026-11-06T13:09:04+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/stavis_ft_summe_f2 --dataset summe_f2 --split holdout --frame-step 2 --out runs/stavis/ft_sigma_summe_f2.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 13/587 [00:00<00:04, 116.91it/s]Loading weights:   4%|▍         | 25/587 [00:00<00:09, 61.13it/s] Loading weights:   6%|▌         | 36/587 [00:00<00:08, 68.35it/s]Loading weights:   7%|▋         | 44/587 [00:00<00:10, 54.21it/s]Loading weights:   9%|▉         | 53/587 [00:00<00:09, 56.83it/s]Loading weights:  10%|█         | 60/587 [00:01<00:13, 37.98it/s]Loading weights:  11%|█         | 65/587 [00:01<00:13, 39.33it/s]Loading weights:  12%|█▏        | 72/587 [00:01<00:12, 41.77it/s]Loading weights:  16%|█▌        | 93/587 [00:01<00:06, 75.40it/s]Loading weights:  18%|█▊        | 105/587 [00:01<00:05, 85.03it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 329.19it/s]
+predicted Car_railcrossing
+predicted Excavators_river_crossing
+sigma 0.0: cc=0.5331 nss=2.6358 sim=0.4174 kld=1.2687
+sigma 4.0: cc=0.5342 nss=2.6324 sim=0.4173 kld=1.2661
+sigma 8.0: cc=0.5366 nss=2.6192 sim=0.4169 kld=1.2601
+sigma 12.0: cc=0.5390 nss=2.5956 sim=0.4154 kld=1.2539
+sigma 16.0: cc=0.5403 nss=2.5631 sim=0.4124 kld=1.2503
+sigma 24.0: cc=0.5381 nss=2.4793 sim=0.4018 kld=1.2569
+BEST SIGMA 16.0

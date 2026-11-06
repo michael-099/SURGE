@@ -1,0 +1,18 @@
+2026-11-06T09:13:04+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/main_b1_s0 --dataset avad_f1 --split val --metrics all --sigma 12 --out runs/stavis/zs_avad_f1.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 6/587 [00:00<00:11, 52.81it/s]Loading weights:   2%|▏         | 13/587 [00:00<00:09, 59.36it/s]Loading weights:   4%|▎         | 21/587 [00:00<00:08, 65.40it/s]Loading weights:   5%|▍         | 28/587 [00:00<00:08, 64.29it/s]Loading weights:   7%|▋         | 39/587 [00:00<00:07, 73.18it/s]Loading weights:   8%|▊         | 47/587 [00:00<00:08, 66.61it/s]Loading weights:   9%|▉         | 54/587 [00:00<00:08, 60.44it/s]Loading weights:  10%|█         | 61/587 [00:01<00:12, 43.49it/s]Loading weights:  13%|█▎        | 75/587 [00:01<00:08, 58.49it/s]Loading weights:  14%|█▍        | 82/587 [00:01<00:11, 45.76it/s]Loading weights:  15%|█▌        | 90/587 [00:01<00:09, 51.08it/s]Loading weights:  18%|█▊        | 106/587 [00:01<00:06, 71.73it/s]Loading weights:  21%|██        | 124/587 [00:01<00:04, 94.17it/s]Loading weights:  70%|███████   | 412/587 [00:01<00:00, 742.67it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 297.58it/s]
+[1/15] V32_Dancers cc=0.5562 nss=2.5877 sim=0.4543 kld=1.4997 auc_j=0.9040 sauc=0.7045
+[2/15] V6_Basketball1 cc=0.7878 nss=4.9162 sim=0.6172 kld=0.5934 auc_j=0.9662 sauc=0.8558
+[3/15] V33_Harp cc=0.7012 nss=3.0314 sim=0.5317 kld=1.1873 auc_j=0.8948 sauc=0.7166
+[4/15] V17_Soccer1 cc=0.7599 nss=4.5744 sim=0.5517 kld=0.6743 auc_j=0.9699 sauc=0.8967
+[5/15] V41_Violin1 cc=0.7230 nss=3.6855 sim=0.5719 kld=0.7014 auc_j=0.9486 sauc=0.7384
+[6/15] V29_Dog2 cc=0.6709 nss=3.1303 sim=0.5148 kld=1.3608 auc_j=0.8788 sauc=0.6426
+[7/15] V25_Piano1 cc=0.6559 nss=2.9412 sim=0.4725 kld=1.1286 auc_j=0.8971 sauc=0.7910
+[8/15] V31_Bird cc=0.8498 nss=6.1268 sim=0.6913 kld=0.4241 auc_j=0.9803 sauc=0.8754
+[9/15] V27_Piano3 cc=0.6608 nss=3.0771 sim=0.4994 kld=1.1391 auc_j=0.8895 sauc=0.7409
+[10/15] V15_Drummer1 cc=0.5223 nss=2.8115 sim=0.4258 kld=1.4526 auc_j=0.8910 sauc=0.6688
+[11/15] V23_Tap3 cc=0.2910 nss=1.1421 sim=0.2905 kld=2.2949 auc_j=0.8479 sauc=0.4380
+[12/15] V24_Tap4 cc=0.4392 nss=1.5723 sim=0.4021 kld=1.7568 auc_j=0.8586 sauc=0.5405
+[13/15] V13_Conservation2 cc=0.8536 nss=5.5658 sim=0.6429 kld=0.6074 auc_j=0.9617 sauc=0.8352
+[14/15] V9_News2 cc=0.8071 nss=5.6854 sim=0.6315 kld=0.6320 auc_j=0.9665 sauc=0.9108
+[15/15] V10_News3 cc=0.8921 nss=5.3885 sim=0.6854 kld=0.5875 auc_j=0.9582 sauc=0.7856
+MEAN cc=0.6781 nss=3.7491 sim=0.5322 kld=1.0693 auc_j=0.9209 sauc=0.7427

@@ -1,0 +1,11 @@
+2026-11-06T13:36:39+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/stavis_ft_summe_f3 --dataset summe_f3 --split val --metrics all --sigma 8.0 --out runs/stavis/ft_summe_f3.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 7/587 [00:00<00:15, 36.84it/s]Loading weights:   2%|▏         | 11/587 [00:00<00:20, 28.06it/s]Loading weights:   3%|▎         | 19/587 [00:00<00:13, 41.74it/s]Loading weights:   5%|▍         | 29/587 [00:00<00:09, 58.34it/s]Loading weights:   6%|▌         | 36/587 [00:00<00:09, 56.26it/s]Loading weights:   7%|▋         | 43/587 [00:00<00:12, 44.93it/s]Loading weights:  10%|▉         | 58/587 [00:01<00:07, 66.45it/s]Loading weights:  12%|█▏        | 70/587 [00:01<00:06, 75.30it/s]Loading weights:  13%|█▎        | 79/587 [00:01<00:07, 67.91it/s]Loading weights:  15%|█▍        | 87/587 [00:01<00:08, 61.70it/s]Loading weights:  16%|█▋        | 96/587 [00:01<00:07, 63.29it/s]Loading weights:  18%|█▊        | 104/587 [00:01<00:07, 63.29it/s]Loading weights:  19%|█▉        | 111/587 [00:01<00:07, 61.03it/s]Loading weights:  25%|██▍       | 146/587 [00:02<00:03, 127.21it/s]Loading weights: 100%|██████████| 587/587 [00:02<00:00, 285.45it/s]
+[1/8] Base_jumping cc=0.5964 nss=3.0488 sim=0.4425 kld=1.1550 auc_j=0.9170 sauc=0.7431
+[2/8] Bike_Polo cc=0.5478 nss=2.7068 sim=0.4214 kld=1.1961 auc_j=0.9211 sauc=0.7769
+[3/8] paluma_jump cc=0.6291 nss=4.2775 sim=0.4324 kld=1.2476 auc_j=0.9326 sauc=0.7873
+[4/8] Kids_playing_in_leaves cc=0.6205 nss=3.8580 sim=0.4655 kld=1.0294 auc_j=0.9547 sauc=0.8213
+[5/8] Eiffel_Tower cc=0.5659 nss=2.5654 sim=0.4217 kld=1.1419 auc_j=0.9276 sauc=0.7911
+[6/8] Statue_of_Liberty cc=0.5747 nss=3.0083 sim=0.4513 kld=1.2059 auc_j=0.9263 sauc=0.6868
+[7/8] Excavators_river_crossing cc=0.5838 nss=2.7868 sim=0.4171 kld=1.1674 auc_j=0.9229 sauc=0.7192
+[8/8] Jumps cc=0.6670 nss=4.9367 sim=0.5074 kld=0.9346 auc_j=0.9660 sauc=0.8288
+MEAN cc=0.5982 nss=3.3986 sim=0.4449 kld=1.1347 auc_j=0.9335 sauc=0.7693

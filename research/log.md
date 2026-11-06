@@ -310,3 +310,42 @@ the DHF1K test maps (one GPU job at a time).
 Maps built 2026-11-06 (`scripts/prep_hollywood_gaze.py`): 1,707 clips, 487,556 frames; 99.8 % of frames have at least
 one point, mean 4.53 points per frame. Gaze md5s all match figshare. A visual check of overlays on three clips shows
 points on faces and the acting person, as expected for this task.
+
+### Section 7 results (queue finished 2026-11-06 13:45; `runs/stavis/`, summary in `runs/stavis/summary.json`)
+
+Fold means (DIEM: its one split). Every test fold scored once. Fine-tuned σ per fold (holdout): DIEM 4; Coutrot1
+12/8/12; Coutrot2 12/12/12; ETMD 12/8/16; AVAD 12/12/8; SumMe 12/16/8. As on DHF1K, holdout CC peaked after epoch
+1–2 on most folds (best epoch kept).
+
+| Dataset | Model | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|---|
+| DIEM | SURGE-D zero-shot | 0.675 | 2.730 | 0.559 | 0.815 | 0.916 | 0.713 |
+| | **SURGE-D fine-tuned** | **0.706** | 2.790 | 0.568 | 0.708 | 0.920 | 0.728 |
+| | best visual (ViNet-E) / best AV (RAVF; DTFSal) | 0.701 / 0.685; 0.682 | 2.840 / 2.78; 2.98 | 0.566 / 0.559; 0.562 | — | 0.913 / 0.911; 0.921 | — |
+| Coutrot1 | SURGE-D zero-shot | 0.600 | 2.912 | 0.480 | 1.136 | 0.899 | 0.742 |
+| | **SURGE-D fine-tuned** | **0.632** | 3.164 | 0.489 | 0.996 | 0.907 | 0.762 |
+| | best visual (DTFSal(V)) / best AV (DTFSal) | 0.623 / 0.661 | 3.21 / 3.31 | 0.505 / 0.523 | — | 0.904 / 0.911 | — |
+| Coutrot2 | SURGE-D zero-shot | 0.645 | 4.796 | 0.428 | 1.069 | 0.958 | 0.723 |
+| | SURGE-D fine-tuned | 0.816 | 6.564 | 0.599 | 0.694 | 0.966 | 0.758 |
+| | best visual (ViNet-A) / best AV (DTFSal) | 0.862 / 0.845 | 6.8 / 6.72 | 0.638 / 0.649 | — | 0.961 / 0.971 | — |
+| ETMD | SURGE-D zero-shot | 0.588 | 3.169 | 0.468 | 1.173 | 0.939 | 0.718 |
+| | **SURGE-D fine-tuned** | **0.662** | 3.608 | 0.502 | 0.965 | 0.948 | 0.759 |
+| | best visual (DTFSal(V)) / best AV (DTFSal) | 0.653 / 0.667 | 3.57 / 3.82 | 0.499 / 0.531 | — | 0.939 / 0.957 | — |
+| AVAD | SURGE-D zero-shot | 0.692 | 3.919 | 0.541 | 0.985 | 0.931 | 0.760 |
+| | SURGE-D fine-tuned | 0.718 | 4.105 | 0.547 | 0.856 | 0.938 | 0.780 |
+| | best visual (DTFSal(V)) / best AV (DTFSal) | 0.742 / 0.746 | 4.21 / 4.36 | 0.559 / 0.595 | — | 0.938 / 0.939 | — |
+| SumMe | SURGE-D zero-shot | 0.551 | 2.931 | 0.442 | 1.297 | 0.918 | 0.729 |
+| | **SURGE-D fine-tuned** | **0.581** | 3.151 | 0.443 | 1.174 | 0.926 | 0.764 |
+| | best visual (DTFSal(V)) / best AV (DTFSal) | 0.561 / 0.573 | 2.91 / 3.20 | 0.441 / 0.449 | — | 0.911 / 0.927 | — |
+
+**Rule outcome (fold-mean CC above the published CC):**
+- Versus the best published **visual-only** model: higher on **DIEM (+0.005), Coutrot1 (+0.009), ETMD (+0.009),
+  SumMe (+0.020)**; lower on **Coutrot2 (−0.046)** and **AVAD (−0.024)**.
+- Versus the best published **audio-visual** model (which also uses the soundtrack): higher on **DIEM (+0.021)** and
+  **SumMe (+0.008)**; lower on Coutrot1, Coutrot2, ETMD, AVAD.
+- Margins under ~0.01 (DIEM, Coutrot1, ETMD vs visual; SumMe vs AV) are inside the cross-paper disagreement noted
+  above, so they are ties at best, not clear wins. The clear results: SumMe vs visual-only (+0.020) is a win; Coutrot2
+  and AVAD are clear losses. Other metrics are mixed: SURGE-D's NSS and SIM are below the best published on most
+  datasets even where its CC is higher.
+- Coutrot2 (4-person meetings, gaze follows the speaker) is where the gap is largest and where fine-tuning helped most
+  (+0.171 CC over zero-shot); a visual-only model cannot know who is talking.

@@ -1,0 +1,13 @@
+2026-11-06T10:30:36+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/stavis_ft_coutrot1_f2 --dataset coutrot1_f2 --split holdout --frame-step 2 --out runs/stavis/ft_sigma_coutrot1_f2.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 9/587 [00:00<00:07, 80.80it/s]Loading weights:   3%|▎         | 18/587 [00:00<00:10, 53.82it/s]Loading weights:   5%|▍         | 29/587 [00:00<00:09, 60.83it/s]Loading weights:   6%|▋         | 37/587 [00:00<00:08, 61.49it/s]Loading weights:   7%|▋         | 44/587 [00:00<00:15, 36.00it/s]Loading weights:   9%|▊         | 51/587 [00:01<00:12, 41.45it/s]Loading weights:  10%|▉         | 57/587 [00:01<00:14, 37.54it/s]Loading weights:  11%|█         | 65/587 [00:01<00:11, 45.67it/s]Loading weights:  12%|█▏        | 71/587 [00:01<00:10, 47.61it/s]Loading weights:  14%|█▍        | 85/587 [00:01<00:08, 60.90it/s]Loading weights:  19%|█▉        | 112/587 [00:01<00:04, 105.54it/s]Loading weights:  48%|████▊     | 284/587 [00:01<00:00, 491.46it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 311.05it/s]
+predicted clip9
+predicted clip47
+predicted clip48
+predicted clip58
+sigma 0.0: cc=0.7344 nss=4.1820 sim=0.5634 kld=0.7451
+sigma 4.0: cc=0.7353 nss=4.1671 sim=0.5632 kld=0.7443
+sigma 8.0: cc=0.7368 nss=4.1203 sim=0.5618 kld=0.7443
+sigma 12.0: cc=0.7368 nss=4.0429 sim=0.5575 kld=0.7494
+sigma 16.0: cc=0.7339 nss=3.9403 sim=0.5492 kld=0.7634
+sigma 24.0: cc=0.7167 nss=3.6864 sim=0.5202 kld=0.8232
+BEST SIGMA 8.0

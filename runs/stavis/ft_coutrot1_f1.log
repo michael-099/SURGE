@@ -1,0 +1,23 @@
+2026-11-06T10:20:48+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/stavis_ft_coutrot1_f1 --dataset coutrot1_f1 --split val --metrics all --sigma 12.0 --out runs/stavis/ft_coutrot1_f1.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 5/587 [00:00<00:12, 46.64it/s]Loading weights:   2%|▏         | 14/587 [00:00<00:10, 53.66it/s]Loading weights:   4%|▍         | 24/587 [00:00<00:08, 64.61it/s]Loading weights:   5%|▌         | 31/587 [00:00<00:10, 53.32it/s]Loading weights:   6%|▋         | 38/587 [00:00<00:10, 53.85it/s]Loading weights:   8%|▊         | 49/587 [00:00<00:08, 65.99it/s]Loading weights:  10%|▉         | 56/587 [00:00<00:09, 58.60it/s]Loading weights:  11%|█         | 65/587 [00:01<00:08, 64.69it/s]Loading weights:  12%|█▏        | 72/587 [00:01<00:08, 57.26it/s]Loading weights:  14%|█▍        | 82/587 [00:01<00:08, 61.22it/s]Loading weights:  16%|█▌        | 93/587 [00:01<00:06, 70.98it/s]Loading weights:  17%|█▋        | 101/587 [00:01<00:08, 56.13it/s]Loading weights:  19%|█▉        | 112/587 [00:01<00:07, 67.52it/s]Loading weights:  24%|██▍       | 143/587 [00:01<00:03, 122.52it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 297.80it/s]
+[1/20] clip4 cc=0.4939 nss=1.7122 sim=0.4013 kld=1.5548 auc_j=0.8463 sauc=0.5930
+[2/20] clip5 cc=0.6749 nss=3.5352 sim=0.4739 kld=0.9297 auc_j=0.9486 sauc=0.8384
+[3/20] clip10 cc=0.8903 nss=7.8823 sim=0.6315 kld=0.6225 auc_j=0.9708 sauc=0.9052
+[4/20] clip14 cc=0.6082 nss=2.2788 sim=0.5020 kld=0.9682 auc_j=0.9039 sauc=0.7498
+[5/20] clip15 cc=0.4400 nss=2.5595 sim=0.3401 kld=1.5990 auc_j=0.8887 sauc=0.7286
+[6/20] clip16 cc=0.5299 nss=2.2343 sim=0.4520 kld=1.1498 auc_j=0.9204 sauc=0.6906
+[7/20] clip17 cc=0.5518 nss=3.3589 sim=0.3827 kld=1.2600 auc_j=0.9326 sauc=0.7975
+[8/20] clip22 cc=0.5371 nss=2.9555 sim=0.3740 kld=1.3301 auc_j=0.9206 sauc=0.8240
+[9/20] clip24 cc=0.5592 nss=2.3752 sim=0.4507 kld=1.1677 auc_j=0.8840 sauc=0.7515
+[10/20] clip26 cc=0.3485 nss=1.2723 sim=0.3547 kld=1.4331 auc_j=0.8395 sauc=0.5179
+[11/20] clip32 cc=0.4892 nss=1.3883 sim=0.4484 kld=1.2243 auc_j=0.8348 sauc=0.6303
+[12/20] clip37 cc=0.4286 nss=1.1843 sim=0.3930 kld=1.1712 auc_j=0.8089 sauc=0.5825
+[13/20] clip38 cc=0.4408 nss=1.1926 sim=0.4101 kld=1.2046 auc_j=0.7979 sauc=0.5736
+[14/20] clip39 cc=0.6900 nss=3.3134 sim=0.4910 kld=0.9299 auc_j=0.9101 sauc=0.7588
+[15/20] clip44 cc=0.4664 nss=1.3144 sim=0.4074 kld=1.1734 auc_j=0.8231 sauc=0.6295
+[16/20] clip47 cc=0.7471 nss=4.9546 sim=0.5557 kld=0.7375 auc_j=0.9640 sauc=0.9309
+[17/20] clip48 cc=0.7262 nss=3.5550 sim=0.5562 kld=0.6800 auc_j=0.9581 sauc=0.8857
+[18/20] clip50 cc=0.7983 nss=4.1428 sim=0.6156 kld=0.5822 auc_j=0.9631 sauc=0.8629
+[19/20] clip56 cc=0.6688 nss=4.3310 sim=0.4761 kld=0.9191 auc_j=0.9647 sauc=0.9201
+[20/20] clip58 cc=0.7962 nss=3.6375 sim=0.6343 kld=0.5551 auc_j=0.9602 sauc=0.8833
+MEAN cc=0.5943 nss=2.9589 sim=0.4675 kld=1.0596 auc_j=0.9020 sauc=0.7527

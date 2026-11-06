@@ -1,0 +1,12 @@
+2026-11-06T12:31:46+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/stavis_ft_avad_f3 --dataset avad_f3 --split holdout --frame-step 2 --out runs/stavis/ft_sigma_avad_f3.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 7/587 [00:00<00:09, 58.45it/s]Loading weights:   2%|▏         | 13/587 [00:00<00:11, 50.41it/s]Loading weights:   3%|▎         | 19/587 [00:00<00:10, 51.95it/s]Loading weights:   4%|▍         | 25/587 [00:00<00:11, 47.58it/s]Loading weights:   6%|▌         | 33/587 [00:00<00:10, 52.22it/s]Loading weights:   7%|▋         | 43/587 [00:00<00:08, 64.79it/s]Loading weights:   9%|▊         | 51/587 [00:00<00:08, 66.95it/s]Loading weights:  11%|█         | 64/587 [00:00<00:06, 82.29it/s]Loading weights:  12%|█▏        | 73/587 [00:01<00:07, 66.77it/s]Loading weights:  14%|█▍        | 81/587 [00:01<00:07, 63.81it/s]Loading weights:  15%|█▍        | 88/587 [00:01<00:08, 57.24it/s]Loading weights:  16%|█▌        | 95/587 [00:01<00:08, 56.57it/s]Loading weights:  19%|█▉        | 113/587 [00:01<00:05, 83.49it/s]Loading weights:  26%|██▌       | 150/587 [00:01<00:02, 149.27it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 313.42it/s]
+predicted V34_Beat
+predicted V33_Harp
+predicted V44_Darbuka1
+sigma 0.0: cc=0.7088 nss=3.8035 sim=0.5368 kld=0.8843
+sigma 4.0: cc=0.7095 nss=3.7868 sim=0.5365 kld=0.8821
+sigma 8.0: cc=0.7104 nss=3.7355 sim=0.5349 kld=0.8781
+sigma 12.0: cc=0.7100 nss=3.6542 sim=0.5309 kld=0.8758
+sigma 16.0: cc=0.7071 nss=3.5520 sim=0.5239 kld=0.8785
+sigma 24.0: cc=0.6929 nss=3.3203 sim=0.5020 kld=0.9041
+BEST SIGMA 8.0

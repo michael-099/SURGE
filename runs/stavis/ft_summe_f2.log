@@ -1,0 +1,10 @@
+2026-11-06T13:14:31+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/stavis_ft_summe_f2 --dataset summe_f2 --split val --metrics all --sigma 16.0 --out runs/stavis/ft_summe_f2.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 7/587 [00:00<00:09, 63.60it/s]Loading weights:   2%|▏         | 14/587 [00:00<00:12, 46.30it/s]Loading weights:   3%|▎         | 19/587 [00:00<00:14, 40.19it/s]Loading weights:   4%|▍         | 24/587 [00:00<00:15, 36.65it/s]Loading weights:   5%|▌         | 32/587 [00:00<00:11, 46.90it/s]Loading weights:   7%|▋         | 40/587 [00:00<00:10, 53.91it/s]Loading weights:   8%|▊         | 46/587 [00:01<00:12, 44.93it/s]Loading weights:   9%|▉         | 53/587 [00:01<00:11, 47.83it/s]Loading weights:  10%|█         | 59/587 [00:01<00:10, 49.40it/s]Loading weights:  11%|█         | 65/587 [00:01<00:10, 48.16it/s]Loading weights:  12%|█▏        | 73/587 [00:01<00:09, 55.25it/s]Loading weights:  15%|█▍        | 87/587 [00:01<00:06, 75.29it/s]Loading weights:  21%|██▏       | 125/587 [00:01<00:02, 155.59it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 338.17it/s]
+[1/7] Cooking cc=0.6150 nss=3.9504 sim=0.4468 kld=1.1464 auc_j=0.9406 sauc=0.7614
+[2/7] Bus_in_Rock_Tunnel cc=0.5274 nss=2.4070 sim=0.4310 kld=1.3943 auc_j=0.8894 sauc=0.7247
+[3/7] Uncut_Evening_Flight cc=0.5700 nss=2.3855 sim=0.4590 kld=1.1346 auc_j=0.9138 sauc=0.7783
+[4/7] playing_ball cc=0.5789 nss=3.5140 sim=0.4331 kld=1.1883 auc_j=0.9380 sauc=0.7875
+[5/7] Paintball cc=0.4722 nss=2.3687 sim=0.3812 kld=1.3976 auc_j=0.8799 sauc=0.6878
+[6/7] Air_Force_One cc=0.6985 nss=4.3228 sim=0.5276 kld=1.0898 auc_j=0.9462 sauc=0.8153
+[7/7] car_over_camera cc=0.6195 nss=3.3258 sim=0.4359 kld=1.1763 auc_j=0.9205 sauc=0.6852
+MEAN cc=0.5831 nss=3.1820 sim=0.4450 kld=1.2182 auc_j=0.9183 sauc=0.7486

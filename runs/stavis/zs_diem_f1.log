@@ -1,0 +1,20 @@
+2026-11-06T08:29:45+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/main_b1_s0 --dataset diem_f1 --split val --metrics all --sigma 12 --out runs/stavis/zs_diem_f1.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 5/587 [00:00<00:13, 44.70it/s]Loading weights:   2%|▏         | 12/587 [00:00<00:09, 57.88it/s]Loading weights:   3%|▎         | 18/587 [00:00<00:10, 54.15it/s]Loading weights:   4%|▍         | 24/587 [00:00<00:10, 52.41it/s]Loading weights:   5%|▌         | 30/587 [00:00<00:13, 42.35it/s]Loading weights:   7%|▋         | 40/587 [00:00<00:10, 54.26it/s]Loading weights:   8%|▊         | 46/587 [00:00<00:10, 52.56it/s]Loading weights:   9%|▉         | 52/587 [00:01<00:10, 50.96it/s]Loading weights:  10%|█         | 60/587 [00:01<00:09, 56.84it/s]Loading weights:  11%|█         | 66/587 [00:01<00:09, 53.46it/s]Loading weights:  12%|█▏        | 72/587 [00:01<00:09, 53.89it/s]Loading weights:  13%|█▎        | 78/587 [00:01<00:10, 47.74it/s]Loading weights:  15%|█▌        | 89/587 [00:01<00:07, 62.96it/s]Loading weights:  18%|█▊        | 106/587 [00:01<00:05, 90.07it/s]Loading weights:  21%|██        | 124/587 [00:01<00:04, 113.69it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 310.46it/s]
+[1/17] BBC_life_in_cold_blood_1278x710 cc=0.6900 nss=2.6048 sim=0.5799 kld=0.7186 auc_j=0.9262 sauc=0.7358
+[2/17] BBC_wildlife_serpent_1280x704 cc=0.6714 nss=2.2759 sim=0.5557 kld=0.7712 auc_j=0.9173 sauc=0.7141
+[3/17] DIY_SOS_1280x712 cc=0.7625 nss=3.3077 sim=0.6201 kld=0.6268 auc_j=0.9352 sauc=0.7411
+[4/17] advert_bbc4_bees_1024x576 cc=0.7230 nss=2.2827 sim=0.5593 kld=0.8375 auc_j=0.8771 sauc=0.6915
+[5/17] advert_bbc4_library_1024x576 cc=0.5460 nss=2.0084 sim=0.4435 kld=1.3140 auc_j=0.8638 sauc=0.6344
+[6/17] advert_iphone_1272x720 cc=0.7134 nss=2.9931 sim=0.5834 kld=0.7075 auc_j=0.9350 sauc=0.7362
+[7/17] harry_potter_6_trailer_1280x544 cc=0.8469 nss=3.7735 sim=0.6959 kld=0.4110 auc_j=0.9544 sauc=0.7651
+[8/17] music_gummybear_880x720 cc=0.4209 nss=1.6173 sim=0.3842 kld=1.4790 auc_j=0.9135 sauc=0.5725
+[9/17] music_trailer_nine_inch_nails_1280x720 cc=0.6395 nss=2.9379 sim=0.5132 kld=0.8884 auc_j=0.9426 sauc=0.7710
+[10/17] nightlife_in_mozambique_1280x580 cc=0.7933 nss=2.7690 sim=0.6538 kld=0.4966 auc_j=0.9354 sauc=0.7650
+[11/17] one_show_1280x712 cc=0.8728 nss=5.0884 sim=0.7110 kld=0.4212 auc_j=0.9595 sauc=0.8401
+[12/17] pingpong_angle_shot_960x720 cc=0.5079 nss=1.8800 sim=0.4718 kld=1.0536 auc_j=0.8997 sauc=0.6545
+[13/17] pingpong_no_bodies_960x720 cc=0.5774 nss=1.6781 sim=0.4987 kld=0.8474 auc_j=0.8740 sauc=0.6285
+[14/17] sport_scramblers_1280x720 cc=0.7093 nss=3.3378 sim=0.5766 kld=0.7292 auc_j=0.9401 sauc=0.7299
+[15/17] sport_wimbledon_federer_final_1280x704 cc=0.6499 nss=2.6989 sim=0.5253 kld=0.8861 auc_j=0.9097 sauc=0.7381
+[16/17] tv_uni_challenge_final_1280x712 cc=0.7262 nss=3.2965 sim=0.5985 kld=0.7883 auc_j=0.9101 sauc=0.7496
+[17/17] university_forum_construction_ionic_1280x720 cc=0.6302 nss=1.8543 sim=0.5353 kld=0.8824 auc_j=0.8754 sauc=0.6548
+MEAN cc=0.6753 nss=2.7296 sim=0.5592 kld=0.8152 auc_j=0.9158 sauc=0.7131

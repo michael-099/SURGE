@@ -1,0 +1,15 @@
+2026-11-06T10:01:56+03:00 .venv/Scripts/python.exe -u scripts/tune_sigma.py --run runs/stavis_ft_diem_f1 --dataset diem_f1 --split holdout --frame-step 5 --out runs/stavis/ft_sigma_diem_f1.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|▏         | 8/587 [00:00<00:07, 74.83it/s]Loading weights:   3%|▎         | 17/587 [00:00<00:07, 78.72it/s]Loading weights:   4%|▍         | 25/587 [00:00<00:07, 76.20it/s]Loading weights:   6%|▌         | 33/587 [00:00<00:07, 74.14it/s]Loading weights:   7%|▋         | 41/587 [00:00<00:08, 66.04it/s]Loading weights:   8%|▊         | 49/587 [00:00<00:09, 56.04it/s]Loading weights:   9%|▉         | 55/587 [00:00<00:09, 54.34it/s]Loading weights:  11%|█         | 66/587 [00:01<00:07, 65.95it/s]Loading weights:  12%|█▏        | 73/587 [00:01<00:08, 58.25it/s]Loading weights:  14%|█▍        | 84/587 [00:01<00:07, 70.23it/s]Loading weights:  16%|█▋        | 96/587 [00:01<00:06, 78.53it/s]Loading weights:  18%|█▊        | 106/587 [00:01<00:06, 78.66it/s]Loading weights:  21%|██        | 123/587 [00:01<00:04, 99.60it/s]Loading weights:  23%|██▎       | 134/587 [00:01<00:04, 99.46it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 324.44it/s]
+predicted arctic_bears_1066x710
+predicted basketball_of_sorts_960x720
+predicted home_movie_Charlie_bit_my_finger_again_960x720
+predicted hummingbirds_narrator_960x720
+predicted movie_trailer_ice_age_3_1280x690
+predicted sport_wimbledon_baltacha_1280x704
+sigma 0.0: cc=0.7450 nss=2.9783 sim=0.6036 kld=0.6019
+sigma 4.0: cc=0.7451 nss=2.9746 sim=0.6032 kld=0.6019
+sigma 8.0: cc=0.7451 nss=2.9620 sim=0.6019 kld=0.6027
+sigma 12.0: cc=0.7441 nss=2.9396 sim=0.5992 kld=0.6057
+sigma 16.0: cc=0.7417 nss=2.9074 sim=0.5945 kld=0.6122
+sigma 24.0: cc=0.7311 nss=2.8159 sim=0.5788 kld=0.6395
+BEST SIGMA 4.0

@@ -1,0 +1,18 @@
+2026-11-06T09:14:36+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/main_b1_s0 --dataset avad_f2 --split val --metrics all --sigma 12 --out runs/stavis/zs_avad_f2.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 12/587 [00:00<00:06, 84.97it/s]Loading weights:   4%|▍         | 26/587 [00:00<00:05, 100.59it/s]Loading weights:   6%|▋         | 37/587 [00:00<00:07, 77.51it/s] Loading weights:   8%|▊         | 46/587 [00:00<00:07, 73.67it/s]Loading weights:   9%|▉         | 54/587 [00:00<00:07, 75.26it/s]Loading weights:  11%|█         | 62/587 [00:00<00:07, 67.69it/s]Loading weights:  12%|█▏        | 69/587 [00:01<00:09, 55.15it/s]Loading weights:  13%|█▎        | 75/587 [00:01<00:10, 51.11it/s]Loading weights:  15%|█▍        | 87/587 [00:01<00:07, 65.41it/s]Loading weights:  16%|█▌        | 95/587 [00:01<00:08, 58.34it/s]Loading weights:  19%|█▉        | 112/587 [00:01<00:05, 81.74it/s]Loading weights:  24%|██▎       | 139/587 [00:01<00:03, 123.82it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 337.30it/s]
+[1/15] V22_Tap2 cc=0.5237 nss=2.9120 sim=0.4196 kld=1.6894 auc_j=0.9282 sauc=0.6402
+[2/15] V34_Beat cc=0.6917 nss=3.1948 sim=0.5768 kld=0.7213 auc_j=0.9504 sauc=0.6465
+[3/15] V35_Squirrel cc=0.7098 nss=3.3176 sim=0.5567 kld=1.2605 auc_j=0.9014 sauc=0.7649
+[4/15] V3_Speech3 cc=0.9013 nss=7.5573 sim=0.6975 kld=0.5051 auc_j=0.9756 sauc=0.9108
+[5/15] V11_News4 cc=0.6080 nss=4.2718 sim=0.4874 kld=1.0376 auc_j=0.9457 sauc=0.8975
+[6/15] V45_Darbuka2 cc=0.6912 nss=4.0066 sim=0.5221 kld=0.7647 auc_j=0.9617 sauc=0.8382
+[7/15] V38_Guitar3 cc=0.5916 nss=3.3528 sim=0.4493 kld=1.0945 auc_j=0.9471 sauc=0.8680
+[8/15] V14_Conservation3 cc=0.7060 nss=4.5088 sim=0.5324 kld=0.9881 auc_j=0.9362 sauc=0.9035
+[9/15] V8_News1 cc=0.7697 nss=5.5309 sim=0.5799 kld=0.7075 auc_j=0.9604 sauc=0.8876
+[10/15] V44_Darbuka1 cc=0.5873 nss=3.7156 sim=0.4495 kld=1.0399 auc_j=0.9443 sauc=0.7681
+[11/15] V1_Speech1 cc=0.8073 nss=5.3907 sim=0.5873 kld=0.6474 auc_j=0.9709 sauc=0.8591
+[12/15] V36_Guitar1 cc=0.6148 nss=3.0975 sim=0.5017 kld=0.8414 auc_j=0.9414 sauc=0.7030
+[13/15] V2_Speech2 cc=0.7416 nss=3.1895 sim=0.5864 kld=0.6872 auc_j=0.9443 sauc=0.8092
+[14/15] V18_Soccer2 cc=0.7099 nss=2.9841 sim=0.5259 kld=0.7569 auc_j=0.9448 sauc=0.8104
+[15/15] V39_Guitar4 cc=0.5939 nss=2.8147 sim=0.4608 kld=1.2582 auc_j=0.9136 sauc=0.6796
+MEAN cc=0.6832 nss=3.9897 sim=0.5289 kld=0.9333 auc_j=0.9444 sauc=0.7991

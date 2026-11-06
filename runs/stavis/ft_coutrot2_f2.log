@@ -1,0 +1,8 @@
+2026-11-06T11:03:25+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/stavis_ft_coutrot2_f2 --dataset coutrot2_f2 --split val --metrics all --sigma 12.0 --out runs/stavis/ft_coutrot2_f2.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   2%|▏         | 11/587 [00:00<00:05, 102.10it/s]Loading weights:   4%|▎         | 22/587 [00:00<00:06, 81.03it/s] Loading weights:   5%|▌         | 31/587 [00:00<00:10, 51.33it/s]Loading weights:   6%|▋         | 38/587 [00:00<00:10, 50.67it/s]Loading weights:   7%|▋         | 44/587 [00:00<00:12, 44.76it/s]Loading weights:   9%|▉         | 52/587 [00:00<00:10, 51.47it/s]Loading weights:  11%|█         | 63/587 [00:01<00:08, 63.90it/s]Loading weights:  12%|█▏        | 71/587 [00:01<00:09, 55.25it/s]Loading weights:  13%|█▎        | 78/587 [00:01<00:12, 42.40it/s]Loading weights:  14%|█▍        | 84/587 [00:01<00:11, 45.39it/s]Loading weights:  15%|█▌        | 90/587 [00:01<00:10, 48.21it/s]Loading weights:  17%|█▋        | 102/587 [00:01<00:07, 63.16it/s]Loading weights:  21%|██        | 123/587 [00:01<00:04, 98.79it/s]Loading weights:  33%|███▎      | 193/587 [00:02<00:01, 250.26it/s]Loading weights: 100%|██████████| 587/587 [00:02<00:00, 281.22it/s]
+[1/5] clip12 cc=0.7706 nss=5.9154 sim=0.5574 kld=0.7636 auc_j=0.9641 sauc=0.7412
+[2/5] clip13 cc=0.8871 nss=7.7261 sim=0.6204 kld=0.5720 auc_j=0.9798 sauc=0.8791
+[3/5] clip10 cc=0.8426 nss=6.6411 sim=0.6287 kld=0.6045 auc_j=0.9694 sauc=0.8174
+[4/5] clip7 cc=0.7322 nss=5.4442 sim=0.5734 kld=0.8546 auc_j=0.9494 sauc=0.6506
+[5/5] clip5 cc=0.8188 nss=6.4362 sim=0.5870 kld=0.7284 auc_j=0.9641 sauc=0.8088
+MEAN cc=0.8102 nss=6.4326 sim=0.5934 kld=0.7046 auc_j=0.9653 sauc=0.7794

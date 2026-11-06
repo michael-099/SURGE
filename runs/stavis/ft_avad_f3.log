@@ -1,0 +1,18 @@
+2026-11-06T12:32:50+03:00 .venv/Scripts/python.exe -u scripts/evaluate.py --run runs/stavis_ft_avad_f3 --dataset avad_f3 --split val --metrics all --sigma 8.0 --out runs/stavis/ft_avad_f3.json
+Loading weights:   0%|          | 0/587 [00:00<?, ?it/s]Loading weights:   1%|          | 7/587 [00:00<00:08, 66.67it/s]Loading weights:   3%|▎         | 20/587 [00:00<00:05, 96.97it/s]Loading weights:   5%|▌         | 30/587 [00:00<00:07, 72.02it/s]Loading weights:   7%|▋         | 43/587 [00:00<00:06, 89.92it/s]Loading weights:   9%|▉         | 53/587 [00:00<00:06, 85.79it/s]Loading weights:  11%|█         | 63/587 [00:00<00:06, 83.20it/s]Loading weights:  12%|█▏        | 72/587 [00:00<00:06, 78.03it/s]Loading weights:  14%|█▍        | 81/587 [00:01<00:06, 77.15it/s]Loading weights:  15%|█▌        | 89/587 [00:01<00:08, 60.73it/s]Loading weights:  17%|█▋        | 97/587 [00:01<00:07, 61.32it/s]Loading weights:  18%|█▊        | 108/587 [00:01<00:07, 68.40it/s]Loading weights:  24%|██▍       | 142/587 [00:01<00:03, 130.06it/s]Loading weights:  28%|██▊       | 163/587 [00:01<00:02, 145.91it/s]Loading weights: 100%|██████████| 587/587 [00:01<00:00, 343.85it/s]
+[1/15] V40_Guitar5 cc=0.5821 nss=2.5698 sim=0.4885 kld=0.9748 auc_j=0.9168 sauc=0.7630
+[2/15] V16_Drummer2 cc=0.7279 nss=3.3983 sim=0.5398 kld=0.8458 auc_j=0.9282 sauc=0.7168
+[3/15] V30_Dog3 cc=0.3582 nss=1.3912 sim=0.3513 kld=1.6251 auc_j=0.8640 sauc=0.5415
+[4/15] V7_Basketball2 cc=0.6379 nss=2.5821 sim=0.5283 kld=0.8527 auc_j=0.9326 sauc=0.6439
+[5/15] V42_Violin2 cc=0.7704 nss=4.3482 sim=0.5710 kld=1.0752 auc_j=0.9202 sauc=0.7954
+[6/15] V28_Dog1 cc=0.9160 nss=7.7583 sim=0.7107 kld=0.3529 auc_j=0.9873 sauc=0.9200
+[7/15] V5_Interview2 cc=0.8251 nss=5.4152 sim=0.5806 kld=0.7839 auc_j=0.9509 sauc=0.8506
+[8/15] V21_Tap1 cc=0.4817 nss=2.1201 sim=0.4017 kld=1.3610 auc_j=0.8680 sauc=0.7006
+[9/15] V37_Guitar2 cc=0.8630 nss=4.8854 sim=0.6179 kld=0.5866 auc_j=0.9594 sauc=0.7415
+[10/15] V26_Piano2 cc=0.6531 nss=3.0677 sim=0.5197 kld=1.0894 auc_j=0.9059 sauc=0.5988
+[11/15] V43_Violin3 cc=0.7438 nss=3.7800 sim=0.5541 kld=0.9111 auc_j=0.9320 sauc=0.7277
+[12/15] V19_Singing1 cc=0.8557 nss=5.9416 sim=0.6809 kld=0.6243 auc_j=0.9672 sauc=0.7576
+[13/15] V4_Interview1 cc=0.8400 nss=5.1856 sim=0.6408 kld=0.7014 auc_j=0.9507 sauc=0.8016
+[14/15] V20_Singing2 cc=0.9002 nss=5.9530 sim=0.6899 kld=0.5927 auc_j=0.9568 sauc=0.8272
+[15/15] V12_Conservation1 cc=0.7695 nss=4.1895 sim=0.5858 kld=0.7300 auc_j=0.9520 sauc=0.9000
+MEAN cc=0.7283 nss=4.1724 sim=0.5641 kld=0.8738 auc_j=0.9328 sauc=0.7524
