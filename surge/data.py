@@ -128,6 +128,24 @@ def stavis_split_videos(dataset: str, split: str, splits_dir) -> list[Video]:
     return [v for v in vids if (v.name in hold) == (split == "holdout")]
 
 
+HOLLYWOOD = "D:/Datasets/Hollywood2/surge"
+
+
+def hollywood_vig_videos(split: str, splits_dir, root: str = HOLLYWOOD) -> list[Video]:
+    """Hollywood-2 clips with maps built from the Vig, Dorr & Cox gaze (research/log.md section 9).
+    split: 'val' (= the 884 official test clips), 'train' or 'holdout' (the 823 training clips without / only the
+    seeded holdout)."""
+    import csv
+    root = Path(root)
+    part = "test" if split in ("val", "test") else "train"
+    names = [r["clip"] for r in csv.DictReader(open(root / "clips.csv")) if r["split"] == part]
+    if part == "train":
+        hold = set(open(Path(splits_dir) / "hollywood_vig_holdout.txt").read().split())
+        names = [n for n in names if (n in hold) == (split == "holdout")]
+    return [Video(n, _sorted_files(root / "frames" / n, (".jpg",)), _sorted_files(root / "maps" / n, (".png",)),
+                  _sorted_files(root / "fixation" / n, (".png",)), skip_empty=True) for n in sorted(names)]
+
+
 def read_split_file(path: str) -> list[int]:
     with open(path) as f:
         return [int(x) for x in f.read().split()]

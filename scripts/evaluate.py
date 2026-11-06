@@ -41,6 +41,9 @@ def get_videos(dataset: str, split: str, root: str | None):
         return vids
     if parse_stavis(dataset):
         return stavis_split_videos(dataset, split, ROOT / "configs/splits")
+    if dataset == "hollywood_vig":
+        from surge.data import hollywood_vig_videos
+        return hollywood_vig_videos(split, ROOT / "configs/splits")
     raise ValueError(dataset)
 
 
