@@ -357,3 +357,16 @@ per-video CC within 0.0001 (`runs/dhf1k_submission/format_check.*`). Test maps: 
 (8-bit, 640 × 360), frame names identical to `D:/DHF1K/frames` for every video. Archive `D:/DHF1K_submission/SURGE-D.zip`,
 3,472,705,435 bytes, zip test passed, SHA-256 68794038688eb9e4efdff01e68d19229755d676e5cc1853c36d6f1fa8950e20b.
 Sending is done by the user (upload + email to the DHF1K authors).
+
+### Section 9 results (queue finished 2026-11-06 17:19; `runs/hollywood_vig/`, `runs/hollywood_vig_ft/`)
+
+Hollywood-2 (Vig gaze) test: 884 clips, 257,733 scored frames. **Not comparable to published Hollywood-2 results.**
+
+| Model | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| SURGE-D zero-shot (B1 seed 0, σ = 12) | 0.632 | 3.595 | 0.503 | 1.061 | 0.951 | 0.780 |
+| **SURGE-D fine-tuned** (best epoch 2, σ = 12) | **0.680** | **3.898** | **0.518** | **0.925** | **0.956** | **0.817** |
+
+Fine-tuning: holdout CC by epoch 0.706 / 0.704 / 0.708 on every 5th frame, so best.pt = epoch 2 (the config's
+UCF paths are unused; the `hollywood_vig` loader reads its own split and holdout files); σ grid on the holdout 0–24 → 12 (CC 0.718). Fine-tuning improves every metric (+0.048 CC). Training CC
+kept rising (0.683 → 0.730) while holdout CC stayed flat, the same early-saturation pattern as on DHF1K and UCF.
