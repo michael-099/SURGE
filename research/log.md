@@ -267,3 +267,16 @@ Caveats found while checking: the papers disagree on baselines they both copy (S
 DTFSal, 0.652 in ViNet-S/A; ViNet on Coutrot2: 0.754 vs 0.724), so cross-paper numbers carry evaluator and protocol
 noise of a few hundredths. ViNet-S/A state 3-fold averages for Coutrot1/2, AVAD, ETMD and the standard DIEM split;
 DiffSal and DTFSal follow the STAViS protocol. None of these papers reports sAUC or KLD on these datasets.
+
+## 8. DHF1K test-set submission (decided 2026-11-06, before generating any test map)
+
+The user asked to submit to the DHF1K authors (results by email to the address in the DHF1K README; at most one
+submission per week; test annotations for videos 701–1000 are held out). **Submitted model:** the 3-seed ensemble of
+B1 (`runs/main_b1_s{0,1,2}/best.pt`), σ = 8 px (its DHF1K-holdout σ, `runs/final/sigma_ens3.json`): the configuration
+that scored best on DHF1K val (section 5). No choice is made on test feedback.
+
+**Format** (DHF1K README): `SURGE-D/<video>/<frame>.png`, 8-bit grayscale at native frame size, frame names as in
+`D:/DHF1K/frames` (`0001.png` …). The frames on disk came from the same extraction for train/val and test; for videos
+1–700 every frame count equals the annotation count (checked 2026-11-06, 0 mismatches). Script:
+`scripts/predict_dhf1k_test.py`. **Format check before sending:** the same script on val videos 601–605, scored with
+`scripts/evaluate.py --maps`, must reproduce the ensemble's val per-video CC to within PNG rounding (≤ 0.002).
