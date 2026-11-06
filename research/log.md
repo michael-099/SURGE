@@ -306,3 +306,7 @@ ACLNet / DHF1K recipe), stored as 8-bit PNG scaled to max 255. Frames with no po
 (Stage 1, 3 epochs, warmup 0.25, lr 1e-4, clips_per_video = ceil(1500 / training clips), best epoch by holdout CC on
 every 5th frame, σ tuned on the holdout). The 884 test clips are scored once per model. Runs after the STAViS queue and
 the DHF1K test maps (one GPU job at a time).
+
+Maps built 2026-11-06 (`scripts/prep_hollywood_gaze.py`): 1,707 clips, 487,556 frames; 99.8 % of frames have at least
+one point, mean 4.53 points per frame. Gaze md5s all match figshare. A visual check of overlays on three clips shows
+points on faces and the acting person, as expected for this task.
