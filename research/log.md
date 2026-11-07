@@ -397,3 +397,24 @@ Whether ViT-g then replaces ViT-L on the STAViS and Hollywood data is left to th
 G-1 (ViT-g, seed 0) fit at batch 8 (10.0 GB, ~10 min per epoch + 6 min holdout; backbone 1,034.6M, decoder 7.39M).
 Holdout CC by epoch 0.5658 / **0.5866** / 0.5844 → best 0.5866 (epoch 1) ≥ 0.5833: **gate passed** (+0.008 over the
 ViT-L 3-seed mean, above every ViT-L seed). Seeds 1 and 2, σ tuning, DHF1K val and UCF follow as written.
+
+### Section 10B results: DHF1K val (2026-11-07 11:35; `runs/vitg/`), scored once each
+
+Holdout bests: seed 0 0.5866, seed 1 0.5867, seed 2 0.5829 (ViT-L: 0.5772, 0.5801, 0.5776). σ tuned on the holdout:
+8 (single) and 8 (ensemble).
+
+| DHF1K val (100 videos) | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| SalFoM (released weights, same evaluator) | 0.5639 | 3.326 | 0.4130 | 1.297 | 0.9243 | 0.7406 |
+| SURGE-D ViT-L single (σ 12) | 0.5836 | 3.349 | 0.4492 | 1.222 | 0.9283 | 0.7636 |
+| SURGE-D ViT-L 3-seed ensemble (σ 8) | 0.5910 | 3.418 | 0.4486 | 1.187 | 0.9302 | 0.7614 |
+| **SURGE-D ViT-g single** (σ 8) | **0.6003** | **3.457** | **0.4531** | **1.170** | **0.9308** | **0.7709** |
+| **SURGE-D ViT-g 3-seed ensemble** (σ 8) | **0.6029** | **3.486** | **0.4574** | **1.160** | **0.9314** | 0.7680 |
+
+Paired bootstrap over videos (`runs/vitg/cmp_*.txt`), ΔCC [95 % CI]:
+- ViT-g single vs ViT-L single: +0.0167 [+0.0116, +0.0222]; better on all six metrics, every interval excludes 0
+  (SIM barely: +0.0039 [+0.0000, +0.0077]).
+- ViT-g ensemble vs ViT-L ensemble: +0.0118 [+0.0077, +0.0163]; better on all six, every interval excludes 0.
+- vs SalFoM: single +0.0364 [+0.0259, +0.0475], ensemble +0.0390 [+0.0286, +0.0498]; better on all six metrics.
+
+ViT-g is the stronger backbone on DHF1K. The 3-seed ensemble adds less on ViT-g (+0.003 CC) than on ViT-L (+0.007).
