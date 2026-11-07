@@ -418,3 +418,15 @@ Paired bootstrap over videos (`runs/vitg/cmp_*.txt`), ΔCC [95 % CI]:
 - vs SalFoM: single +0.0364 [+0.0259, +0.0475], ensemble +0.0390 [+0.0286, +0.0498]; better on all six metrics.
 
 ViT-g is the stronger backbone on DHF1K. The 3-seed ensemble adds less on ViT-g (+0.003 CC) than on ViT-L (+0.007).
+
+### Section 10 results: UCF Sports test (47 videos), scored once each (2026-11-07 12:10)
+
+| UCF Sports test | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| SURGE-D ViT-L single (section 5; σ from its holdout) | 0.7252 | 3.916 | 0.5799 | 0.773 | 0.9406 | 0.8089 |
+| SURGE-D ViT-g single (10B; holdout best 0.7660, epoch 1; σ 8) | 0.7305 | 4.061 | 0.5831 | 0.747 | 0.9442 | 0.8145 |
+| SURGE-D ViT-L 3-seed ensemble (10A; members' holdout 0.7616 / 0.7579 / 0.7602; σ 8) | **0.7331** | 4.028 | **0.5833** | 0.749 | 0.9430 | **0.8153** |
+
+Paired bootstrap ΔCC vs ViT-L single: ViT-g +0.0053 [−0.0055, +0.0178] (not significant; better on 23/47 videos);
+ViT-L ensemble +0.0080 [+0.0039, +0.0123]. Published: ViNet-E 0.744, ViNet-A 0.734, TMFI-Net 0.707, SalFoM 0.631.
+The ensemble ties ViNet-A (−0.001) and stays below ViNet-E (−0.011): still not state of the art on UCF.
