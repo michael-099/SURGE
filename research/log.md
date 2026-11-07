@@ -453,3 +453,27 @@ ViT-L, 3 fine-tuned members per fold, σ tuned per fold on the holdout; dataset 
 - Versus the best **audio-visual** model: higher on DIEM (+0.029) and SumMe (+0.020), tie on ETMD (+0.003), lower on
   Coutrot1, Coutrot2, AVAD.
 - NSS stays below the best published on DIEM, Coutrot1 and AVAD; above it on ETMD (vs visual) and SumMe.
+
+### Section 10A results: Hollywood-2 (Vig gaze) ensemble (queue finished 2026-11-07 21:57; `runs/ens/hollywood_*`)
+
+Members' holdout CC 0.7076 (seed 0) / 0.7110 / 0.7067; ensemble σ 12 (tuned on the holdout). 884 test clips, scored
+once. **Not comparable to published Hollywood-2 results.**
+
+| Hollywood-2 (Vig gaze) test | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| SURGE-D fine-tuned, single (seed 0) | 0.6798 | **3.898** | **0.5178** | 0.925 | 0.9564 | 0.8167 |
+| SURGE-D fine-tuned, 3-seed ensemble | **0.6841** | 3.875 | 0.5073 | **0.918** | **0.9574** | **0.8192** |
+
+Paired bootstrap (ensemble − single): CC +0.0043 [+0.0036, +0.0050], KLD −0.008, AUC-J +0.001, sAUC +0.003 (all
+intervals exclude 0); NSS −0.024 and SIM −0.011 (also significant, worse). Mixed: the gain is smallest here of all
+datasets, and the averaged maps lose some peak sharpness (NSS, SIM) with only ≤ 5 viewers per frame.
+
+### Section 10 summary (2026-11-07)
+
+- **ViT-g (10B)** passed its gate and is the better backbone on DHF1K: val CC 0.600 single / 0.603 ensemble vs
+  ViT-L 0.584 / 0.591, better on all six metrics (paired intervals exclude 0); vs SalFoM +0.036 / +0.039 CC. On UCF
+  its gain (+0.005 CC) is not significant. ViT-g is not yet run on STAViS or Hollywood (user's decision).
+- **Seed ensembles (10A, ViT-L)**: UCF 0.7331 (+0.008, ties ViNet-A, below ViNet-E); STAViS CC up on 5/6 datasets,
+  clear visual-only wins on DIEM, Coutrot1, ETMD, SumMe, still behind on Coutrot2 and AVAD; Hollywood (Vig) +0.004 CC
+  with NSS/SIM slightly lower.
+- The DHF1K test maps in `D:/DHF1K_submission/SURGE-D.zip` are still the ViT-L ensemble.
