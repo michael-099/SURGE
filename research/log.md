@@ -430,3 +430,26 @@ ViT-g is the stronger backbone on DHF1K. The 3-seed ensemble adds less on ViT-g 
 Paired bootstrap ΔCC vs ViT-L single: ViT-g +0.0053 [−0.0055, +0.0178] (not significant; better on 23/47 videos);
 ViT-L ensemble +0.0080 [+0.0039, +0.0123]. Published: ViNet-E 0.744, ViNet-A 0.734, TMFI-Net 0.707, SalFoM 0.631.
 The ensemble ties ViNet-A (−0.001) and stays below ViNet-E (−0.011): still not state of the art on UCF.
+
+### Section 10A results: STAViS seed ensembles (2026-11-07 19:21; `runs/ens/stavis_*.json`, `runs/ens/stavis_summary.json`)
+
+ViT-L, 3 fine-tuned members per fold, σ tuned per fold on the holdout; dataset number = fold mean
+(`scripts/summarize_stavis_ens.py`). Single = the seed-0 model of section 7.
+
+| Dataset | Single CC | **Ensemble** CC | Δ | Ens. NSS | Ens. SIM | Ens. KLD | Ens. AUC-J | Ens. sAUC | best visual / best AV CC | Ens. − visual / − AV |
+|---|---|---|---|---|---|---|---|---|---|---|
+| DIEM | 0.706 | **0.714** | +0.009 | 2.832 | 0.575 | 0.688 | 0.921 | 0.731 | 0.701 / 0.685 | **+0.013 / +0.029** |
+| Coutrot1 | 0.632 | **0.641** | +0.009 | 3.183 | 0.491 | 0.977 | 0.909 | 0.769 | 0.623 / 0.661 | **+0.018** / −0.020 |
+| Coutrot2 | 0.816 | 0.807 | −0.009 | 6.606 | 0.590 | 0.709 | 0.966 | 0.758 | 0.862 / 0.845 | −0.055 / −0.038 |
+| ETMD | 0.662 | **0.670** | +0.008 | 3.649 | 0.505 | 0.940 | 0.950 | 0.763 | 0.653 / 0.667 | **+0.017** / +0.003 |
+| AVAD | 0.718 | 0.729 | +0.011 | 4.167 | 0.554 | 0.821 | 0.941 | 0.782 | 0.742 / 0.746 | −0.013 / −0.017 |
+| SumMe | 0.581 | **0.593** | +0.012 | 3.232 | 0.448 | 1.138 | 0.928 | 0.769 | 0.561 / 0.573 | **+0.032 / +0.020** |
+
+- The ensemble raises fold-mean CC on 5/6 datasets (+0.008 to +0.012) and lowers it on Coutrot2 (−0.009); NSS, KLD
+  and sAUC improve on all six.
+- Versus the best published **visual-only** model (section 7 rule, margins < 0.01 = ties): the ensemble is now clearly
+  higher on **DIEM, Coutrot1, ETMD and SumMe** (+0.013 to +0.032; three of these were ties with the single model) and
+  still lower on Coutrot2 and AVAD.
+- Versus the best **audio-visual** model: higher on DIEM (+0.029) and SumMe (+0.020), tie on ETMD (+0.003), lower on
+  Coutrot1, Coutrot2, AVAD.
+- NSS stays below the best published on DIEM, Coutrot1 and AVAD; above it on ETMD (vs visual) and SumMe.
