@@ -391,3 +391,9 @@ setting unchanged (if it does not fit in 24 GB at batch 8, batch 4 with the lear
 number only; DHF1K val is not touched. If it passes: train seeds 1 and 2, tune σ on the holdout (single and
 ensemble), score DHF1K val once each, and fine-tune on UCF (seed 0, the section-5 recipe) and score UCF test once.
 Whether ViT-g then replaces ViT-L on the STAViS and Hollywood data is left to the user (it costs ~4× the GPU time).
+
+### Section 10B gate (2026-11-07 08:25; `runs/vitg_s0`)
+
+G-1 (ViT-g, seed 0) fit at batch 8 (10.0 GB, ~10 min per epoch + 6 min holdout; backbone 1,034.6M, decoder 7.39M).
+Holdout CC by epoch 0.5658 / **0.5866** / 0.5844 → best 0.5866 (epoch 1) ≥ 0.5833: **gate passed** (+0.008 over the
+ViT-L 3-seed mean, above every ViT-L seed). Seeds 1 and 2, σ tuning, DHF1K val and UCF follow as written.
