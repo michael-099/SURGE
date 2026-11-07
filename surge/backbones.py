@@ -6,6 +6,7 @@ volumes (B, D, T', h, w) taken from 4 depths of the network ("taps"), plus metad
   vjepa21_l  V-JEPA 2.1 ViT-L/16 (distilled from ViT-G), official code (facebookresearch/vjepa2, MIT)
   vjepa2_l   V-JEPA 2 ViT-L/16 (HF transformers port, facebook/vjepa2-vitl-fpc64-256, MIT); also exposes the
              pretrained predictor for the surprise gate (G2)
+  vjepa2_g   V-JEPA 2 ViT-g/16 (HF port, facebook/vjepa2-vitg-fpc64-256, MIT; 40 layers, width 1408), taps 10/20/30/40
   umt_l      UMT-L/16 (Unmasked Teacher, K710 -> K400 fine-tuned), the backbone family used by SalFoM
 """
 from __future__ import annotations
@@ -21,6 +22,7 @@ from .lora import inject_lora
 VJEPA21_SRC = "D:/models/vjepa2_1/src"
 VJEPA21_CKPT = "D:/models/vjepa2_1/vjepa2_1_vitl_dist_vitG_384.pt"
 VJEPA2_HF = "facebook/vjepa2-vitl-fpc64-256"
+VJEPA2_G_HF = "facebook/vjepa2-vitg-fpc64-256"
 UMT_CKPT = "D:/models/umt/single_modality/l16_ptk710_ftk710_ftk400_f16_res224.pth"
 
 
@@ -74,6 +76,7 @@ class VJEPA2(Backbone):
         from transformers import AutoModel
 
         self.model = AutoModel.from_pretrained(name, attn_implementation=attn)
+        self.embed_dim = self.model.config.hidden_size
         self.taps = taps
         if grad_ckpt:
             self.model.gradient_checkpointing_enable()
@@ -141,6 +144,8 @@ def build_backbone(name: str, grad_ckpt: bool = False) -> Backbone:
         return VJEPA21(grad_ckpt=grad_ckpt)
     if name == "vjepa2_l":
         return VJEPA2(grad_ckpt=grad_ckpt)
+    if name == "vjepa2_g":
+        return VJEPA2(VJEPA2_G_HF, taps=(10, 20, 30, 40), grad_ckpt=grad_ckpt)
     if name == "umt_l":
         return UMT(grad_ckpt=grad_ckpt)
     raise ValueError(name)

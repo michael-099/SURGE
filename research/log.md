@@ -370,3 +370,24 @@ Hollywood-2 (Vig gaze) test: 884 clips, 257,733 scored frames. **Not comparable 
 Fine-tuning: holdout CC by epoch 0.706 / 0.704 / 0.708 on every 5th frame, so best.pt = epoch 2 (the config's
 UCF paths are unused; the `hollywood_vig` loader reads its own split and holdout files); σ grid on the holdout 0–24 → 12 (CC 0.718). Fine-tuning improves every metric (+0.048 CC). Training CC
 kept rising (0.683 → 0.730) while holdout CC stayed flat, the same early-saturation pattern as on DHF1K and UCF.
+
+## 10. Improvements: per-dataset seed ensembles and the V-JEPA 2 ViT-g backbone (rules written 2026-11-07, before any run)
+
+The user asked for both improvements. One GPU job at a time; order: 10B (ViT-g, DHF1K holdout gate) first, then 10A.
+
+**10A. Seed ensembles on every fine-tuned dataset (ViT-L, independent of the 10B outcome).** For UCF Sports, each of
+the 16 STAViS folds and Hollywood-2 (Vig gaze): two more fine-tunes, member k ∈ {1, 2} initialised from
+`runs/main_b1_s{k}/best.pt` with `train.seed=k`, everything else identical to the seed-0 run of that dataset (recipe,
+holdout, clips per video, eval frame step, best epoch by holdout CC). Ensemble = mean of the three members' raw
+predictions (as for DHF1K); σ tuned for the ensemble on the same holdout and grid (UCF frame step 1, STAViS 2 (DIEM 5),
+Hollywood 5). Each test set is scored once with the ensemble. Reported next to the seed-0 single model; for STAViS
+the dataset number is still the fold mean. No other change is made after seeing test numbers.
+
+**10B. V-JEPA 2 ViT-g/16** (`facebook/vjepa2-vitg-fpc64-256`, MIT, 40 layers, width 1408, frozen; taps 10/20/30/40,
+the same relative depths as ViT-L's 6/12/18/24). Run G-1 = B1 with `model.backbone=vjepa2_g`, seed 0, every other
+setting unchanged (if it does not fit in 24 GB at batch 8, batch 4 with the learning rates unchanged, noted). Gate:
+**adopt ViT-g only if G-1's best holdout CC (DHF1K holdout 60, every 5th frame) ≥ 0.5833** = the ViT-L 3-seed mean
+(0.5772, 0.5801, 0.5776 → 0.5783) + 0.005, i.e. above the ViT-L seed spread (0.003). If it fails: report the holdout
+number only; DHF1K val is not touched. If it passes: train seeds 1 and 2, tune σ on the holdout (single and
+ensemble), score DHF1K val once each, and fine-tune on UCF (seed 0, the section-5 recipe) and score UCF test once.
+Whether ViT-g then replaces ViT-L on the STAViS and Hollywood data is left to the user (it costs ~4× the GPU time).
