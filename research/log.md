@@ -583,3 +583,19 @@ model does use the sound, since the wrong video's sound costs 0.018 CC, but the 
 which already finds faces and speakers from the image. Coutrot2 has 15 videos (5 per test fold), so this is suggestive
 only. The gap to the audio-visual methods on Coutrot2 and AVAD (section 7) is therefore not closed by a frozen AST
 encoder with zero-initialised FiLM/correlation fusion and 3 epochs of fine-tuning on these small sets.
+
+### 11E results: UCF Sports test (47 videos), 2026-11-08 20:39
+
+ViT-g members fine-tuned from `runs/vitg_s{0,1,2}/best.pt` (section 5 recipe); σ 8 for single and ensemble (holdout).
+
+| UCF Sports test | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| ViT-g single (seed 0) | 0.7305 | 4.061 | 0.5830 | 0.747 | 0.9442 | 0.8145 |
+| ViT-g 3-seed ensemble | **0.7350** | **4.085** | **0.5857** | **0.736** | **0.9449** | **0.8173** |
+| ViT-L 3-seed ensemble (10A) | 0.7331 | 4.028 | 0.5833 | 0.749 | 0.9430 | 0.8153 |
+
+- The seed-0 run reproduces section 10B's ViT-g UCF result exactly (0.7305): the pipeline is deterministic.
+- ViT-g ensemble vs ViT-L ensemble: ΔCC +0.0019 [−0.0071, +0.0125] (n.s.); only NSS significant (+0.057).
+  vs ViT-L single: ΔCC +0.0098 [−0.0001, +0.0211] (borderline).
+- Published: ViNet-E 0.744, ViNet-A 0.734. The ViT-g ensemble ties ViNet-A (+0.001) and stays below ViNet-E
+  (−0.009). Still not state of the art on UCF; the ranking is unchanged.
