@@ -528,3 +528,25 @@ the seed-0 single and the 3-seed ensemble. Compared with the ViT-L single (secti
 Audio features built 2026-11-08 (`scripts/prep_stavis_audio.py`, CPU, `runs/prep_stavis_audio.log`): DIEM 78/84,
 Coutrot1 60/60, Coutrot2 15/15, ETMD 12/12, AVAD 45/45, SumMe 23/25 videos with audio (the counts the STAViS release
 ships); WAV durations match frame count / fps.
+
+### 11A results (2026-11-08)
+
+Trained 07:06–09:45 (three seeds, epoch_1.pt each), DHF1K val, σ 8:
+
+| Model | CC | NSS | SIM | KLD | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| ViT-g train600, seed 0 | 0.6002 | 3.495 | 0.4594 | 1.173 | 0.9307 | 0.7647 |
+| ViT-g train600, 3-seed ensemble | 0.6044 | 3.500 | 0.4558 | 1.156 | 0.9315 | 0.7697 |
+| ViT-g train540 ensemble (10B) | 0.6029 | 3.486 | 0.4574 | 1.160 | 0.9314 | 0.7680 |
+
+- Ensemble 600 vs 540 (paired bootstrap): ΔCC +0.0015 [−0.0006, +0.0037]; NSS +0.014 [−0.000, +0.028]; SIM −0.0017
+  [−0.0032, −0.0001]; KLD −0.004 (n.s.); AUC-J +0.0001 (n.s.); sAUC +0.0017 [−0.0000, +0.0033].
+- Single 600 vs 540 seed 0: CC −0.0001 (n.s.); NSS +0.039 and SIM +0.006 significant; sAUC −0.006 significant.
+- 600 ensemble vs SalFoM: CC +0.041 [+0.030, +0.052], all six metrics significantly better.
+- **Decision (rule above): the ΔCC interval includes 0, so the 540 ensemble is kept for the test maps
+  (`runs/vitg600/use600.txt` = 0).** The 60 extra videos (+11 %) change the val scores within noise.
+
+### 11B format check (2026-11-08)
+
+Val 601–605 through `predict_dhf1k_test.py` (10B ensemble, σ 8): per-video |ΔCC| ≤ 8e-5 against the evaluation
+pipeline (rule: ≤ 0.002), so the format check passed. The test maps 701–1000 are running.
