@@ -549,4 +549,8 @@ Trained 07:06–09:45 (three seeds, epoch_1.pt each), DHF1K val, σ 8:
 ### 11B format check (2026-11-08)
 
 Val 601–605 through `predict_dhf1k_test.py` (10B ensemble, σ 8): per-video |ΔCC| ≤ 8e-5 against the evaluation
-pipeline (rule: ≤ 0.002), so the format check passed. The test maps 701–1000 are running.
+pipeline (rule: ≤ 0.002), so the format check passed. Test maps (10B ViT-g 3-seed ensemble, σ 8): 300 folders
+0701–1000, 176,192 PNGs (the same count as the section 8 archive). Archive `D:/DHF1K_submission/SURGE-D-vitg.zip`
+(root folder `SURGE-D/`), 2,661,220,447 bytes (smaller than the ViT-L archive: smoother maps compress better), zip test
+passed, SHA-256 0fe4e2e75853ee888251462f8d216918466bf7ed971b19dad50b39b86155fc4f. Finished 13:04. Sending stays with
+the user; this archive supersedes `SURGE-D.zip` (expected val CC 0.6029 vs 0.5911).
