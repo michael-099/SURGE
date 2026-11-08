@@ -554,3 +554,11 @@ pipeline (rule: ≤ 0.002), so the format check passed. Test maps (10B ViT-g 3-s
 (root folder `SURGE-D/`), 2,661,220,447 bytes (smaller than the ViT-L archive: smoother maps compress better), zip test
 passed, SHA-256 0fe4e2e75853ee888251462f8d216918466bf7ed971b19dad50b39b86155fc4f. Finished 13:04. Sending stays with
 the user; this archive supersedes `SURGE-D.zip` (expected val CC 0.6029 vs 0.5911).
+
+### 11C results (2026-11-08)
+
+T32-1 (ViT-g, seed 0, T = 32, batch 8, 16 GB, about 30 min per epoch): holdout CC 0.5628 / 0.5856 / **0.5902** at
+epochs 0 / 1 / 2 (NSS 3.407, SIM 0.452, KLD 1.181 at epoch 2). **Gate (≥ 0.5904) failed by 0.0002, so seeds 1–2 are
+not run and val is not touched.** For context only (not a test): the T = 16 seed-0 run reached 0.5866 and peaked at
+epoch 1, while T = 32 was still rising at its last epoch, so a longer schedule might change this. That would be a new
+pre-registered run, not a re-reading of this one.
