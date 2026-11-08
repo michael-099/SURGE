@@ -32,6 +32,7 @@ class Video:
     maps: list[str] = field(default_factory=list)
     fixations: list[str] = field(default_factory=list)
     skip_empty: bool = False  # score only frames with at least one fixation (STAViS datasets; research/log.md section 7)
+    audio: str | None = None  # per-frame audio features (n_frames, 768) .npy (STAViS; research/log.md section 11D)
 
     def __len__(self) -> int:
         n = len(self.frames)
@@ -103,7 +104,24 @@ def stavis_videos(key: str, fold: int, part: str, root: str = "D:/Datasets") -> 
         mp = _sorted_files(a / "maps", (".jpg",))
         fx = sorted(str(p) for p in a.glob("fixMap_*.mat"))
         n = min(listed, len(fr), len(mp), len(fx))
-        out.append(Video(v, fr[:n], mp[:n], fx[:n], skip_empty=True))
+        au = Path(root) / folder / "surge_audio" / f"{v}.npy"
+        out.append(Video(v, fr[:n], mp[:n], fx[:n], skip_empty=True, audio=str(au) if au.exists() else None))
+    return out
+
+
+AUDIO_DIM = 768
+
+
+def audio_features(v: "Video", n: int | None = None) -> np.ndarray:
+    """(n, 768) float32 per-frame audio features of a video; zeros if it has none; the last row repeats past the end."""
+    n = len(v) if n is None else n
+    out = np.zeros((n, AUDIO_DIM), np.float32)
+    if v.audio:
+        a = np.load(v.audio).astype(np.float32)
+        k = min(n, len(a))
+        out[:k] = a[:k]
+        if 0 < k < n:
+            out[k:] = a[k - 1]
     return out
 
 
@@ -205,8 +223,9 @@ class ClipDataset(Dataset):
     """
 
     def __init__(self, videos: list[Video], T: int = 16, stride: int = 2, size=(256, 256), out_size=(64, 64),
-                 clips_per_video: int = 8, hflip: bool = True, seed: int = 0):
+                 clips_per_video: int = 8, hflip: bool = True, seed: int = 0, audio: bool = False):
         self.videos = [v for v in videos if len(v) >= 1]
+        self.audio = audio
         self.T, self.stride, self.size, self.out_size = T, stride, size, out_size
         self.cpv, self.hflip = clips_per_video, hflip
         self.seed = seed
@@ -236,11 +255,14 @@ class ClipDataset(Dataset):
             frames = frames[:, :, ::-1]
             dens = dens[:, :, ::-1]
             fixs = fixs[:, :, ::-1]
-        return {
+        item = {
             "frames": torch.from_numpy(np.ascontiguousarray(frames)).permute(0, 3, 1, 2),
             "density": torch.from_numpy(np.ascontiguousarray(dens)),
             "fixations": torch.from_numpy(np.ascontiguousarray(fixs)),
         }
+        if self.audio:
+            item["audio"] = torch.from_numpy(audio_features(v, n)[idx])
+        return item
 
 
 class SaliconDataset(Dataset):

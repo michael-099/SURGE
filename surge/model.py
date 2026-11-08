@@ -107,10 +107,47 @@ class CenterPrior(nn.Module):
         return self.strength * logmix  # h,w
 
 
+class AudioFusion(nn.Module):
+    """Audio conditioning of one pyramid level (research/log.md section 11D).
+
+    a (B, T', da) per tubelet -> e = GELU(Linear(LayerNorm(a))) (B, T', d).
+    F~ = F * (1 + gamma(e)) + beta(e) + R(F * s),  s = sigmoid(<Wq F(x), Wk e> / sqrt(d))  (audio-visual correlation map).
+    gamma/beta and R are zero-initialized, so the module is an exact no-op at initialization.
+    """
+
+    def __init__(self, c: int, da: int = 768, d: int = 256):
+        super().__init__()
+        self.d = d
+        self.norm = nn.LayerNorm(da)
+        self.proj = nn.Linear(da, d)
+        self.film = nn.Linear(d, 2 * c)
+        self.q = nn.Conv3d(c, d, 1)
+        self.k = nn.Linear(d, d)
+        self.res = nn.Conv3d(c, c, 1)
+        for m in (self.film, self.res):
+            nn.init.zeros_(m.weight)
+            nn.init.zeros_(m.bias)
+
+    def forward(self, f, a):
+        if a.shape[1] != f.shape[2]:  # align audio steps to the level's temporal size
+            a = F.interpolate(a.transpose(1, 2), size=f.shape[2], mode="linear", align_corners=False).transpose(1, 2)
+        e = F.gelu(self.proj(self.norm(a.to(f.dtype))))
+        g, b = self.film(e).chunk(2, -1)
+        g = g.transpose(1, 2)[..., None, None]
+        b = b.transpose(1, 2)[..., None, None]
+        k = self.k(e).transpose(1, 2)[..., None, None]  # B,d,T',1,1
+        s = torch.sigmoid((self.q(f) * k).sum(1, keepdim=True) / math.sqrt(self.d))
+        return f * (1 + g) + b + self.res(f * s)
+
+
 class Decoder(nn.Module):
-    def __init__(self, d: int = 1024, c: int = 256, use_scm: bool = False, prior: bool = True, aux: bool = True):
+    def __init__(self, d: int = 1024, c: int = 256, use_scm: bool = False, prior: bool = True, aux: bool = True,
+                 audio: bool = False):
         super().__init__()
         self.fpn = SimpleFPN3D(d, c)
+        self.audio = audio
+        if audio:
+            self.av = nn.ModuleList([AudioFusion(c) for _ in range(3)])  # P8, P16a, P16b
         self.use_scm = use_scm
         if use_scm:
             self.phi = SurpriseEncoder(64)
@@ -126,8 +163,14 @@ class Decoder(nn.Module):
             self.aux8 = nn.Conv3d(c, 1, 1)
         self.prior = CenterPrior() if prior else None
 
-    def forward(self, taps, surprise=None, T_out: int | None = None):
+    def forward(self, taps, surprise=None, T_out: int | None = None, audio=None):
         p4, p8, p16a, p16b = self.fpn(taps)
+        if self.audio:
+            if audio is None:
+                raise ValueError("audio enabled but no audio given")
+            B, Ta, Da = audio.shape  # per sampled frame -> per tubelet (mean of consecutive pairs)
+            a = audio[:, : Ta // 2 * 2].reshape(B, Ta // 2, 2, Da).mean(2) if Ta > 1 else audio
+            p8, p16a, p16b = self.av[0](p8, a), self.av[1](p16a, a), self.av[2](p16b, a)
         if self.use_scm:
             if surprise is None:
                 raise ValueError("SCM enabled but no surprise given")
@@ -153,12 +196,17 @@ class Decoder(nn.Module):
 
 
 class SurgeD(nn.Module):
-    def __init__(self, backbone: Backbone, use_scm: bool = False, prior: bool = True, aux: bool = True, c: int = 256):
+    def __init__(self, backbone: Backbone, use_scm: bool = False, prior: bool = True, aux: bool = True, c: int = 256,
+                 audio: bool = False):
         super().__init__()
         self.backbone = backbone
-        self.decoder = Decoder(backbone.embed_dim, c, use_scm=use_scm, prior=prior, aux=aux)
+        self.decoder = Decoder(backbone.embed_dim, c, use_scm=use_scm, prior=prior, aux=aux, audio=audio)
 
-    def forward(self, frames, surprise=None, backbone_grad: bool = False):
+    @property
+    def uses_audio(self) -> bool:
+        return self.decoder.audio
+
+    def forward(self, frames, surprise=None, backbone_grad: bool = False, audio=None):
         T = frames.shape[1]
         if backbone_grad:
             taps = self.backbone(frames)
@@ -166,7 +214,7 @@ class SurgeD(nn.Module):
             with torch.no_grad():
                 taps = self.backbone(frames)
         taps = [t.float() if t.dtype != torch.bfloat16 else t for t in taps]
-        return self.decoder(taps, surprise, T_out=T)
+        return self.decoder(taps, surprise, T_out=T, audio=audio)
 
 
 def central(x: torch.Tensor, T: int) -> torch.Tensor:

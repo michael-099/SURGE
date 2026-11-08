@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import torch
 
-from .data import Video, inference_windows, load_gray, load_rgb
+from .data import Video, audio_features, inference_windows, load_gray, load_rgb
 from .losses import log_softmax2d
 from .metrics import all_metrics
 from concurrent.futures import ThreadPoolExecutor
@@ -24,6 +24,7 @@ def predict_video(model, video: Video, T: int, stride: int, size, device, batch:
     n = len(video)
     wins = list(inference_windows(n, T, stride))
     cache = {}
+    A = audio_features(video, n) if getattr(model, "uses_audio", False) else None
     for b0 in range(0, len(wins), batch):
         chunk = wins[b0:b0 + batch]
         need = sorted({j for idx, _ in chunk for j in idx if j not in cache})
@@ -36,7 +37,11 @@ def predict_video(model, video: Video, T: int, stride: int, size, device, batch:
         x = torch.from_numpy(np.stack(x)).permute(0, 1, 4, 2, 3).to(device, non_blocking=True)
         with torch.autocast("cuda", dtype=amp, enabled=device.type == "cuda"):
             s = surprise_fn(x) if surprise_fn is not None else None
-            out = model(x, surprise=s)
+            if A is not None:
+                a = torch.from_numpy(np.stack([A[idx] for idx, _ in chunk])).to(device)
+                out = model(x, surprise=s, audio=a)
+            else:
+                out = model(x, surprise=s)
         p = log_softmax2d(out["logits"].float()).exp().cpu().numpy()  # B,T,h,w
         for bi, (_, assign) in enumerate(chunk):
             for f, q in assign:

@@ -70,7 +70,7 @@ def load_model(run: Path, ckpt: str, device):
         add_lora(bb, r=cfg["train"]["lora_r"], alpha=cfg["train"]["lora_alpha"])
         bb.load_state_dict(st["lora"], strict=False)
     m = SurgeD(bb, use_scm=cfg["model"]["scm"], prior=cfg["model"]["prior"], aux=cfg["model"]["aux"],
-               c=cfg["model"]["channels"])
+               c=cfg["model"]["channels"], audio=cfg["model"].get("audio", False))
     m.decoder.load_state_dict(st["decoder"])
     return m.to(device).eval(), cfg
 
@@ -88,6 +88,7 @@ def main():
     ap.add_argument("--frame-step", type=int, default=1)
     ap.add_argument("--flip-tta", action="store_true")
     ap.add_argument("--max-videos", type=int, default=None)
+    ap.add_argument("--audio-rotate", action="store_true")
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--batch", type=int, default=4)
     ap.add_argument("--save-maps", default=None, help="folder to write 8-bit PNG maps at native resolution")
@@ -95,6 +96,11 @@ def main():
     a = ap.parse_args()
     which = ALL if a.metrics == "all" else tuple(a.metrics.split(","))
     videos = get_videos(a.dataset, a.split, a.root)[: a.max_videos]
+    if a.audio_rotate:  # control (section 11D): video i gets the audio of video i+1
+        aud = [v.audio for v in videos]
+        for i, v in enumerate(videos):
+            v.audio = aud[(i + 1) % len(videos)]
+        print("audio rotated:", [(v.name, Path(v.audio).stem if v.audio else None) for v in videos], flush=True)
     sauc = other_fixations(videos) if "sauc" in which else None
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = [load_model(ROOT / r, a.ckpt, device) for r in a.run]
@@ -155,7 +161,13 @@ class _FlipModel(torch.nn.Module):
         super().__init__()
         self.m = m
 
-    def forward(self, x, surprise=None):
+    @property
+    def uses_audio(self) -> bool:
+        return getattr(self.m, "uses_audio", False)
+
+    def forward(self, x, surprise=None, audio=None):
+        if audio is not None:
+            return self.m(x.flip(-1), surprise=surprise, audio=audio)
         return self.m(x.flip(-1), surprise=surprise)
 
 

@@ -91,10 +91,16 @@ def main():
     if stage2:
         names = add_lora(bb, r=tr["lora_r"], alpha=tr["lora_alpha"])
         log(f"LoRA on {len(names)} linears")
-    model = SurgeD(bb, use_scm=md["scm"], prior=md["prior"], aux=md["aux"], c=md["channels"]).to(device)
+    use_audio = md.get("audio", False)
+    model = SurgeD(bb, use_scm=md["scm"], prior=md["prior"], aux=md["aux"], c=md["channels"], audio=use_audio).to(device)
     if tr.get("init_from"):
         ck0 = torch.load(ROOT / tr["init_from"], map_location="cpu", weights_only=False)
-        model.decoder.load_state_dict(ck0["decoder"])
+        if use_audio and not any(k.startswith("av.") for k in ck0["decoder"]):  # visual checkpoint -> new audio modules
+            r = model.decoder.load_state_dict(ck0["decoder"], strict=False)
+            assert not r.unexpected_keys and all(k.startswith("av.") for k in r.missing_keys), r
+            log(f"audio modules new ({len(r.missing_keys)} tensors); the rest from {tr['init_from']}")
+        else:
+            model.decoder.load_state_dict(ck0["decoder"])
         log(f"decoder initialized from {tr['init_from']}")
         if stage2 and "lora" in ck0:
             bb.load_state_dict(ck0["lora"], strict=False)
@@ -107,7 +113,7 @@ def main():
     size = tuple(d["size"])
     g = (size[0] // 16 * 4, size[1] // 16 * 4)
     train_ds = ClipDataset(videos_for(cfg, "train"), T=d["T"], stride=d["stride"], size=size, out_size=g,
-                           clips_per_video=tr["clips_per_video"], hflip=d["hflip"], seed=tr["seed"])
+                           clips_per_video=tr["clips_per_video"], hflip=d["hflip"], seed=tr["seed"], audio=use_audio)
     ds = train_ds
     if d.get("salicon"):
         sal = SaliconDataset(d["salicon_root"], "train", T=d["T"], size=size, out_size=g, limit=d.get("salicon_limit"))
@@ -178,7 +184,8 @@ def main():
             fx = batch["fixations"].to(device, non_blocking=True)
             set_lr(step)
             with torch.autocast("cuda", dtype=torch.bfloat16):
-                out = model(x, backbone_grad=stage2)
+                out = model(x, backbone_grad=stage2,
+                            audio=batch["audio"].to(device, non_blocking=True) if use_audio else None)
             loss, parts = saliency_loss(central(out["logits"], T), y, fx, tr["w_cc"], tr["w_nss"])
             if model.decoder.aux:
                 for k in ("aux16", "aux8"):

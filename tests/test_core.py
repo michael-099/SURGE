@@ -146,3 +146,33 @@ def test_stavis_layout_and_mat_fixations():
         assert a[-9:-4] == b[-9:-4] == c[-9:-4]
     f = load_gray(v.fixations[10])
     assert f.dtype == np.uint8 and set(np.unique(f)) <= {0, 255} and f.shape == load_gray(v.maps[10]).shape
+
+
+def test_audio_fusion_noop_at_init_and_learns():
+    torch.manual_seed(0)
+    vis = Decoder(d=32, c=32).eval()
+    av = Decoder(d=32, c=32, audio=True).eval()
+    r = av.load_state_dict(vis.state_dict(), strict=False)  # visual checkpoint into the audio decoder
+    assert not r.unexpected_keys and all(k.startswith("av.") for k in r.missing_keys)
+    taps = _fake_taps()
+    a1, a2 = torch.randn(2, 16, 768), torch.randn(2, 16, 768)
+    o0 = vis(taps, T_out=16)["logits"]
+    assert torch.allclose(av(taps, T_out=16, audio=a1)["logits"], o0, atol=1e-6)  # exact no-op at init
+    assert torch.allclose(av(taps, T_out=16, audio=a2)["logits"], o0, atol=1e-6)
+    with pytest.raises(ValueError):
+        av(taps, T_out=16)
+    for m in av.av:  # after training moves the zero-initialized layers, audio changes the output
+        torch.nn.init.normal_(m.film.weight, std=0.1)
+        torch.nn.init.normal_(m.res.weight, std=0.1)
+    assert not torch.allclose(av(taps, T_out=16, audio=a1)["logits"], av(taps, T_out=16, audio=a2)["logits"])
+
+
+def test_audio_features_alignment(tmp_path):
+    from surge.data import Video, audio_features
+    a = np.arange(5 * 768, dtype=np.float16).reshape(5, 768)
+    np.save(tmp_path / "v.npy", a)
+    v = Video("v", [f"{i}.jpg" for i in range(7)], audio=str(tmp_path / "v.npy"))
+    f = audio_features(v)
+    assert f.shape == (7, 768) and f.dtype == np.float32
+    assert np.array_equal(f[:5], a.astype(np.float32)) and np.array_equal(f[6], f[4])  # last row repeats
+    assert not audio_features(Video("w", ["0.jpg", "1.jpg"])).any()  # no audio -> zeros
