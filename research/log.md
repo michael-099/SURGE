@@ -524,3 +524,7 @@ change 11B.
 initialised from `runs/vitg_s{k}/best.pt` (`model.backbone=vjepa2_g`). σ tuned on each holdout; scored once each:
 the seed-0 single and the 3-seed ensemble. Compared with the ViT-L single (section 7/9/5) and ViT-L ensemble
 (section 10A).
+
+Audio features built 2026-11-08 (`scripts/prep_stavis_audio.py`, CPU, `runs/prep_stavis_audio.log`): DIEM 78/84,
+Coutrot1 60/60, Coutrot2 15/15, ETMD 12/12, AVAD 45/45, SumMe 23/25 videos with audio (the counts the STAViS release
+ships); WAV durations match frame count / fps.
