@@ -562,3 +562,24 @@ epochs 0 / 1 / 2 (NSS 3.407, SIM 0.452, KLD 1.181 at epoch 2). **Gate (≥ 0.590
 not run and val is not touched.** For context only (not a test): the T = 16 seed-0 run reached 0.5866 and peaked at
 epoch 1, while T = 32 was still rising at its last epoch, so a longer schedule might change this. That would be a new
 pre-registered run, not a re-reading of this one.
+
+### 11D results (2026-11-08)
+
+16 audio fine-tunes, 14:33–19:50 (`runs/stavis_av_*`, scores in `runs/av/`, fold means in `runs/av/summary.json`).
+Fold-mean CC; "visual" = the section 7 single model (same init, seed and recipe):
+
+| Dataset | Visual | Audio (matched) | Audio (rotated) | Audio − visual | Matched − rotated | Audio helps? |
+|---|---|---|---|---|---|---|
+| DIEM | 0.706 | 0.706 | 0.706 | +0.0008 | +0.0002 | no |
+| Coutrot1 | 0.632 | 0.633 | 0.630 | +0.0010 | +0.0031 | no |
+| Coutrot2 | 0.816 | 0.816 | 0.797 | −0.0003 | **+0.0183** | no |
+| ETMD | 0.662 | 0.661 | 0.661 | −0.0014 | −0.0001 | no |
+| AVAD | 0.718 | 0.718 | 0.717 | +0.0002 | +0.0013 | no |
+| SumMe | 0.581 | 0.579 | 0.580 | −0.0021 | −0.0011 | no |
+
+**The claim rule holds on no dataset: this audio fusion does not improve the visual model.** Other metrics move by
+≤ 0.1 NSS, ≤ 0.004 SIM/sAUC. One signal: on Coutrot2 (one-to-one conversations, where the speaker is the target) the
+model does use the sound, since the wrong video's sound costs 0.018 CC, but the right sound only matches the visual model,
+which already finds faces and speakers from the image. Coutrot2 has 15 videos (5 per test fold), so this is suggestive
+only. The gap to the audio-visual methods on Coutrot2 and AVAD (section 7) is therefore not closed by a frozen AST
+encoder with zero-initialised FiLM/correlation fusion and 3 epochs of fine-tuning on these small sets.
