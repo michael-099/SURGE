@@ -477,3 +477,50 @@ datasets, and the averaged maps lose some peak sharpness (NSS, SIM) with only �
   clear visual-only wins on DIEM, Coutrot1, ETMD, SumMe, still behind on Coutrot2 and AVAD; Hollywood (Vig) +0.004 CC
   with NSS/SIM slightly lower.
 - The DHF1K test maps in `D:/DHF1K_submission/SURGE-D.zip` are still the ViT-L ensemble.
+
+## 11. Next round: train-on-600, DHF1K test maps with ViT-g, 32-frame clips, audio, ViT-g on the other datasets (rules written 2026-11-08, before any run)
+
+The user asked for everything that does not depend on the DHF1K reply or the IMAR reply. One GPU job at a time, in
+this order: 11A, 11B, 11C, 11D, 11E (`scripts/queue_next.sh`).
+
+**11A. Train on all 600 DHF1K training videos (ViT-g).** Split `dhf1k_train600.txt` = train540 ∪ holdout60. Seeds
+0–2, B1 recipe with `model.backbone=vjepa2_g`, 3-epoch schedule; no data is left for selection, so the checkpoint is
+fixed in advance: **epoch_1.pt** (the best epoch of all three ViT-g seeds in section 10B). σ = 8 (section 10B's
+tuned value, single and ensemble). Holdout scores printed during training are on training data and are not used.
+Scored once on DHF1K val: seed 0 and the 3-seed ensemble, paired-bootstrap vs section 10B. **The 600 models replace
+the 540 models for the DHF1K test maps only if the ensemble's ΔCC interval vs the 10B ensemble is above 0 and it is
+not worse on more than 2 of 6 metrics;** otherwise the 10B ensemble is used.
+
+**11B. DHF1K test maps with ViT-g.** The 11A winner (3-seed ensemble, σ 8). Format check first, as in section 8
+(val 601–605 through `predict_dhf1k_test.py`, |ΔCC| ≤ 0.002 vs that ensemble's val per-video CC), then 701–1000,
+zipped as `D:/DHF1K_submission/SURGE-D-vitg.zip` (root folder `SURGE-D/`). Sending stays with the user.
+
+**11C. 32-frame clips (ViT-g, train540).** Run T32-1 = 10B G-1 with `data.T=32` (stride 2, so 64 frames ≈ 2.6 s;
+the output still covers the central half). Batch 8, else 4 on out-of-memory. Gate: best holdout CC ≥ **0.5904** =
+ViT-g T=16 3-seed mean (0.5866, 0.5867, 0.5829 → 0.5854) + 0.005. If it fails: holdout only, val untouched. If it
+passes: seeds 1–2, σ tuned on the holdout, val scored once (single and ensemble), compared with 10B. It does not
+change 11B.
+
+**11D. Audio on the STAViS datasets (ViT-L).**
+- Audio: the STAViS release's own WAVs (`<DB>/extracted/video_audio/<name>/<video>/<video>.wav`), mixed to mono,
+  resampled to 16 kHz. Videos without a WAV get zero audio features.
+- Encoder, frozen: AST (`MIT/ast-finetuned-audioset-10-10-0.4593`, BSD-3-Clause), run on consecutive 10.24 s chunks;
+  patch tokens averaged over frequency give a 768-d feature every 10 ms column. Feature of video frame k (1-based,
+  time (k − 0.5)/fps, fps from the fold list) = mean of the columns whose centre lies within ±0.5 s.
+  Cached once per video.
+- Fusion (new decoder module, on P8, P16a, P16b): per tubelet, the audio feature (mean of its two frames) → LayerNorm →
+  linear to 256 → (i) FiLM (γ, β) and (ii) an audio–visual correlation map σ(⟨Wq·F(x), Wk·a⟩/√d) gating a residual
+  1×1 conv. The FiLM and residual output layers are zero-initialised, so at the start the model is exactly the visual
+  model.
+- Training: per fold, the section 7 seed-0 recipe (init `runs/main_b1_s0`, Stage 1, 3 epochs, same holdout, clips per
+  video, frame step); σ tuned on the holdout; each test fold scored once. Baseline = the section 7 single visual model
+  (same init, seed, recipe).
+- Control: the same audio model scored with audio rotated among the fold's test videos (video i gets video i+1's
+  sound). If the model uses sound, matched audio must beat rotated audio.
+- Claim rule: **"audio helps on dataset X" only if its fold-mean ΔCC vs the visual model ≥ +0.010 and matched −
+  rotated ≥ +0.005.** Coutrot2 and AVAD, the two clear losses, are where it is expected to matter.
+
+**11E. ViT-g on UCF, STAViS and Hollywood-2 (Vig gaze).** Same recipes as section 10A, with members k = 0, 1, 2
+initialised from `runs/vitg_s{k}/best.pt` (`model.backbone=vjepa2_g`). σ tuned on each holdout; scored once each:
+the seed-0 single and the 3-seed ensemble. Compared with the ViT-L single (section 7/9/5) and ViT-L ensemble
+(section 10A).
