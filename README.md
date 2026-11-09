@@ -1,4 +1,4 @@
-﻿# SURGE
+# SURGE
 
 Video saliency prediction research: the SURGE-D proposal, its fact-check, and an independent implementation with results.
 
@@ -26,20 +26,24 @@ once, with all settings fixed beforehand on held-out training data (`research/lo
 Paired bootstrap over videos, ΔCC [95 % CI]: ViT-g vs SalFoM +0.036 [+0.026, +0.048] (single), +0.039 [+0.029, +0.050]
 (ensemble); ViT-g vs ViT-L +0.017 (single), +0.012 (ensemble). Better than SalFoM on all six metrics.
 
-**UCF Sports test** (fine-tuned): ViT-L 0.725, ViT-g 0.731 (not a significant gain), ViT-L 3-seed ensemble **0.733** CC.
-Above SalFoM (0.631) and TMFI-Net (0.707), tied with ViNet-A (0.734), below ViNet-E (0.744): not state of the art on UCF.
+**UCF Sports test** (fine-tuned): ViT-L 0.725, ViT-L 3-seed ensemble 0.733, ViT-g 0.731, ViT-g 3-seed ensemble
+**0.735** CC (ViT-g vs ViT-L ensemble +0.002, not significant). Above SalFoM (0.631) and TMFI-Net (0.707), tied with
+ViNet-A (0.734), below ViNet-E (0.744): not state of the art on UCF.
 
 **STAViS audio-visual datasets** (fine-tuned per fold, fold-mean CC; SURGE-D uses no audio here):
 
 | | DIEM | Coutrot1 | Coutrot2 | ETMD | AVAD | SumMe |
 |---|---|---|---|---|---|---|
-| SURGE-D ViT-L, single | 0.706 | 0.632 | 0.816 | 0.662 | 0.718 | 0.581 |
-| SURGE-D ViT-L, 3-seed ensemble | **0.714** | **0.641** | 0.807 | **0.670** | 0.729 | **0.593** |
-| best published visual-only | 0.701 | 0.623 | 0.862 | 0.653 | 0.742 | 0.561 |
-| best published audio-visual | 0.685 | 0.661 | 0.845 | 0.667 | 0.746 | 0.573 |
+| SURGE-D ViT-L, single / 3-seed ensemble | 0.706 / 0.714 | 0.632 / 0.641 | 0.816 / 0.807 | 0.662 / 0.670 | 0.718 / 0.729 | 0.581 / **0.593** |
+| SURGE-D ViT-g, single | 0.714 | 0.648 | 0.820 | 0.672 | 0.731 | 0.586 |
+| SURGE-D ViT-g, 3-seed ensemble | **0.729** | 0.657 | 0.819 | **0.676** | 0.740 | 0.590 |
+| best published visual-only | 0.701 | 0.623 | **0.862** | 0.653 | 0.742 | 0.561 |
+| best published audio-visual | 0.685 | **0.661** | 0.845 | 0.667 | **0.746** | 0.573 |
 
-The ensemble is clearly above the best visual-only model on DIEM, Coutrot1, ETMD and SumMe, and below it on Coutrot2
-and AVAD (where gaze follows the speaker).
+The ViT-g ensemble is clearly above the best visual-only model on DIEM, Coutrot1, ETMD and SumMe, ties it on AVAD,
+and is below it on Coutrot2 (gaze follows the speaker). Versus the best audio-visual model: above on DIEM and SumMe,
+within 0.01 on Coutrot1, ETMD and AVAD, below on Coutrot2. An audio branch (frozen AST features, FiLM + audio-visual
+correlation fusion) did not improve any dataset (`research/log.md` 11D).
 
 **Hollywood-2 with the Vig, Dorr & Cox gaze data** (884 test clips; *not comparable to published Hollywood-2 results*,
 which use different viewers and shots): zero-shot 0.632, fine-tuned 0.680, 3-seed ensemble 0.684 CC.
@@ -54,6 +58,7 @@ What the experiments showed about the proposal (details and tables in `research/
 | Learned center prior, auxiliary heads, SALICON co-training | No measurable effect (single-seed ablations) |
 | Short schedule | All decoders overfit after 1–2 epochs; 3-epoch schedule used |
 | Multi-frame output, frozen foundation features, light decoder | Kept; together they beat SalFoM |
+| Later checks (section 11) | Training on all 600 DHF1K videos: no gain; 32-frame clips: missed the pre-set bar by 0.0002; audio: no gain |
 
 ## Reproduce
 
