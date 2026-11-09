@@ -118,7 +118,8 @@ which explains the remaining gap. Section 5.6 tests whether adding the soundtrac
 Fine-tuning on the Vig gaze data adds +0.048 CC over zero-shot. ViT-g improves on ViT-L by +0.005 CC [+0.003,
 +0.006] as a single model (all six metrics significant) and +0.004 [+0.003, +0.005] as an ensemble. As with ViT-L,
 the ensemble raises CC, KLD and AUC but lowers NSS and SIM against its own single model (−0.026, −0.011): with at most
-five viewers per frame, averaging blunts the sharp peaks those two metrics reward. **[pending: re-run on the standard Hollywood-2 ground truth once received.]**
+five viewers per frame, averaging blunts the sharp peaks those two metrics reward.
+**[pending: re-run on the standard Hollywood-2 ground truth once received.]**
 
 ### 5.6 Analysis: what helped and what did not
 
@@ -130,7 +131,7 @@ All of these were decided by rules written before the runs; negative outcomes ar
 | Larger backbone (ViT-g) | +0.008 holdout CC over the ViT-L 3-seed mean; +0.017 on DHF1K val (Table 1). Adopted. |
 | Predictive "surprise" as a cue (V-JEPA 2 predictor error) | No: anti-correlated with fixations (NSS −0.19 at 4 fps, −0.50 at 15 fps vs +0.81 for plain frame difference). The surprise module was dropped. |
 | LoRA fine-tuning of the backbone | No: lower than the frozen backbone in 3/3 seeds (mean −0.0025 CC). |
-| Centre prior, auxiliary heads, SALICON co-training | No measurable effect (|ΔCC| < 0.003, one seed). |
+| Centre prior, auxiliary heads, SALICON co-training | No measurable effect (ΔCC within ±0.003, one seed). |
 | Frame stride 4 instead of 2 | +0.003 CC, at the threshold; not adopted. |
 | 32-frame clips instead of 16 (ViT-g) | 0.5902 holdout CC vs the pre-set bar of 0.5904: not adopted (still improving at the last epoch). |
 | All 600 training videos instead of 540 (ViT-g) | DHF1K val ensemble CC 0.604 vs 0.603, ΔCC +0.002 [−0.001, +0.004]: no gain. |
@@ -139,9 +140,9 @@ All of these were decided by rules written before the runs; negative outcomes ar
 
 Two readings follow. First, almost all of the gain comes from the frozen video representation: a better encoder
 (V-JEPA 2 over 2.1 and UMT, ViT-g over ViT-L) moves every benchmark, while decoder additions, backbone fine-tuning,
-more data and longer clips do not. Second, frozen self-supervised video features with a light decoder beat the best published
-visual-only and audio-visual models on DIEM and SumMe and match them within 0.01 CC on Coutrot1, ETMD and AVAD; the one clear failure
-is speaker-driven attention, which our audio module did not solve.
+more data and longer clips do not. Second, frozen self-supervised video features with a light decoder beat the
+best published visual-only and audio-visual models on DIEM and SumMe and match them within 0.01 CC on Coutrot1, ETMD
+and AVAD; the one clear failure is speaker-driven attention, which our audio module did not solve.
 
 ### 5.7 Limitations
 
