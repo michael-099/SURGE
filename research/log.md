@@ -599,3 +599,32 @@ ViT-g members fine-tuned from `runs/vitg_s{0,1,2}/best.pt` (section 5 recipe); �
   vs ViT-L single: ΔCC +0.0098 [−0.0001, +0.0211] (borderline).
 - Published: ViNet-E 0.744, ViNet-A 0.734. The ViT-g ensemble ties ViNet-A (+0.001) and stays below ViNet-E
   (−0.009). Still not state of the art on UCF; the ranking is unchanged.
+
+### 11E results: STAViS datasets (queue 2026-11-08 20:39 → 2026-11-09 14:48; `runs/g_other/`)
+
+48 ViT-g fine-tunes (16 folds × seeds 0–2, section 7 recipe, init `runs/vitg_s{k}/best.pt`), σ tuned per fold on the
+holdout (ensemble: 8–16). Fold-mean CC (`scripts/summarize_stavis_vitg.py`, `runs/g_other/stavis_summary.json`);
+paired bootstrap over each dataset's pooled test videos (each video is in exactly one test fold;
+`runs/g_other/cmp_<dataset>_*.txt`).
+
+| Dataset | ViT-L single | ViT-L ens. | ViT-g single | **ViT-g ens.** | ens. NSS | ens. SIM | ens. KLD | ens. AUC-J | ens. sAUC | g ens. − L ens. CC [95 % CI] | vs best visual / best AV |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| DIEM (17) | 0.706 | 0.714 | 0.714 | **0.729** | 2.878 | 0.584 | 0.664 | 0.923 | 0.735 | **+0.014 [+0.003, +0.027]** | **+0.027 / +0.043** |
+| Coutrot1 (60) | 0.632 | 0.641 | 0.648 | **0.657** | 3.302 | 0.504 | 0.947 | 0.911 | 0.774 | **+0.017 [+0.005, +0.031]** | **+0.034** / −0.004 |
+| Coutrot2 (15) | 0.816 | 0.807 | **0.820** | 0.819 | 6.673 | 0.601 | 0.683 | 0.966 | 0.759 | +0.012 [−0.007, +0.032] | −0.043 / −0.026 |
+| ETMD (12) | 0.662 | 0.670 | 0.672 | **0.676** | 3.687 | 0.510 | 0.930 | 0.950 | 0.765 | **+0.006 [+0.002, +0.010]** | **+0.023** / +0.009 |
+| AVAD (45) | 0.718 | 0.729 | 0.731 | **0.740** | 4.306 | 0.565 | 0.795 | 0.942 | 0.782 | **+0.011 [+0.005, +0.019]** | −0.002 / −0.006 |
+| SumMe (23) | 0.581 | **0.593** | 0.586 | 0.590 | 3.261 | 0.448 | 1.148 | 0.927 | 0.763 | −0.003 [−0.010, +0.004] | **+0.029 / +0.017** |
+
+- **ViT-g ensemble vs ViT-L ensemble:** higher CC on 5/6 datasets, significant on DIEM, Coutrot1, ETMD and AVAD
+  (with NSS, SIM, KLD also significantly better on Coutrot1, AVAD and mostly DIEM/ETMD); n.s. on Coutrot2; SumMe
+  is a tie in CC and sAUC is worse (−0.006, significant).
+- **ViT-g single vs ViT-L single:** CC higher on all 6; significant on Coutrot1 (+0.016), ETMD (+0.010), AVAD
+  (+0.013). On 5/6 datasets the single ViT-g model matches or beats the ViT-L ensemble.
+- **Versus published (section 7 rule, margins < 0.01 = ties):**
+  - best visual-only: clearly higher on DIEM, Coutrot1, ETMD, SumMe (+0.023 to +0.034); **AVAD is now a tie
+    (−0.002, was −0.013)**; Coutrot2 still a clear loss (−0.043).
+  - best audio-visual: clearly higher on DIEM (+0.043) and SumMe (+0.017); ties on Coutrot1 (−0.004), ETMD
+    (+0.009) and AVAD (−0.006); Coutrot2 still a clear loss (−0.026).
+- The one dataset a visual model cannot fix is Coutrot2 (who is talking); 11D showed that the audio module as built
+  does not fix it either.
