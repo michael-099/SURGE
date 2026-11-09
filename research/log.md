@@ -628,3 +628,33 @@ paired bootstrap over each dataset's pooled test videos (each video is in exactl
     (+0.009) and AVAD (−0.006); Coutrot2 still a clear loss (−0.026).
 - The one dataset a visual model cannot fix is Coutrot2 (who is talking); 11D showed that the audio module as built
   does not fix it either.
+
+### 11E results: Hollywood-2 (Vig gaze), queue finished 2026-11-09 21:08
+
+ViT-g members fine-tuned from `runs/vitg_s{k}/best.pt` (section 9 recipe); members' holdout CC 0.7103 (seed 0,
+epoch 2) / 0.7143 (epoch 1) / 0.7104 (epoch 0); σ 12 for single and ensemble (holdout). 884 test clips, scored once.
+**Not comparable to published Hollywood-2 results.**
+
+| Hollywood-2 (Vig gaze) test | CC | NSS | SIM | KLD ↓ | AUC-J | sAUC |
+|---|---|---|---|---|---|---|
+| ViT-L single (section 9) | 0.6798 | 3.898 | 0.5178 | 0.925 | 0.9564 | 0.8167 |
+| ViT-L 3-seed ensemble (10A) | 0.6841 | 3.875 | 0.5073 | 0.918 | 0.9574 | 0.8192 |
+| ViT-g single (seed 0) | 0.6844 | **3.933** | **0.5214** | 0.917 | 0.9569 | 0.8180 |
+| ViT-g 3-seed ensemble | **0.6882** | 3.907 | 0.5104 | **0.911** | **0.9577** | **0.8199** |
+
+Paired bootstrap over clips (`runs/g_other/cmp_hollywood_*.txt`):
+- ViT-g single vs ViT-L single: CC +0.0046 [+0.0032, +0.0060]; better on all six metrics, every interval excludes 0.
+- ViT-g ensemble vs ViT-L ensemble: CC +0.0041 [+0.0030, +0.0052]; better on five metrics (sAUC +0.0007 n.s.).
+- ViT-g ensemble vs ViT-g single: CC +0.0038, KLD, AUC-J, sAUC better; NSS −0.026 and SIM −0.011 worse (the same
+  pattern as with ViT-L: averaging blunts the peaks that ≤ 5 viewers per frame reward).
+
+### Section 11 summary (2026-11-09)
+
+- **11A** train600: no gain (ensemble ΔCC +0.0015, interval includes 0); the 540 models are kept.
+- **11B** DHF1K test maps from the ViT-g ensemble: `D:/DHF1K_submission/SURGE-D-vitg.zip` (SHA-256 0fe4e2e7…);
+  supersedes `SURGE-D.zip`. Sending is the user's.
+- **11C** 32-frame clips: holdout 0.5902, gate 0.5904 → not adopted.
+- **11D** audio (AST + FiLM/correlation fusion): no improvement on any STAViS dataset.
+- **11E** ViT-g everywhere: best SURGE-D numbers on UCF (0.735), 5/6 STAViS datasets (AVAD now ties the best published
+  visual model) and Hollywood (Vig) (0.688); significant over ViT-L on DIEM, Coutrot1, ETMD, AVAD and Hollywood.
+- The safety monitor ran throughout (max 87 °C); no SAFETY_STOP; nothing was force-killed.
