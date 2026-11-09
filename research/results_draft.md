@@ -112,10 +112,13 @@ which explains the remaining gap. Section 5.6 tests whether adding the soundtrac
 | SURGE-D ViT-L, zero-shot | 0.632 | 3.595 | 0.503 | 1.061 | 0.951 | 0.780 |
 | SURGE-D ViT-L | 0.680 | 3.898 | 0.518 | 0.925 | 0.956 | 0.817 |
 | SURGE-D ViT-L, 3 seeds | 0.684 | 3.875 | 0.507 | 0.918 | 0.957 | 0.819 |
-| SURGE-D ViT-g | HW_G_SINGLE |
-| SURGE-D ViT-g, 3 seeds | HW_G_ENS |
+| SURGE-D ViT-g | 0.684 | **3.933** | **0.521** | 0.917 | 0.957 | 0.818 |
+| SURGE-D ViT-g, 3 seeds | **0.688** | 3.907 | 0.510 | **0.911** | **0.958** | **0.820** |
 
-HW_TEXT **[pending: re-run on the standard Hollywood-2 ground truth once received.]**
+Fine-tuning on the Vig gaze data adds +0.048 CC over zero-shot. ViT-g improves on ViT-L by +0.005 CC [+0.003,
++0.006] as a single model (all six metrics significant) and +0.004 [+0.003, +0.005] as an ensemble. As with ViT-L,
+the ensemble raises CC, KLD and AUC but lowers NSS and SIM against its own single model (−0.026, −0.011): with at most
+five viewers per frame, averaging blunts the sharp peaks those two metrics reward. **[pending: re-run on the standard Hollywood-2 ground truth once received.]**
 
 ### 5.6 Analysis: what helped and what did not
 

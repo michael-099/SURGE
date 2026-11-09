@@ -46,7 +46,8 @@ within 0.01 on Coutrot1, ETMD and AVAD, below on Coutrot2. An audio branch (froz
 correlation fusion) did not improve any dataset (`research/log.md` 11D).
 
 **Hollywood-2 with the Vig, Dorr & Cox gaze data** (884 test clips; *not comparable to published Hollywood-2 results*,
-which use different viewers and shots): zero-shot 0.632, fine-tuned 0.680, 3-seed ensemble 0.684 CC.
+which use different viewers and shots): zero-shot 0.632; fine-tuned ViT-L 0.680 / 3-seed ensemble 0.684; ViT-g 0.684 / 3-seed ensemble **0.688** CC
+(ViT-g better than ViT-L on all six metrics as a single model).
 
 What the experiments showed about the proposal (details and tables in `research/log.md`):
 
