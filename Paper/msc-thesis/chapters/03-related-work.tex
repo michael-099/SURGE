@@ -6,38 +6,271 @@ group, say what was done, how well it worked and what is still missing. End
 by stating the gap that this thesis fills, and show how your work is similar
 to, yet different from, previous work.}
 
-Give a short introduction to the chapter here.
+Deep video saliency models differ mainly in two respects: how they represent
+the temporal dimension of a video, and what their encoder has been trained on
+before it meets eye-tracking data. This chapter follows that development, from
+recurrent models built on image features (\cref{sec:related-a}), through
+three-dimensional convolutional encoders (\cref{sec:related-3d}) and
+transformers (\cref{sec:related-b}), to models that build on video foundation
+encoders (\cref{sec:related-vfm}). Audio-visual models, which add the
+soundtrack, are reviewed separately (\cref{sec:related-av}), as is the small
+body of work that treats prediction error as a cue for attention
+(\cref{sec:related-surprise}). The chapter closes with a summary and the research
+gap that this thesis addresses (\cref{sec:gap}).
 
 %----------------------------------------------------------------------------
-\section{[First Group of Approaches]}\label{sec:related-a}
+\section{Recurrent and Two-Stream Models}\label{sec:related-a}
 
-Discuss the first group of related works here~\cite{wang2018revisiting}.
+The first deep video saliency models extended image saliency networks with
+mechanisms for motion and memory. Bak et al.~\cite{bak2018spatio} used
+two-stream networks, one stream on the frames and one on optical flow, and
+compared ways of fusing them. Lai et al.~\cite{lai2020video} coupled appearance
+and motion streams more tightly through dense residual cross connections and
+added a convolutional gated recurrent unit for long-term dynamics. Gorji and
+Clark~\cite{gorji2018going} took the opposite route and augmented a strong
+static saliency model with recurrent \enquote{attentional push} pathways, which
+model how the photographer and the actors in a scene direct the viewer's
+attention.
+
+Recurrence on top of per-frame convolutional features became the dominant
+design. DeepVS~\cite{jiang2018deepvs} combined an object-to-motion network with
+a saliency-structured convolutional LSTM, motivated by the observation, made
+on its own large eye-tracking dataset, that moving objects attract gaze.
+ACLNet~\cite{wang2018revisiting,wang2021revisiting}, introduced together with
+DHF1K, added a supervised attention module that encodes static saliency to a
+CNN-LSTM, so that the recurrent part can concentrate on temporal change; it was
+trained with static images from SALICON alongside the videos. Linardos et
+al.~\cite{linardos2019simple} showed that a simple exponential moving average
+of features can perform on a par with a convolutional LSTM, which suggests that
+much of the temporal modelling in these networks amounts to smoothing.
+UNISAL~\cite{droste2020unified} pursued a lightweight encoder--RNN--decoder
+design trained jointly on image and video saliency data, with domain-adaptive
+priors, fusion and smoothing to cope with the differences between datasets,
+and reached strong results at a fraction of the size of its competitors.
+
+These models share a limitation: their spatial features come from networks
+pretrained on images, and their temporal modelling is confined to a recurrent
+state on top of those features. Their reliance on static saliency data, which
+helped them markedly~\cite{wang2021revisiting}, is a sign that the video data
+alone were not sufficient to train them.
 
 %----------------------------------------------------------------------------
-\section{[Second Group of Approaches]}\label{sec:related-b}
+\section{Three-Dimensional Convolutional Encoder--Decoders}\label{sec:related-3d}
 
-Discuss the second group of related works here~\cite{min2019tased}.
+A second generation replaced per-frame features by spatio-temporal features
+from three-dimensional convolutional networks pretrained for action
+recognition, typically S3D~\cite{xie2018rethinking} trained on
+Kinetics~\cite{carreira2017quo}. TASED-Net~\cite{min2019tased} encodes a clip of
+consecutive frames and decodes the features spatially while aggregating the
+temporal dimension, producing one map per clip; maps for a whole video are
+obtained by sliding the window, under the assumption that a limited number of
+past frames suffices to predict the current one. HD2S~\cite{bellitto2021hierarchical}
+supervises intermediate \enquote{conspicuity} maps at several levels of
+abstraction and adds domain adaptation through gradient reversal and
+dataset-specific priors. ViNet~\cite{jain2021vinet} decodes features from
+several levels of an action-recognition encoder with trilinear upsampling and
+three-dimensional convolutions; it is causal, runs in real time and, despite
+using no audio, outperformed audio-visual models on six audio-visual datasets.
+
+Later work in this family focused on efficiency and on the choice of encoder.
+TinyHD~\cite{hu2023tinyhd} combines several simple heterogeneous decoders with
+hierarchical map distillation from a larger teacher, and predicts several
+output frames per forward pass to reduce cost. MSFF-Net~\cite{zhang2024msff}
+fuses multi-scale spatio-temporal features through a bi-directional pyramid
+with attention-guided fusion. Most recently, ViNet-S and
+ViNet-A~\cite{girmaji2025minimalistic} paired a lightweight decoder with either
+an S3D encoder or a SlowFast encoder pretrained for spatio-temporal action
+localisation; their ensemble, ViNet-E, reported the best results among the
+compared methods on UCF Sports and Hollywood-2. The strength of the
+action-localisation encoder on these two datasets, whose gaze was recorded
+during action recognition~\cite{mathe2015actions}, illustrates how much the
+pre-training of the encoder matters.
+
+Three-dimensional convolutions capture motion well, but their receptive field
+in time is limited by the kernel sizes, and their encoders were trained for
+classification on a fixed set of action categories.
+
+%----------------------------------------------------------------------------
+\section{Transformer-Based Models}\label{sec:related-b}
+
+Self-attention relaxes the locality of convolutions. STSANet~\cite{wang2023spatio}
+inserts spatio-temporal self-attention modules at several levels of a
+three-dimensional convolutional backbone to capture long-range relations
+between time steps, and fuses the levels with an attentional multi-scale
+module. VSFT~\cite{ma2022video} was the first purely transformer-based model in
+the field and extended the task to forecasting the saliency of future frames.
+TMFI-Net~\cite{zhou2023transformer} builds on multi-level features of a video
+transformer, enriches them top-down with high-level semantics in a
+semantic-guided encoder, and decodes them hierarchically with attention along
+the channel, temporal and spatial dimensions. THTD-Net~\cite{moradi2024transformer}
+argues that the temporal dimension of transformer features should be kept high
+throughout decoding, and reaches results comparable to multi-branch decoders
+with a single-branch one. UniST~\cite{xiong2025unist} uses one saliency-aware
+transformer for both video saliency prediction and video salient object
+detection, and TM2SP~\cite{li2025tm2sp} combines a Video Swin
+encoder~\cite{liu2022video} with a multi-level spatio-temporal feature pyramid
+guided by a pretrained image saliency encoder.
+
+These models raised the published DHF1K test correlation from about 0.52 to
+about 0.55~\cite{moradi2024salfom}. They remain, however, trained end to end,
+or with an encoder pretrained for supervised action recognition, on the few
+hundred videos of a saliency dataset, and they are large: TMFI-Net has about 61
+million parameters and STSANet about 169 million~\cite{girmaji2025minimalistic}.
+
+%----------------------------------------------------------------------------
+\section{Video Foundation Models for Saliency}\label{sec:related-vfm}
+
+Foundation models trained with self-supervision on large video collections
+offer a different starting point. SalFoM~\cite{moradi2024salfom} was the first
+video saliency model built on such an encoder. It fine-tunes the UMT-L
+encoder~\cite{li2023unmasked}, a ViT-L trained by masked video modelling guided
+by an image--text teacher, together with a heterogeneous decoder that includes
+a locality-aware spatio-temporal transformer. Given 16 frames at
+$224\times224$ pixels, it predicts the saliency map of the last frame, and
+maps for a whole video are produced with a sliding window. SalFoM reported the
+best DHF1K test results among the methods it compared with (CC 0.569, NSS
+3.353), but it was weaker than earlier models on UCF Sports, which its authors
+attribute to the task-driven gaze of that dataset and to overfitting on its
+small training set~\cite{moradi2024salfom}.
+
+The same group has since combined foundation encoders with explicit
+long- and short-term temporal modelling~\cite{moradi2026lstd} and distilled them
+into smaller models to reduce their cost~\cite{moradi2026knowledge}. A
+different direction couples a multimodal large language model with a saliency
+decoder to produce saliency maps together with textual explanations, trained on
+a new dataset of gaze annotated with reasons~\cite{wu2026explainable}.
+
+Two properties of these approaches are relevant here. First, the encoder is
+adapted to the saliency data, either by full fine-tuning or by distillation;
+whether a frozen foundation encoder is sufficient, and how it compares with an
+adapted one, was not examined in the studies whose full texts could be
+consulted. Second, the sliding-window design runs the large encoder once for
+every output frame, which makes inference expensive.
+
+%----------------------------------------------------------------------------
+\section{Audio-Visual Saliency Models}\label{sec:related-av}
+
+Because most videos have sound, and sound influences where people
+look~\cite{coutrot2012influence,coutrot2014how}, a separate line of work fuses
+the soundtrack with the frames. STAViS~\cite{tsiami2020stavis} combined a
+spatio-temporal visual saliency network with auditory features, learned to
+localise sound sources, and fused the two saliencies; it also introduced the
+protocol, with three folds per dataset, under which six audio-visual datasets
+are now evaluated. CASP-Net~\cite{xiong2023casp} addresses the temporal
+inconsistency between the two modalities with a consistency-aware predictive
+coding module, and DiffSal~\cite{xiong2024diffsal} formulates prediction as
+conditional generation with a diffusion model conditioned on audio-visual
+features. Models based on implicit neural representations map space--time
+coordinates to saliency values and fuse the modalities
+parametrically~\cite{zhu2024discrete,zhang2025audio}, and the relevance-guided
+fusion of Yu et al.~\cite{yu2026relevance} adjusts how much audio is retained
+according to its semantic relevance to the visual content.
+
+Whether these models actually use the audio is disputed. Jain et
+al.~\cite{jain2021vinet} found that an audio-augmented variant of ViNet became
+agnostic to its audio input after training and observed the same behaviour in
+an earlier audio-visual model. Agrawal et al.~\cite{agrawal2022does} examined a
+range of audio modules and fusion techniques on ten datasets and found that none
+improved on visual-only models. On several audio-visual datasets, visual-only
+models such as ViNet-E report results that equal or exceed those of
+audio-visual models~\cite{girmaji2025minimalistic}.
+
+%----------------------------------------------------------------------------
+\section{Prediction Error as an Attention Signal}\label{sec:related-surprise}
+
+The idea that attention is drawn to what violates expectation has a long
+history. Itti and Baldi formalised \enquote{surprise} as the divergence between
+an observer's prior and posterior beliefs, detected surprising events in video
+with low-level feature models~\cite{itti2005principled}, and showed that this
+measure predicted human gaze shifts better than the other metrics they
+tested~\cite{itti2009bayesian}. Predictive-coding accounts of the visual
+cortex propose that neural responses signal the error of predictions made from
+context~\cite{rao1999predictive}, and deep networks built on this principle have
+been trained to predict future video frames~\cite{lotter2017deep}.
+
+Modern self-supervised video models contain an explicit predictor. In the
+joint-embedding predictive architectures I-JEPA~\cite{assran2023self} and
+V-JEPA~\cite{bardes2024revisiting}, a predictor network learns to predict the
+representations of masked regions from the visible ones. Such a predictor
+offers, in principle, a learned and high-level analogue of surprise: its error
+indicates which parts of a scene the model could not anticipate. In the
+literature reviewed for this thesis, the error of such a learned latent
+predictor has not been evaluated against human fixations. CASP-Net uses
+predictive coding in a different sense, to align audio and visual
+features~\cite{xiong2023casp}.
 
 %----------------------------------------------------------------------------
 \section{Summary and Research Gap}\label{sec:gap}
 
-Every table must be referred to in the text. \Cref{tab:related} summarises
-the related works discussed in this chapter.
+\Cref{tab:related} summarises the most relevant works. Three observations
+emerge from the review.
 
 \begin{table}[htbp]
   \centering
-  \caption{Summary of related works}\label{tab:related}
-  \begin{tabularx}{\textwidth}{@{}l>{\raggedright}X>{\raggedright}X
+  \caption{Summary of the closest related works}\label{tab:related}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright}p{2.7cm}>{\raggedright}X>{\raggedright}p{2.6cm}
                                    >{\raggedright\arraybackslash}X@{}}
     \toprule
-    \textbf{Work} & \textbf{Approach} & \textbf{Dataset / Evaluation}
-      & \textbf{Limitation / Gap} \\
+    \textbf{Work} & \textbf{Approach} & \textbf{Evaluation}
+      & \textbf{Limitation relevant to this thesis} \\
     \midrule
-    \cite{itti1998model}       & \ldots & \ldots & \ldots \\
-    \cite{wang2018revisiting}  & \ldots & \ldots & \ldots \\
-    \cite{min2019tased}        & \ldots & \ldots & \ldots \\
+    ACLNet~\cite{wang2021revisiting} & CNN-LSTM with static-saliency attention & DHF1K, Hollywood-2, UCF
+      & image features; needs static data \\
+    UNISAL~\cite{droste2020unified} & lightweight encoder--RNN--decoder, image and video jointly
+      & DHF1K, Hollywood-2, UCF, SALICON & recurrent temporal model on image features \\
+    TASED-Net~\cite{min2019tased} & S3D encoder, temporally aggregating decoder & DHF1K, Hollywood-2, UCF
+      & one map per clip; action-recognition encoder \\
+    ViNet-S/A/E~\cite{girmaji2025minimalistic} & S3D or action-localisation encoder, light decoder
+      & DHF1K val, Hollywood-2, UCF, six AV sets & supervised encoders; one map per clip \\
+    TinyHD~\cite{hu2023tinyhd} & heterogeneous decoders, distillation, multi-output
+      & DHF1K, Hollywood-2, UCF & efficiency focus; CNN encoder \\
+    STSANet~\cite{wang2023spatio} & self-attention on a 3D CNN & DHF1K, Hollywood-2, UCF, DIEM
+      & large (about 169\,M parameters) \\
+    TMFI-Net~\cite{zhou2023transformer} & video transformer, multi-scale integration
+      & four video datasets & trained on few videos; large \\
+    SalFoM~\cite{moradi2024salfom} & fine-tuned UMT-L, heterogeneous decoder & DHF1K test, Hollywood-2, UCF
+      & full fine-tuning; one encoder pass per output frame \\
+    STAViS~\cite{tsiami2020stavis} & visual saliency with sound localisation and fusion & six AV datasets
+      & audio benefit later disputed~\cite{agrawal2022does} \\
+    DiffSal~\cite{xiong2024diffsal} & audio-visual conditional diffusion & six AV datasets
+      & iterative generation; audio-dependent design \\
+    Itti and Baldi~\cite{itti2009bayesian} & Bayesian surprise of low-level features & gaze in video
+      & hand-crafted features, no learned predictor \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-State the research gap that this thesis addresses.
+First, progress in video saliency prediction has tracked progress in the
+encoder: from image networks with recurrence, through action-recognition
+three-dimensional networks, to video transformers and, most recently, video
+foundation models. The decoders, by contrast, have converged on variations of
+multi-scale fusion. Yet the encoders used for saliency have all been trained
+with supervision or with objectives that reconstruct or align tokens, and they
+have been adapted to the saliency data. Encoders trained with a
+feature-prediction objective, such as V-JEPA~\cite{bardes2024revisiting}, whose
+authors report that its features perform well without adapting the model's
+parameters, have not been evaluated for this task in the peer-reviewed studies
+whose full texts could be consulted.
+
+Second, the evaluation practice of the field makes small differences hard to
+interpret. DHF1K results are reported on the validation or the test set,
+published numbers for the same model differ between papers by up to 0.03
+CC~\cite{girmaji2025minimalistic,xiong2025unist}, and comparisons are almost
+always made against numbers copied from other papers rather than against
+re-scored predictions with an uncertainty estimate.
+
+Third, the idea that motivated this work, that a learned video model's
+prediction error marks where people look, has support in classical models of
+surprise~\cite{itti2009bayesian} but had not been tested with the predictor of a
+modern self-supervised video model.
+
+This thesis addresses these gaps. It evaluates a frozen V-JEPA~2 encoder with a
+light decoder that predicts many frames per pass, compares it with SalFoM, the
+closest foundation-model approach, under one validated evaluator with
+paired statistics, tests the encoder's own predictor as a source of attention
+cues, and examines which design choices still matter once the encoder is fixed.
+It resembles SalFoM in building on a video foundation encoder and shares its
+multi-scale decoder design with much of the field; it differs in keeping the
+encoder frozen, in the objective with which that encoder was trained, in the
+multi-frame output, and in the pre-registered experimental protocol.

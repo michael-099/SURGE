@@ -120,8 +120,10 @@ training objective and the distribution-based metrics well defined.
 The model sees a temporal window rather than a single frame. A clip of
 $T=16$ frames is sampled with a stride of $s=2$, so that the sampled indices
 are $n_k=n_0+ks$ for $k=0,\dots,T-1$; at the 30\,frames-per-second rate of
-DHF1K the clip spans 31 original frames, or about one second. Indices that
-fall outside the video are clamped to its first or last frame. The model
+DHF1K the clip spans 31 original frames, or about one second. The stride is
+defined in frames, so on datasets with other frame rates the clip covers a
+correspondingly different duration. Indices that fall outside the video are
+clamped to its first or last frame. The model
 predicts maps for all $T$ sampled frames but only the central $T/2$
 positions,
 \begin{equation}
@@ -144,7 +146,7 @@ are compared in \cref{ch:experiments}.
 
 No new eye-tracking data were collected. The study uses ten public datasets,
 summarised in \cref{tab:datasets}. All were read from their original
-distributions; the splits and holdout lists used here are released with the
+distributions; the splits and holdout lists used here are provided with the
 code.
 
 \begin{table}[htbp]
@@ -280,7 +282,11 @@ intermediate layers of the encoder, rebuilds a multi-scale feature pyramid,
 decodes it top-down with factorised spatio-temporal convolutions, and adds a
 learned centre prior before normalising each output frame into a probability
 distribution. Only the decoder and the prior are trained: 6.99 million
-parameters with the ViT-L encoder and 7.39 million with ViT-g.
+parameters with the ViT-L encoder and 7.39 million with ViT-g. The name
+derives from the original design of the project, a \emph{SURprise-Gated
+Encoder}--decoder in which the predictor's error was to modulate the decoder;
+the suffix D marks the reduced design that remained after the tests of
+\cref{sec:optional}, in which the surprise branch did not pass its gate.
 
 \begin{figure}[htbp]
   \centering
@@ -630,7 +636,11 @@ $64\times64$ map is upsampled bilinearly to the native resolution, smoothed
 with a Gaussian of standard deviation $\sigma$ (in native pixels) and
 normalised to sum to one. The value of $\sigma$ was chosen on the holdout by
 CC for each model and each ensemble, and the same map is then used for all
-metrics, as recommended by K\"ummerer et al.~\cite{kummerer2018saliency}.
+metrics, as is common practice in video saliency evaluation. K\"ummerer et
+al.~\cite{kummerer2018saliency} argue instead that each metric should receive
+the map that is optimal for it under the model's probabilistic prediction; the
+single CC-tuned map treats all models alike but may understate the scores a
+model could reach on the other metrics (\cref{sec:threats}).
 
 \begin{algorithm}[htbp]
   \caption{Whole-video inference with SURGE-D}\label{alg:inference}
@@ -740,7 +750,7 @@ interfaces, but they can also be used to design content that captures
 attention against the viewer's interest. The models of this thesis predict
 average gaze over groups of observers and contain no information about
 individuals; the work does not, however, remove the broader risk, and the
-released code is intended for research use.
+code accompanying the thesis is intended for research use.
 
 Finally, the experiments consumed electricity on a single workstation
 graphics card. The design choices that keep the encoder frozen and amortise

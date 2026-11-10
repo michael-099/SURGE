@@ -5,9 +5,45 @@
 and how, what the main results were (with numbers), and what the work
 contributes. Write it last, and do not cite references in it.}
 
-Write the abstract here. Start with the problem and why it matters. Then
-describe the approach and datasets, give the main quantitative results, and
-end with the contribution of the work.
+Predicting where people look in videos supports applications from compression
+to content design and tests our understanding of human attention. Recent video
+saliency models draw their accuracy from large pretrained encoders, which they
+fine-tune on small eye-tracking datasets and run once for every output frame.
+This thesis asks whether a self-supervised video encoder trained by feature
+prediction, V-JEPA~2, is sufficient for the task without adapting it, and
+whether the error of the encoder's own pretrained predictor, a learned measure
+of surprise, indicates where people look.
+
+The proposed model, SURGE-D, combines the frozen encoder with a decoder of 7.4
+million parameters that reads four intermediate layers, rebuilds a multi-scale
+feature pyramid, decodes it with factorised spatio-temporal convolutions and
+predicts saliency maps for sixteen frames per forward pass. Every design choice
+was tested under a rule written before the experiment, all models were scored
+once per test set by an evaluator validated against reference code, and
+differences were assessed with a paired bootstrap over videos. The evaluation
+covers DHF1K, UCF Sports, Hollywood-2 with openly licensed gaze recordings, and
+six audio-visual datasets.
+
+On the DHF1K validation set, a three-seed ensemble with the ViT-g encoder reached
+a correlation coefficient of 0.603 and a normalised scanpath saliency of 3.49,
+against 0.564 and 3.33 for SalFoM, the closest foundation-model approach, scored
+by the same evaluator. It was better on all six metrics, with bootstrap intervals
+that exclude zero, while needing about one sixth of SalFoM's encoder computation
+per output frame. After brief fine-tuning, the model was competitive with the
+best published results on UCF Sports and exceeded the best peer-reviewed results
+that could be verified on five of the six audio-visual datasets; it failed on
+conversations, where gaze follows the speaker. The predictor's error, by
+contrast, was anti-correlated with fixations and was beaten by simple frame
+differencing. Encoder pre-training and scale produced the only large gains,
+whereas low-rank adaptation, a learned centre prior, deep supervision,
+static-image co-training, longer clips, more training videos and audio fusion
+produced none that could be measured.
+
+The thesis contributes an efficient frozen-encoder saliency model, a documented
+negative result on predictive surprise, controlled evidence on which design
+choices matter with a strong encoder, and a transparent evaluation protocol.
 
 \vspace{\baselineskip}
-\noindent\textbf{Keywords:} keyword one, keyword two, keyword three, keyword four
+\noindent\textbf{Keywords:} video saliency prediction, eye fixations,
+self-supervised learning, joint-embedding predictive architecture, frozen
+encoder, predictive surprise

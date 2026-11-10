@@ -9,16 +9,73 @@ links to your research question. Start from the broad theme, then narrow down
 to the specific details that make your problem relevant. By the end, the need
 for the research should already be clear.}
 
-Write the background here. Cite sources as you go~\cite{itti1998model}, and
-introduce acronyms with \verb|\ac{...}|. For example, \ac{CNN} is spelled out
-on first use and abbreviated afterwards: \ac{CNN}.
+When people watch a video, they do not look everywhere. Their eyes move several
+times per second, and different observers tend to look at the same few regions:
+moving objects, faces and, in conversations, the person who is
+speaking~\cite{mital2011clustering,coutrot2014how}. Where people look is shaped
+by the image itself, by the viewer's task and by strong regularities such as
+the preference for the centre of the
+screen~\cite{itti2001computational,borji2013state,tseng2009quantifying}.
+\emph{Video saliency prediction} is the task of predicting, for every frame of a
+video, the distribution of human fixations. Models of this kind support
+applications in which the allocation of attention matters, from compression and
+summarisation to the design and evaluation of visual
+content~\cite{borji2021saliency}, and they are also scientific models of human
+attention whose successes and failures say something about what drives gaze.
+
+The field has progressed in step with the representations it builds on. Early
+models computed saliency from the local contrast of hand-crafted features such
+as intensity, colour, orientation and motion~\cite{itti1998model}. The
+introduction of large eye-tracking benchmarks, most importantly
+DHF1K~\cite{wang2018revisiting,wang2021revisiting}, enabled deep networks to be
+trained for the task, and the accuracy of these networks has risen with each
+generation of their encoders: image networks with recurrent layers,
+three-dimensional convolutional networks pretrained for action recognition,
+video transformers and, most recently, video foundation models trained with
+self-supervision on large collections of video~\cite{moradi2024salfom}.
+
+Self-supervised video models differ in what they learn to predict. One family,
+the joint-embedding predictive architectures, learns by predicting the
+\emph{representations} of hidden parts of a video from the visible
+parts~\cite{assran2023self,bardes2024revisiting}. Such models have two
+properties that make them interesting for saliency prediction. Their features
+are reported to work well without adapting the encoder to a new
+task~\cite{bardes2024revisiting}, which suggests that a frozen encoder with a
+small task-specific decoder might suffice. And they contain a trained predictor,
+whose errors indicate what the model failed to anticipate, a learned analogue of
+the \enquote{surprise} that has been proposed as a driver of human
+attention~\cite{itti2009bayesian}.
 
 %----------------------------------------------------------------------------
 \section{Motivation}\label{sec:motivation}
 
 \guide{Explain what motivated you to carry out this work.}
 
-Write the motivation here.
+Three considerations motivated this work. The first is practical.
+SalFoM~\cite{moradi2024salfom}, the first video saliency model built on a video
+foundation encoder, which reported the best DHF1K test results among the methods
+it compared with, fine-tunes a 300-million-parameter encoder on a few hundred
+training videos and runs it once for every output frame. Fine-tuning
+so large a model on so little data risks overfitting, which its authors offer as
+an explanation for its weaker results on a small dataset, and the per-frame
+design makes inference expensive. A frozen encoder with a decoder that predicts
+many frames at once would avoid both problems, if its features are good enough.
+
+The second consideration is scientific. The idea that attention is drawn to the
+unexpected has strong support from computational models built on hand-crafted
+features~\cite{itti2009bayesian}, but it had not been tested with the learned
+predictor of a modern video model. If such a predictor's errors marked where
+people look, they would provide a principled attention cue learned without any
+gaze data; if they did not, understanding why would clarify what these models
+actually learn.
+
+The third consideration is methodological. Published comparisons in video
+saliency rely mostly on numbers copied from other papers, computed with
+different evaluation code and sometimes on different data splits, and they
+rarely report uncertainty. Small reported gains are therefore hard to interpret.
+A study that re-scores its main baseline with the same validated evaluator,
+quantifies uncertainty and fixes its decision rules in advance can give answers
+that are more reliable, including negative answers.
 
 %----------------------------------------------------------------------------
 \section{Statement of the Problem}\label{sec:problem}
@@ -28,7 +85,19 @@ thesis solves, clearly enough that the reader knows exactly what is being
 addressed. A good problem statement answers \enquote{Why does this research
 need to be conducted?}}
 
-Write the problem statement here.
+Recent video saliency models obtain their accuracy from large pretrained
+encoders, which they adapt to small saliency datasets, at a high computational
+cost per output frame. It is not known whether this adaptation is necessary, or
+whether the representations of a self-supervised video encoder trained by
+feature prediction are sufficient on their own, with only a light decoder
+trained on gaze data. Nor is it known whether the prediction errors of such an
+encoder's predictor, which offer a learned measure of surprise, carry
+information about where people look. Finally, because comparisons in the field
+are rarely made under a common evaluation protocol with uncertainty estimates,
+it is unclear which design choices, beyond the encoder, still matter once a
+strong encoder is used. This thesis addresses these questions with a frozen
+V-JEPA~2 encoder~\cite{murlabadia2026vjepa21}, a purpose-built decoder, and a
+pre-registered evaluation on nine eye-tracking test sets.
 
 %----------------------------------------------------------------------------
 \section{Research Questions}\label{sec:questions}
@@ -38,9 +107,20 @@ answer each one explicitly.}
 
 This study answers the following research questions:
 \begin{enumerate}[label=\textbf{RQ\arabic*.},leftmargin=*]
-  \item First research question?
-  \item Second research question?
-  \item Third research question?
+  \item Can a frozen self-supervised video encoder of the V-JEPA family, combined
+    with a lightweight spatio-temporal decoder, predict human fixations in video
+    more accurately than the closest foundation-model approach, SalFoM, when both
+    are evaluated under an identical protocol?
+  \item Does the prediction error of the encoder's pretrained latent predictor
+    (\enquote{predictive surprise}) carry information about where people look,
+    beyond that carried by simple appearance and motion cues?
+  \item Which design factors determine accuracy when the encoder is frozen: the
+    pre-training and scale of the encoder, parameter-efficient adaptation, the
+    learned centre prior, deep supervision, static-image co-training, temporal
+    sampling, the amount of training data and ensembling?
+  \item How well does the approach transfer to eye-tracking datasets with other
+    content and viewing tasks, and does adding the soundtrack improve it on
+    audio-visual datasets?
 \end{enumerate}
 
 %----------------------------------------------------------------------------
@@ -51,16 +131,29 @@ specific and follow from the problem statement.}
 
 \subsection{General Objective}
 
-The general objective of this study is to \ldots
+The general objective of this study is to design, implement and rigorously
+evaluate a video saliency prediction model built on a frozen self-supervised
+video encoder, and to test whether the encoder's own prediction error is a
+useful cue for human attention.
 
 \subsection{Specific Objectives}
 
 To achieve the general objective, the study will:
 \begin{itemize}
-  \item review \ldots;
-  \item prepare \ldots;
-  \item design and implement \ldots;
-  \item evaluate \ldots.
+  \item review the literature on visual attention, video saliency prediction and
+    self-supervised video representation learning;
+  \item prepare the eye-tracking datasets and an evaluation protocol whose metric
+    implementation is validated against reference code, including a new
+    ground truth for Hollywood-2 from openly licensed gaze recordings;
+  \item design and implement a decoder that turns the intermediate features of a
+    frozen V-JEPA~2 encoder into saliency maps for many frames per forward pass;
+  \item test the predictive surprise of the V-JEPA~2 predictor as a fixation
+    cue against simple reference cues;
+  \item compare encoders and design choices under decision rules fixed before
+    each experiment;
+  \item evaluate the final models on DHF1K and eight further test sets, with
+    paired statistical comparisons where the data allow; and
+  \item measure the computational cost of the approach.
 \end{itemize}
 
 %----------------------------------------------------------------------------
@@ -71,25 +164,54 @@ review, data, tools and evaluation. Keep it brief and point to
 \cref{ch:methodology} for the details.}
 
 \subsection{Literature Review}
-Describe how the literature was reviewed.
+The literature was searched in publisher indexes and through the reference
+lists of key papers, covering visual attention, image and video saliency
+prediction, video representation learning and evaluation methodology. Only
+peer-reviewed publications are cited. The venue and bibliographic details of
+every reference were verified against the publishers' records or, for
+proceedings without digital object identifiers, against the indexes of those
+proceedings; works available only as preprints were excluded.
 
 \subsection{Data Collection}
-Describe the dataset(s) used.
+No new gaze data were recorded. The study uses public eye-tracking datasets:
+DHF1K, UCF Sports, Hollywood-2 with the gaze recordings of Vig et al., the six
+audio-visual datasets of the STAViS benchmark, and SALICON for one ablation
+(\cref{sec:dataset}).
 
 \subsection{Tools and Techniques}
-List the main tools, frameworks and hardware.
+The model was implemented in Python with PyTorch~\cite{paszke2019pytorch}; the
+pretrained encoders were loaded with the Transformers
+library~\cite{wolf2020transformers}. All experiments ran on a single
+workstation with one NVIDIA RTX A5000 graphics card (\cref{sec:setup}).
 
 \subsection{Evaluation}
-Describe how the results were evaluated.
+Models were evaluated with six standard saliency metrics~\cite{bylinskii2019metrics},
+computed by an evaluator validated against reference code. Differences between
+models were tested with a paired bootstrap over videos, and every decision was
+governed by a rule written before the corresponding experiment
+(\cref{sec:design}).
 
 %----------------------------------------------------------------------------
 \section{Scope and Limitations}\label{sec:scope}
 
 \guide{State what the study covers, and what it does not cover and why.}
 
-\paragraph{Scope.} Describe what the study covers.
+\paragraph{Scope.} The study covers offline (non-causal) saliency prediction for
+video, in which the map of a frame may depend on the frames around it. The main
+model is visual; the soundtrack is examined in one separate experiment. The
+encoders are frozen V-JEPA~2 models in two sizes; V-JEPA~2.1 and UMT-L are
+included in the encoder comparison. Evaluation covers nine test sets: DHF1K,
+UCF Sports, Hollywood-2 with the Vig gaze data, and six audio-visual datasets.
 
-\paragraph{Limitations.} Describe what the study does not cover.
+\paragraph{Limitations.} The DHF1K test-set annotations are withheld by the
+dataset authors; predictions for the test set were prepared, but their scores
+were not available when the thesis was written, so DHF1K results are reported on
+the official validation set. The standard Hollywood-2 ground truth could not be
+obtained, so the Hollywood-2 results use other gaze data and are not comparable
+with published numbers. Full fine-tuning of the encoder, other foundation
+encoders and causal (streaming) prediction were outside the scope of the study,
+and the component ablations used a single training seed because of the
+available computing resources.
 
 %----------------------------------------------------------------------------
 \section{Contributions}\label{sec:contributions}
@@ -99,8 +221,29 @@ results, analysis) and how they extend existing knowledge.}
 
 The main contributions of this thesis are:
 \begin{itemize}
-  \item \ldots;
-  \item \ldots.
+  \item \textbf{SURGE-D}, a video saliency model that combines a frozen V-JEPA~2
+    encoder with a light feature-pyramid decoder of factorised spatio-temporal
+    convolutions and predicts maps for sixteen frames per forward pass. With
+    7.4 million trained parameters, its three-seed ViT-g ensemble reaches a
+    correlation coefficient of 0.603 on the DHF1K validation set, against 0.564
+    for SalFoM scored by the same evaluator, and is better on all six metrics
+    with paired bootstrap intervals that exclude zero. Counting the encoder
+    alone, SalFoM's per-frame design requires about six times more computation
+    per output frame.
+  \item \textbf{A negative result on predictive surprise}: the error of the
+    pretrained V-JEPA~2 predictor does not indicate where people look; it is
+    beaten by frame difference and is even anti-correlated with fixations,
+    because it mainly reflects the atypicality of regions rather than violated
+    expectations.
+  \item \textbf{Controlled evidence on what matters} once the encoder is frozen:
+    the encoder's pre-training and scale produce the only large gains, seed
+    ensembles a small one, while low-rank adaptation, the learned centre prior,
+    deep supervision, static-image co-training, longer clips, more training
+    videos and a simple audio fusion produce none that could be measured.
+  \item \textbf{A transparent evaluation} across nine test sets with a validated
+    evaluator, pre-registered decision rules, paired statistics and a new,
+    openly reproducible Hollywood-2 ground truth from the gaze recordings of Vig
+    et al., with the code, splits and decision log provided with the thesis.
 \end{itemize}
 
 %----------------------------------------------------------------------------
@@ -109,6 +252,6 @@ The main contributions of this thesis are:
 The rest of this thesis is organized as follows.
 \Cref{ch:literature} reviews the background concepts and techniques.
 \Cref{ch:related} discusses related work and identifies the research gap.
-\Cref{ch:methodology} presents the proposed approach.
+\Cref{ch:methodology} presents the proposed approach and the evaluation protocol.
 \Cref{ch:experiments} describes the experiments and discusses the results.
 \Cref{ch:conclusion} concludes the thesis and outlines future work.
