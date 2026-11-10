@@ -1,0 +1,79 @@
+% Chapter 4: Methodology (proposed approach)
+% Rename sections to suit your work, e.g. "System Design" or "Proposed Model".
+\chapter{Methodology}\label{ch:methodology}
+
+\guide{Describe what you built or did, in enough detail that someone else
+could reproduce it. Justify each design choice and relate it back to the
+research questions.}
+
+Give a short introduction to the chapter here.
+
+%----------------------------------------------------------------------------
+\section{Research Design}\label{sec:design}
+
+Describe the overall research approach and why it suits the research
+questions.
+
+%----------------------------------------------------------------------------
+\section{Dataset}\label{sec:dataset}
+
+\subsection{Data Collection}
+Describe where the data comes from, its size and how it is split.
+
+\subsection{Preprocessing}
+Describe how the data is cleaned and prepared.
+
+%----------------------------------------------------------------------------
+\section{Proposed Architecture}\label{sec:architecture}
+
+Every figure must be referred to in the text. \Cref{fig:architecture} shows
+the overall architecture of the proposed approach.
+
+\begin{figure}[htbp]
+  \centering
+  % Replace example-image with your own file in figures/,
+  % e.g. \includegraphics[width=0.8\textwidth]{architecture.pdf}
+  \includegraphics[width=0.7\textwidth]{example-image}
+  \caption{Overall architecture of the proposed approach}\label{fig:architecture}
+\end{figure}
+
+\subsection{[Component One]}
+Describe the first component.
+
+\subsection{[Component Two]}
+Describe the second component. \Cref{alg:example} shows how an algorithm is
+written.
+
+\begin{algorithm}[htbp]
+  \caption{Example algorithm}\label{alg:example}
+  \begin{algorithmic}[1]
+    \Require input $x$
+    \Ensure output $y$
+    \State $y \gets 0$
+    \For{$i \gets 1$ \textbf{to} $n$}
+      \State $y \gets y + f(x_i)$
+    \EndFor
+    \State \Return $y$
+  \end{algorithmic}
+\end{algorithm}
+
+%----------------------------------------------------------------------------
+\section{Training Procedure}\label{sec:training}
+
+Describe the loss function, optimiser and training strategy. Number equations
+so they can be referred to, e.g.\ \cref{eq:loss}:
+\begin{equation}
+  \mathcal{L} = \frac{1}{N} \sum_{i=1}^{N} \ell\left(\hat{y}_i, y_i\right).
+  \label{eq:loss}
+\end{equation}
+
+%----------------------------------------------------------------------------
+\section{Evaluation Metrics}\label{sec:evaluation-metrics}
+
+Define the metrics used to evaluate the approach and explain why they were
+chosen.
+
+%----------------------------------------------------------------------------
+\section{Ethical Considerations}\label{sec:ethics}
+
+Discuss any ethical issues, for example the privacy of people in the data.

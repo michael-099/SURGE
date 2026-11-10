@@ -1,0 +1,70 @@
+%% ===========================================================================
+%%  MSc Thesis: AAU, AAiT, School of Information Technology and Engineering
+%%
+%%  Build:  latexmk main.tex    (pdflatex + biber; see README.md)
+%% ===========================================================================
+
+% While writing, the grey "Guide" boxes remind you what each section needs.
+% Switch to the second line before you submit.
+\documentclass{aaitthesis}
+% \documentclass[noguidance]{aaitthesis}
+
+\addbibresource{references.bib}
+
+%-------------------------------- Title page --------------------------------
+\thesistitle{Title of the Thesis: Concise, Clear and Descriptive}
+\studentname{Full Name of the Student}
+\advisor{Dr.\ Full Name of the Advisor}
+\coadvisor{Dr.\ Full Name of the Co-advisor}   % \coadvisor{} if there is none
+\department{Department of [Name]}
+\degree{Master of Science in [Program Name]}
+\submissiondate{November 2026}                 % month and year of submission
+% These already default to the SiTE / AAiT / AAU names:
+% \school{School of Information Technology and Engineering}
+% \institute{Addis Ababa Institute of Technology}
+% \university{Addis Ababa University}
+% \place{Addis Ababa, Ethiopia}
+
+% Logos. The AAU logo is included; add the AAiT logo at this path.
+% \aaulogo{figures/aau-logo.jpg}
+% \aaitlogo{figures/aait-logo.png}
+
+%------------------------------- Approval page ------------------------------
+% Names left empty print as a blank line to be filled in by hand.
+\internalexaminer{}
+\externalexaminer{}
+\chairperson{}
+\schooldean{}
+
+%============================================================================
+\begin{document}
+
+%--------------------------- Preliminary pages -----------------------------
+\maketitlepage                          % title page (no page number)
+\makeapprovalpage                       % approval by board of examiners
+\makedeclaration                        % declaration of originality
+\input{frontmatter/dedication}          % dedication (optional)
+\input{frontmatter/abstract}            % abstract
+\input{frontmatter/acknowledgment}      % acknowledgment
+\tableofcontents
+\listoffigures
+\listoftables
+\input{frontmatter/acronyms}            % list of acronyms
+
+%------------------------------ Main matter --------------------------------
+\mainmatter
+\input{chapters/01-introduction}
+\input{chapters/02-literature-review}
+\input{chapters/03-related-work}
+\input{chapters/04-methodology}
+\input{chapters/05-experiments}
+\input{chapters/06-conclusion}
+
+\printreferences
+
+%------------------------------- Appendices --------------------------------
+\appendix
+\input{appendices/appendix-a}
+\input{appendices/appendix-b}
+
+\end{document}

@@ -6,3 +6,18 @@ runs/smoke*/
 SAFETY_STOP.txt
 runs/**/STOP
 runs/**/preds/
+
+# LaTeX build intermediates
+Paper/**/*.aux
+Paper/**/*.bbl
+Paper/**/*.bcf
+Paper/**/*.blg
+Paper/**/*.fdb_latexmk
+Paper/**/*.fls
+Paper/**/*.lof
+Paper/**/*.log
+Paper/**/*.lot
+Paper/**/*.out
+Paper/**/*.run.xml
+Paper/**/*.synctex.gz
+Paper/**/*.toc

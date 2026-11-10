@@ -1,0 +1,87 @@
+% Chapter 5: Experiments, Results and Discussion
+\chapter{Experiments, Results and Discussion}\label{ch:experiments}
+
+\guide{Describe the setup, present the results objectively, compare them with
+existing methods, and then interpret them. The discussion should say what the
+results mean for each research question.}
+
+Give a short introduction to the chapter here.
+
+%----------------------------------------------------------------------------
+\section{Experimental Setup}\label{sec:setup}
+
+\Cref{tab:setup} lists the hardware and software used in the experiments.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Experimental environment}\label{tab:setup}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Item} & \textbf{Specification} \\
+    \midrule
+    \ac{GPU}            & \ldots \\
+    CPU / RAM           & \ldots \\
+    Operating system    & \ldots \\
+    Framework           & \ldots \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Implementation Details}
+Give the hyperparameters and other details needed to reproduce the results.
+
+%----------------------------------------------------------------------------
+\section{Results}\label{sec:results}
+
+\subsection{Quantitative Results}
+
+\Cref{tab:results} compares the proposed approach with existing methods.
+Highlight the best result in each column in bold.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Comparison with existing methods}\label{tab:results}
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    \textbf{Method} & \textbf{Metric 1} $\uparrow$ & \textbf{Metric 2} $\uparrow$
+      & \textbf{Metric 3} $\downarrow$ \\
+    \midrule
+    Method A~\cite{wang2018revisiting} & 0.000 & 0.000 & 0.000 \\
+    Method B~\cite{min2019tased}       & 0.000 & 0.000 & 0.000 \\
+    \midrule
+    Proposed                          & \textbf{0.000} & \textbf{0.000} & \textbf{0.000} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Qualitative Results}
+
+\Cref{fig:qualitative} shows example outputs.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.31\textwidth}
+    \includegraphics[width=\linewidth]{example-image-a}
+    \caption{Input}\label{fig:qual-input}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.31\textwidth}
+    \includegraphics[width=\linewidth]{example-image-b}
+    \caption{Ground truth}\label{fig:qual-gt}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.31\textwidth}
+    \includegraphics[width=\linewidth]{example-image-c}
+    \caption{Proposed}\label{fig:qual-ours}
+  \end{subfigure}
+  \caption{Qualitative results}\label{fig:qualitative}
+\end{figure}
+
+%----------------------------------------------------------------------------
+\section{Ablation Study}\label{sec:ablation}
+
+Show the effect of each component of the proposed approach.
+
+%----------------------------------------------------------------------------
+\section{Discussion}\label{sec:discussion}
+
+Interpret the results and answer each research question from
+\cref{sec:questions}.
