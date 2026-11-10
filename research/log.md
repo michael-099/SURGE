@@ -658,3 +658,94 @@ Paired bootstrap over clips (`runs/g_other/cmp_hollywood_*.txt`):
 - **11E** ViT-g everywhere: best SURGE-D numbers on UCF (0.735), 5/6 STAViS datasets (AVAD now ties the best published
   visual model) and Hollywood (Vig) (0.688); significant over ViT-L on DIEM, Coutrot1, ETMD, AVAD and Hollywood.
 - The safety monitor ran throughout (max 87 °C); no SAFETY_STOP; nothing was force-killed.
+
+## 12. Review follow-up (rules written 2026-11-10 18:30, before any run)
+
+An area-chair-style review of the thesis (`Paper/msc-thesis/review/area-chair-review.md`) found claims that need
+evidence that had not been collected. The user asked for the appropriate follow-up overnight. Order: 12A, 12B (GPU,
+existing models), 12C and 12F (CPU), 12D (GPU, new models), then 12E and the ViT-L part of 12D as time allows. One
+GPU job at a time under the safety monitor. Results are reported in the thesis as review follow-up results, with the
+date of this section.
+
+**12A. Seeds 1 and 2 scored singly on DHF1K val.** `runs/main_b1_s{1,2}` (ViT-L, σ 12) and `runs/vitg_s{1,2}`
+(ViT-g, σ 8), each with the σ of the seed-0 single model of the same encoder (sections 5 and 10B), no new tuning.
+Scored once, all frames, six metrics. Reported: each seed's paired bootstrap against SalFoM (released maps) and the
+mean ± SD over the three seeds. Reading: "a single model is better than SalFoM" holds for an encoder only if the
+ΔCC interval of every seed lies above 0.
+
+**12B. Frozen UMT-L with the SURGE-D decoder on DHF1K val.** `runs/g1_umt_l/best.pt` (gate G1: seed 0, best of 10
+epochs, 224² input). σ tuned on the holdout (grid 0–24, CC, every 5th frame); scored once on val, six metrics.
+Paired bootstrap against SalFoM and against SURGE-D ViT-L seed 0. Reading: if the ΔCC interval against SalFoM lies at
+or above 0, the gain over SalFoM is not specific to V-JEPA 2 (a frozen encoder of SalFoM's own family with this
+decoder already matches it); if it lies below 0 and below SURGE-D ViT-L, the encoder is the main source of the gain.
+Caveats: one seed, a 10-epoch run, 224² input.
+
+**12C. SalFoM with the same blur grid.** SalFoM's released val maps blurred with σ ∈ {0, 4, 8, 12, 16, 24} native
+pixels (σ 0 = as released), scored on val (all frames, six metrics). The σ with the best val CC is an upper bound
+for SalFoM, because it is selected on the test set. Paired bootstrap of each SURGE-D val result (ViT-L and ViT-g,
+single and ensemble) against SalFoM at that σ. Reading: "better than SalFoM" stands for a model only if its ΔCC
+interval against the best-σ SalFoM lies above 0.
+*Amendment, 18:40, before any blurred SalFoM score was seen:* to save CPU time, the grid is scored with CC, NSS, SIM
+and KLD only (the selection uses CC); all six metrics are computed for σ 0 (the existing
+`runs/metric_check/salfom_val_all.json`) and for the selected σ.
+
+**12D. Causal SURGE-D (the identical-protocol control of RQ1).**
+- Definition: the map of frame f is the model's output at the last sampled position of the window f−30, f−28, …, f
+  (16 frames, stride 2; indices below 0 clamped to frame 0). No frame after f is used, as in SalFoM.
+- Training: the B1 recipe unchanged (ViT-g: `model.backbone=vjepa2_g`, 256², 3 epochs, warm-up 0.25 epoch, 8 clips
+  per video, batch 8, lr 3e-4, prior lr 1e-3, decoder from scratch), except that each clip is supervised on its last
+  sampled frame only (target frame drawn uniformly over the video; auxiliary heads on the same frame). Seeds 0, 1, 2.
+- Selection: best epoch by holdout CC, scored causally on every 10th frame. σ tuned on the holdout (grid 0–24, causal,
+  every 10th frame) for seed 0 (also used for seeds 1 and 2) and for the three-seed ensemble.
+- Test: DHF1K val scored once, causally, on every 10th frame (frames 0, 10, 20, … of each video), six metrics.
+  SalFoM is scored on the same frames, as released and at the 12C σ.
+- **Primary test:** paired bootstrap over the 100 videos, causal ViT-g ensemble against SalFoM at its 12C σ. RQ1 is
+  answered "better under an identical protocol" if the ΔCC interval lies above 0, and "not shown under an identical
+  protocol" otherwise.
+- Secondary: causal single models against SalFoM; causal against offline SURGE-D on the same frames (offline models
+  rescored on the same frames if time allows, otherwise per-video means over all frames). ViT-L causal (same recipe
+  with `vjepa2_l`) only after 12E.
+
+**12E. Component ablations with three seeds (ViT-L, if time allows).** Seeds 1 and 2 of no centre prior, no
+auxiliary heads, SALICON co-training and stride 4 (B1 recipe of section 4, seed changed). The holdout per-video
+scores of all 15 models (B1 seeds 0–2 and the 4 × 3 ablation runs) are recomputed with `scripts/evaluate.py` (holdout,
+every 5th frame, σ 0, as during training). Effect per factor: the mean over seeds of the per-video ΔCC to B1 of the
+same seed, with a two-level bootstrap over seeds and videos. Outcome: **effect** if the 95 % interval excludes 0 and
+|Δ| ≥ 0.003; **equivalent** if the 90 % interval lies within ±0.003; otherwise **inconclusive**.
+
+**12F. Gate G2 intervals (CPU).** 95 % video-bootstrap intervals for each map's NSS and CC at both frame rates, and
+for the paired differences surprise − frame difference and surprise − token atypicality, from
+`runs/g2/g2_results.json`. Reading: "anti-correlated" holds for a map and rate only if its NSS interval lies below 0;
+"weaker than frame difference" holds only if the paired NSS interval lies below 0.
+
+### 12A, 12B, 12C and 12F results (2026-11-10, queue A finished 19:56; SalFoM grid on the CPU; `runs/review/`)
+
+**12F (G2 intervals, 60 holdout videos).** Raw surprise NSS −0.190 [−0.332, −0.045] at ~4 fps and −0.502
+[−0.620, −0.385] at ~15 fps (below 0 at both rates). Contextual surprise +0.116 [−0.043, +0.275] at ~4 fps (not
+distinguishable from 0) and −0.366 [−0.505, −0.225] at ~15 fps. Every paired NSS and CC difference surprise − frame
+difference and surprise − atypicality is below 0 at both rates (e.g. raw − frame difference NSS −1.000 [−1.183,
+−0.817] at ~4 fps). `runs/review/g2_intervals.json`.
+
+**12A (seeds singly on val, σ of the seed-0 model).** CC / NSS:
+- ViT-L: s0 0.5836 / 3.349, s1 0.5805 / 3.307, s2 0.5872 / 3.371; mean 0.5838 ± 0.0034 (SD).
+- ViT-g: s0 0.6003 / 3.457, s1 0.5948 / 3.427, s2 0.5957 / 3.472; mean 0.5969 ± 0.0030. Seed 0, the reported
+  single model (fixed in advance), is the best of the three ViT-g seeds on val.
+- vs SalFoM as released: ΔCC above 0 for every seed of both encoders (ViT-L s1 +0.0165 [+0.0067, +0.0267], s2
+  +0.0233 [+0.0128, +0.0344]; ViT-g s1 +0.0309 [+0.0207, +0.0415], s2 +0.0318 [+0.0208, +0.0433]). NSS not
+  significant for any ViT-L seed; significant for every ViT-g seed.
+
+**12B (frozen UMT-L + SURGE-D decoder, σ 8 from the holdout).** Val CC 0.5450, NSS 3.100. vs SalFoM ΔCC −0.0189
+[−0.0286, −0.0095] (below 0); SURGE-D ViT-L s0 − UMT-L ΔCC +0.0386 [+0.0254, +0.0526]. Reading (rule above): the
+interval is below 0 and below SURGE-D ViT-L, so the encoder (V-JEPA 2 rather than UMT) is the main source of the
+gain over SalFoM; a frozen encoder of SalFoM's own family with this decoder does not reach SalFoM.
+
+**12C (SalFoM with the blur grid).** Val CC by σ: 0 → 0.5639, 4 → 0.5660, 8 → 0.5703, 12 → 0.5737, **16 → 0.5741**,
+24 → 0.5647; σ 16 (all six: NSS 3.265, SIM 0.4009, KLD 1.280, AUC-J 0.9277, sAUC 0.7557) is the upper bound.
+SURGE-D − SalFoM(σ 16), ΔCC:
+- ViT-L: s0 +0.0095 [−0.0008, +0.0203], s1 +0.0063 [−0.0031, +0.0160], s2 +0.0131 [+0.0027, +0.0241]; ensemble
+  +0.0169 [+0.0069, +0.0273].
+- ViT-g: s0 +0.0262 [+0.0160, +0.0371], s1 +0.0207 [+0.0109, +0.0310], s2 +0.0216 [+0.0106, +0.0331]; ensemble
+  +0.0287 [+0.0186, +0.0394].
+- Reading (rule above): the claim stands for every ViT-g model and for the ViT-L ensemble; it does **not** stand for
+  ViT-L single models (two of three seeds, including the reported seed 0, include 0). ViT-g s0 and the ViT-g
+  ensemble are better on all six metrics; ViT-g s2 and the ViT-L ensemble are not significant on sAUC.

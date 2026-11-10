@@ -221,3 +221,8 @@ def central(x: torch.Tensor, T: int) -> torch.Tensor:
     """Select the central T/2 sampled frames of a (B, T, ...) tensor."""
     c0 = T // 4
     return x[:, c0:c0 + T // 2]
+
+
+def last(x: torch.Tensor, T: int) -> torch.Tensor:
+    """Select the last sampled frame of a (B, T, ...) tensor (causal variant, research/log.md section 12D)."""
+    return x[:, T - 1:T]

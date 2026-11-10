@@ -31,6 +31,7 @@ from surge.infer import evaluate  # noqa: E402
 from surge.lora import lora_parameters  # noqa: E402
 from surge.losses import saliency_loss  # noqa: E402
 from surge.model import SurgeD, central  # noqa: E402
+from surge.model import last as last_frame  # noqa: E402  (main() uses `last` for the checkpoint path)
 
 
 def stop_requested(run_dir: Path) -> str | None:
@@ -112,8 +113,17 @@ def main():
 
     size = tuple(d["size"])
     g = (size[0] // 16 * 4, size[1] // 16 * 4)
+    # data.target: "central" (the thesis model) or "last" (causal variant, research/log.md section 12D)
+    tmode = d.get("target", "central")
+    causal = tmode == "last"
+    sel = last_frame if causal else central
+    if causal and d.get("salicon"):
+        raise ValueError("static co-training is defined for central targets only")
+    if causal:
+        log("causal variant: each clip is supervised on its last sampled frame; holdout scored causally")
     train_ds = ClipDataset(videos_for(cfg, "train"), T=d["T"], stride=d["stride"], size=size, out_size=g,
-                           clips_per_video=tr["clips_per_video"], hflip=d["hflip"], seed=tr["seed"], audio=use_audio)
+                           clips_per_video=tr["clips_per_video"], hflip=d["hflip"], seed=tr["seed"], audio=use_audio,
+                           target=tmode)
     ds = train_ds
     if d.get("salicon"):
         sal = SaliconDataset(d["salicon_root"], "train", T=d["T"], size=size, out_size=g, limit=d.get("salicon_limit"))
@@ -186,10 +196,10 @@ def main():
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 out = model(x, backbone_grad=stage2,
                             audio=batch["audio"].to(device, non_blocking=True) if use_audio else None)
-            loss, parts = saliency_loss(central(out["logits"], T), y, fx, tr["w_cc"], tr["w_nss"])
+            loss, parts = saliency_loss(sel(out["logits"], T), y, fx, tr["w_cc"], tr["w_nss"])
             if model.decoder.aux:
                 for k in ("aux16", "aux8"):
-                    la, _ = saliency_loss(central(out[k], T), y, fx, tr["w_cc"], 0.0)
+                    la, _ = saliency_loss(sel(out[k], T), y, fx, tr["w_cc"], 0.0)
                     loss = loss + tr["w_aux"] * la
             opt.zero_grad(set_to_none=True)
             loss.backward()
@@ -213,7 +223,7 @@ def main():
         # ---- internal validation
         t1 = time.time()
         mean, _ = evaluate(model, val_videos, T, d["stride"], size, device, sigma=cfg["eval"]["sigma"],
-                           frame_step=cfg["eval"]["frame_step"], workers=cfg["eval"]["workers"])
+                           frame_step=cfg["eval"]["frame_step"], workers=cfg["eval"]["workers"], causal=causal)
         log(f"epoch {epoch} holdout " + " ".join(f"{k}={v:.4f}" for k, v in mean.items()) +
             f" ({(time.time() - t1) / 60:.1f} min)", event="holdout", epoch=epoch, **mean)
         st = trainable_state()

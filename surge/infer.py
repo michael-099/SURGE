@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import torch
 
-from .data import Video, audio_features, inference_windows, load_gray, load_rgb
+from .data import Video, audio_features, causal_windows, inference_windows, load_gray, load_rgb
 from .losses import log_softmax2d
 from .metrics import all_metrics
 from concurrent.futures import ThreadPoolExecutor
@@ -19,10 +19,13 @@ _IO_POOL = ThreadPoolExecutor(8)  # frame decoding (OpenCV releases the GIL)
 
 @torch.no_grad()
 def predict_video(model, video: Video, T: int, stride: int, size, device, batch: int = 4, amp=torch.bfloat16,
-                  surprise_fn=None):
-    """Yield (frame_index, probability map at decoder resolution) for every frame of the video."""
+                  surprise_fn=None, causal: bool = False, frames=None):
+    """Yield (frame_index, probability map at decoder resolution) for every frame of the video.
+
+    causal=True (research/log.md section 12D): one window per frame, ending at that frame, and only for `frames`
+    (default: every frame); the map is the output at the last sampled position."""
     n = len(video)
-    wins = list(inference_windows(n, T, stride))
+    wins = list(causal_windows(n, T, stride, frames) if causal else inference_windows(n, T, stride))
     cache = {}
     A = audio_features(video, n) if getattr(model, "uses_audio", False) else None
     for b0 in range(0, len(wins), batch):
@@ -95,15 +98,18 @@ def other_fixations(videos: list[Video], k_videos: int = 10, frames_per_video: i
 
 def evaluate(model, videos: list[Video], T, stride, size, device, sigma: float = 0.0, frame_step: int = 1,
              which=("cc", "nss", "sim", "kld"), workers: int = 12, batch: int = 4, sauc_maps=None,
-             surprise_fn=None, save_small: dict | None = None, log=None):
-    """Score every `frame_step`-th frame. Returns (mean over videos of per-video means, per-video dict)."""
+             surprise_fn=None, save_small: dict | None = None, log=None, causal: bool = False):
+    """Score every `frame_step`-th frame. Returns (mean over videos of per-video means, per-video dict).
+    causal=True predicts only the scored frames, each from the window that ends at it (section 12D)."""
     model.eval()
     per_video = {}
     with ProcessPoolExecutor(workers) as ex:
         for vi, v in enumerate(videos):
             jobs, frames = [], []
             preds = {}
-            for f, m in predict_video(model, v, T, stride, size, device, batch=batch, surprise_fn=surprise_fn):
+            sub = range(0, len(v), frame_step) if causal else None
+            for f, m in predict_video(model, v, T, stride, size, device, batch=batch, surprise_fn=surprise_fn,
+                                      causal=causal, frames=sub):
                 if save_small is not None:
                     preds[f] = m.astype(np.float16)
                 if f % frame_step:
@@ -111,8 +117,12 @@ def evaluate(model, videos: list[Video], T, stride, size, device, sigma: float =
                 of = sauc_maps.get(v.name) if sauc_maps is not None else None
                 jobs.append((m, v.maps[f], v.fixations[f], of, sigma, which, v.skip_empty))
                 frames.append(f)
-            if save_small is not None:
-                save_small[v.name] = np.stack([preds[i] for i in range(len(v))])
+            if save_small is not None:  # frames that were not predicted (causal subsets) stay zero
+                first = next(iter(preds.values()))
+                arr = np.zeros((len(v), *first.shape), first.dtype)
+                for i, q in preds.items():
+                    arr[i] = q
+                save_small[v.name] = arr
             res = list(ex.map(_score_one, jobs, chunksize=8))
             per_video[v.name] = {k: float(np.nanmean([r[k] for r in res])) for k in res[0]}
             if log:

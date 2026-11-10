@@ -220,15 +220,21 @@ class ClipDataset(Dataset):
 
     Each item: frames (T,3,H,W); targets for the central T/2 sampled frames: density (T/2, g, g),
     fixation counts (T/2, g, g). `clips_per_video` windows are drawn per video per epoch.
+    With target="last" (causal variant, research/log.md section 12D) the target is the last sampled frame only
+    (density (1, g, g)): the target frame is drawn uniformly over the video and the window ends at it.
     """
 
     def __init__(self, videos: list[Video], T: int = 16, stride: int = 2, size=(256, 256), out_size=(64, 64),
-                 clips_per_video: int = 8, hflip: bool = True, seed: int = 0, audio: bool = False):
+                 clips_per_video: int = 8, hflip: bool = True, seed: int = 0, audio: bool = False,
+                 target: str = "central"):
+        if target not in ("central", "last"):
+            raise ValueError(target)
         self.videos = [v for v in videos if len(v) >= 1]
         self.audio = audio
         self.T, self.stride, self.size, self.out_size = T, stride, size, out_size
         self.cpv, self.hflip = clips_per_video, hflip
         self.seed = seed
+        self.target = target
         self.epoch = 0
 
     def set_epoch(self, e: int):
@@ -242,13 +248,19 @@ class ClipDataset(Dataset):
         rng = random.Random((self.seed, self.epoch, i).__hash__())
         n = len(v)
         span = (self.T - 1) * self.stride
-        lo, hi = -span // 4, max(n - 1 - span + span // 4, -span // 4)  # allow partial edge padding
-        start = rng.randint(lo, hi)
+        if self.target == "last":  # causal: the window ends at a uniformly drawn target frame
+            start = rng.randint(0, n - 1) - span
+        else:
+            lo, hi = -span // 4, max(n - 1 - span + span // 4, -span // 4)  # allow partial edge padding
+            start = rng.randint(lo, hi)
         idx = window_indices(n, start, self.T, self.stride)
         flip = self.hflip and rng.random() < 0.5
         frames = np.stack([load_rgb(v.frames[j], self.size) for j in idx])
-        c0 = self.T // 4
-        tgt = idx[c0:c0 + self.T // 2]
+        if self.target == "last":
+            tgt = idx[-1:]
+        else:
+            c0 = self.T // 4
+            tgt = idx[c0:c0 + self.T // 2]
         dens = np.stack([density_small(load_gray(v.maps[j]), self.out_size) for j in tgt])
         fixs = np.stack([fixations_small(load_gray(v.fixations[j]), self.out_size) for j in tgt])
         if flip:
@@ -326,3 +338,13 @@ def inference_windows(n: int, T: int = 16, stride: int = 2):
             assign.append((f, (f - start) / stride))
         yield [min(max(j, 0), n - 1) for j in idx], assign
         start += hop
+
+
+def causal_windows(n: int, T: int = 16, stride: int = 2, frames=None):
+    """Causal inference (research/log.md section 12D): for each requested frame f, the window of T sampled frames
+    ending at f (f-(T-1)*stride, ..., f; indices below 0 clamped to 0); the map of f is the output at the last sampled
+    position T-1. Yields (window indices, [(f, T-1)]) like inference_windows."""
+    for f in (range(n) if frames is None else frames):
+        if not 0 <= f < n:
+            continue
+        yield [min(max(f - (T - 1 - k) * stride, 0), n - 1) for k in range(T)], [(f, float(T - 1))]

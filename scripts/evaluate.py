@@ -104,6 +104,14 @@ def main():
     sauc = other_fixations(videos) if "sauc" in which else None
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = [load_model(ROOT / r, a.ckpt, device) for r in a.run]
+    # Models trained with data.target=last are causal (research/log.md section 12D) and are run causally: one window
+    # per scored frame, ending at that frame. An ensemble must not mix causal and offline members.
+    modes = {cfg["data"].get("target", "central") for _, cfg in models}
+    if len(modes) > 1:
+        raise ValueError(f"ensemble mixes target modes {modes}")
+    causal = modes == {"last"}
+    if causal:
+        print(f"causal inference on every {a.frame_step}th frame", flush=True)
     t0 = time.time()
     per_video, nframes = {}, 0
     with ProcessPoolExecutor(a.workers) as ex:
@@ -115,15 +123,20 @@ def main():
                     p = cv2.imread(str(Path(a.maps) / v.name / f"{f + 1:04d}.png"), cv2.IMREAD_GRAYSCALE)
                     if p is None:
                         raise IOError(f"missing map {v.name}/{f + 1:04d}.png")
+                    if a.sigma > 0:  # the same output blur as for model predictions (section 12C)
+                        p = cv2.GaussianBlur(p.astype(np.float32), (0, 0), a.sigma)
                     preds[f] = p.astype(np.float64)
             else:
                 acc = None
+                sub = range(0, n, a.frame_step) if causal else None
                 for m, cfg in models:
                     d = cfg["data"]
-                    outs = [dict(predict_video(m, v, d["T"], d["stride"], tuple(d["size"]), device, batch=a.batch))]
+                    outs = [dict(predict_video(m, v, d["T"], d["stride"], tuple(d["size"]), device, batch=a.batch,
+                                               causal=causal, frames=sub))]
                     if a.flip_tta:
                         outs.append({f: mm[:, ::-1] for f, mm in predict_video(_FlipModel(m), v, d["T"], d["stride"],
-                                                                              tuple(d["size"]), device, batch=a.batch)})
+                                                                              tuple(d["size"]), device, batch=a.batch,
+                                                                              causal=causal, frames=sub)})
                     for o in outs:
                         if acc is None:
                             acc = {f: o[f].astype(np.float64) for f in o}
@@ -135,7 +148,7 @@ def main():
                 if a.save_maps:
                     od = Path(a.save_maps) / v.name
                     od.mkdir(parents=True, exist_ok=True)
-                    for f in range(n):
+                    for f in sorted(acc):
                         pm = to_native(acc[f], hw, a.sigma)
                         cv2.imwrite(str(od / f"{f + 1:04d}.png"), np.round(255 * pm / pm.max()).astype(np.uint8))
             jobs = [(preds[f], v.maps[f], v.fixations[f], sauc[v.name] if sauc else None, which, v.skip_empty)

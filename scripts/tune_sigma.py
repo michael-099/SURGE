@@ -33,13 +33,25 @@ def main():
     device = torch.device("cuda")
     vids = get_videos(a.dataset, a.split, None)
     models = [load_model(ROOT / r, a.ckpt, device) for r in a.run]
+    # Causal models (data.target=last, research/log.md section 12D) predict only the scored frames; the other frames
+    # stay zero and are never scored (score_saved uses the same frame step).
+    modes = {cfg["data"].get("target", "central") for _, cfg in models}
+    if len(modes) > 1:
+        raise ValueError(f"ensemble mixes target modes {modes}")
+    causal = modes == {"last"}
     small = {}
     for v in vids:
         acc = None
         for m, cfg in models:
             d = cfg["data"]
-            o = dict(predict_video(m, v, d["T"], d["stride"], tuple(d["size"]), device))
-            arr = np.stack([o[i] for i in range(len(v))]).astype(np.float64)
+            sub = range(0, len(v), a.frame_step) if causal else None
+            o = dict(predict_video(m, v, d["T"], d["stride"], tuple(d["size"]), device, causal=causal, frames=sub))
+            first = next(iter(o.values()))
+            arr = np.zeros((len(v), *first.shape), np.float64)
+            for i, q in o.items():
+                arr[i] = q
+            if not causal:
+                assert len(o) == len(v), (v.name, len(o), len(v))
             acc = arr if acc is None else acc + arr
         small[v.name] = (acc / len(models)).astype(np.float32)
         print("predicted", v.name, flush=True)
