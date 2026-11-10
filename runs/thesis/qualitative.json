@@ -1,0 +1,47 @@
+{
+ "0650": {
+  "tag": "p10",
+  "frame": 410,
+  "n_frames": 818,
+  "cc_ours_frame": 0.38064464850849566,
+  "cc_salfom_frame": 0.3972012126980554,
+  "cc_ours_video": 0.4545645348059064,
+  "cc_salfom_video": 0.3764199858983033
+ },
+ "0632": {
+  "tag": "p50",
+  "frame": 363,
+  "n_frames": 725,
+  "cc_ours_frame": 0.7801221828193923,
+  "cc_salfom_frame": 0.7800446546524922,
+  "cc_ours_video": 0.612513621547474,
+  "cc_salfom_video": 0.639084941261778
+ },
+ "0685": {
+  "tag": "p90",
+  "frame": 283,
+  "n_frames": 565,
+  "cc_ours_frame": 0.9351331610469341,
+  "cc_salfom_frame": 0.9457996838876099,
+  "cc_ours_video": 0.7414915730716367,
+  "cc_salfom_video": 0.7149655639974687
+ },
+ "0696": {
+  "tag": "best_vs_salfom",
+  "frame": 282,
+  "n_frames": 562,
+  "cc_ours_frame": 0.8124513309867653,
+  "cc_salfom_frame": 0.8317335370248821,
+  "cc_ours_video": 0.6642472795761886,
+  "cc_salfom_video": 0.43673084626029085
+ },
+ "0663": {
+  "tag": "worst_vs_salfom",
+  "frame": 268,
+  "n_frames": 535,
+  "cc_ours_frame": 0.5399221329517158,
+  "cc_salfom_frame": 0.7510873027699451,
+  "cc_ours_video": 0.3882428664534515,
+  "cc_salfom_video": 0.46230371251900637
+ }
+}

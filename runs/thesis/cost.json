@@ -1,0 +1,58 @@
+{
+ "vit_l": {
+  "encoder_tflops_per_clip": 1.655709892608,
+  "decoder_tflops_per_clip": 0.165901500416,
+  "tflops_per_output_frame": 0.113850712064,
+  "decoder_params_M": 6.992684,
+  "backbone_params_M": 325.971328,
+  "encoder_params_M": 303.885312,
+  "batch4": {
+   "batch": 4,
+   "windows": 47,
+   "seconds": 2.2428640999714844,
+   "output_frames": 675,
+   "frames_per_second": 300.9544804826034,
+   "ms_per_window": 50.97418409026101
+  },
+  "batch1": {
+   "batch": 1,
+   "windows": 47,
+   "seconds": 5.3223883001483046,
+   "output_frames": 723,
+   "frames_per_second": 135.8412726068585,
+   "ms_per_window": 115.70409348148488
+  },
+  "peak_mem_GB_batch4": 2.838779926300049,
+  "video": "0601",
+  "video_frames": 739
+ },
+ "vit_g": {
+  "encoder_tflops_per_clip": 5.087657197568,
+  "decoder_tflops_per_clip": 0.167512113152,
+  "tflops_per_output_frame": 0.32844808192,
+  "decoder_params_M": 7.3859,
+  "backbone_params_M": 1034.555264,
+  "encoder_params_M": 1012.173952,
+  "batch4": {
+   "batch": 4,
+   "windows": 47,
+   "seconds": 5.247993700089864,
+   "output_frames": 675,
+   "frames_per_second": 128.62058123058372,
+   "ms_per_window": 119.27258409295146
+  },
+  "batch1": {
+   "batch": 1,
+   "windows": 47,
+   "seconds": 7.490207700175233,
+   "output_frames": 723,
+   "frames_per_second": 96.52602824125763,
+   "ms_per_window": 162.83060217772245
+  },
+  "peak_mem_GB_batch4": 7.063024997711182,
+  "video": "0601",
+  "video_frames": 739
+ },
+ "gpu": "NVIDIA RTX A5000",
+ "torch": "2.14.1+cu130"
+}

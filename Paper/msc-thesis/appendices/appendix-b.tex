@@ -1,4 +1,99 @@
 % Appendix B
-\chapter{Sample Code}\label{app:code}
+\chapter{Reproducibility and Sample Code}\label{app:code}
 
-Put important code listings or sample outputs here.
+The implementation was written for this thesis and does not import code from
+other saliency projects. This appendix lists its main parts, the commands that
+produce the main results, and the forward pass of the decoder.
+
+\section{Organisation of the Code}
+
+\Cref{tab:code} lists the main files. The research log records every decision
+rule with its date, written before the experiment it governs, and every
+result with the folder it was read from.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Main files of the implementation}\label{tab:code}
+  \small
+  \begin{tabularx}{\textwidth}{@{}>{\ttfamily\raggedright}p{4.4cm}>{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textrm{\textbf{File}} & \textbf{Content} \\
+    \midrule
+    surge/backbones.py & frozen encoders (V-JEPA~2 ViT-L and ViT-g, V-JEPA~2.1, UMT-L) and their taps; predictor error for gate G2 \\
+    surge/model.py & feature pyramid, (2+1)D decoder, auxiliary heads, centre prior, surprise and audio modules \\
+    surge/data.py & dataset readers, clip sampling, targets, inference windows \\
+    surge/losses.py & training loss (\cref{eq:loss}) \\
+    surge/metrics.py & CC, NSS, SIM, KLD, AUC-J and sAUC \\
+    surge/infer.py & whole-video inference (\cref{alg:inference}) and scoring \\
+    surge/lora.py & low-rank adaptation (\cref{eq:lora}) \\
+    scripts/train.py & training with holdout selection and clean stop/resume \\
+    scripts/evaluate.py & scoring of models, ensembles or saved maps \\
+    scripts/tune\_sigma.py & selection of the output blur on the holdout \\
+    scripts/compare.py & paired bootstrap over videos \\
+    scripts/g2\_surprise.py & gate G2 \\
+    scripts/prep\_hollywood\_gaze.py & Hollywood-2 (Vig gaze) maps \\
+    scripts/prep\_stavis\_audio.py & audio features for the audio experiment \\
+    scripts/thesis\_qualitative.py & qualitative examples and cost measurements \\
+    configs/ & configurations and all split and holdout lists \\
+    research/log.md & dated decision rules and results \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Commands for the Main Results}
+
+The main DHF1K model with the ViT-g encoder (seed 0) is trained, its blur is
+tuned on the holdout, and it is scored once on the validation set with:
+
+\begin{small}
+\begin{verbatim}
+python scripts/train.py --config configs/main_b1.yaml --set \
+    run_dir=runs/vitg_s0 train.seed=0 train.epochs=3 \
+    train.warmup_epochs=0.25 model.backbone=vjepa2_g "data.size=[256,256]"
+python scripts/tune_sigma.py --run runs/vitg_s0 \
+    --out runs/vitg/sigma_single.json
+python scripts/evaluate.py --run runs/vitg_s0 --split val --metrics all \
+    --sigma 8 --out runs/vitg/val_single_s0.json
+\end{verbatim}
+\end{small}
+
+Passing \verb|--run| three times (seeds 0, 1 and 2) to the last two commands
+evaluates the three-seed ensemble. The paired bootstrap against another
+evaluation file is computed with \verb|python scripts/compare.py A.json B.json|.
+
+\section{Forward Pass of the Decoder}
+
+The listing below is the forward method of the decoder in
+\texttt{surge/model.py}, which implements \cref{eq:fpn,eq:decoder,eq:output}
+(the softmax over pixels is applied in the loss and at inference). The two
+branches used only by the audio and surprise modules are abbreviated.
+
+\begin{footnotesize}
+\begin{verbatim}
+def forward(self, taps, surprise=None, T_out=None, audio=None):
+    p4, p8, p16a, p16b = self.fpn(taps)            # SimpleFPN-3D
+    if self.audio:                                  # audio experiment only
+        ...
+    if self.use_scm:                                # surprise module (not used)
+        ...
+    d16 = self.r16(self.fuse16(torch.cat([p16a, p16b], 1)))
+    d8 = self.r8(p8 + F.interpolate(d16, size=p8.shape[2:], mode="nearest"))
+    d4 = self.r4(p4 + F.interpolate(d8, size=p4.shape[2:], mode="nearest"))
+    out = {"logits": self.head(d4)[:, 0]}           # B, T', 64, 64
+    if self.aux and self.training:
+        out["aux16"] = self.aux16(d16)[:, 0]
+        out["aux8"] = self.aux8(d8)[:, 0]
+    for k in list(out):
+        x = out[k]
+        if k != "logits":                           # aux maps to 64 x 64
+            x = F.interpolate(x[:, None], size=out["logits"].shape[1:],
+                              mode="trilinear", align_corners=False)[:, 0]
+        if T_out is not None and x.shape[1] != T_out:   # tubelets -> frames
+            x = F.interpolate(x[:, None], size=(T_out, *x.shape[2:]),
+                              mode="trilinear", align_corners=False)[:, 0]
+        if self.prior is not None:                  # + log G_theta
+            x = x + self.prior(x.shape[-2], x.shape[-1], x.device)
+        out[k] = x
+    return out
+\end{verbatim}
+\end{footnotesize}

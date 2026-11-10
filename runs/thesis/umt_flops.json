@@ -1,0 +1,5 @@
+{
+ "umt_l_encoder_tflops_per_clip_16x224": 1.89901307904,
+ "tokens": 3136,
+ "encoder_params_M": 303.072256
+}

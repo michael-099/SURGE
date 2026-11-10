@@ -1,4 +1,108 @@
 % Appendix A. Each \chapter after \appendix in main.tex is one appendix.
 \chapter{Additional Results}\label{app:results}
 
-Put additional tables and figures here.
+This appendix gives the complete statistics behind the summaries of
+\cref{ch:experiments}. All values were produced by the evaluator of
+\cref{sec:evaluation-metrics}.
+
+% A cell with a difference and its 95 % interval on a second line.
+\newcommand{\dci}[2]{\begin{tabular}[c]{@{}c@{}}#1\\[-2pt]{\scriptsize[#2]}\end{tabular}}
+
+\section{Paired Bootstrap on the DHF1K Validation Set}
+
+\Cref{tab:app-boot,tab:app-boot-enc} extend \cref{tab:dhf1k-boot} to all six
+metrics. Each cell gives the mean per-video difference and, below it, its
+95\,\% percentile interval over 10,000 bootstrap resamples of the 100
+validation videos. For KLD, lower is better, so negative differences favour the
+first model.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Paired bootstrap differences between SURGE-D and SalFoM on DHF1K
+  validation, all six metrics}\label{tab:app-boot}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Metric} & \textbf{ViT-L single} & \textbf{ViT-L ensemble} & \textbf{ViT-g single} & \textbf{ViT-g ensemble} \\
+    \midrule
+    CC    & \dci{+0.0197}{+0.0095, +0.0305} & \dci{+0.0271}{+0.0171, +0.0376} & \dci{+0.0364}{+0.0259, +0.0475} & \dci{+0.0390}{+0.0286, +0.0498} \\[5pt]
+    NSS   & \dci{+0.0225}{$-$0.0499, +0.0967} & \dci{+0.0910}{+0.0218, +0.1637} & \dci{+0.1304}{+0.0603, +0.2047} & \dci{+0.1597}{+0.0891, +0.2333} \\[5pt]
+    SIM   & \dci{+0.0362}{+0.0291, +0.0436} & \dci{+0.0356}{+0.0285, +0.0430} & \dci{+0.0401}{+0.0328, +0.0476} & \dci{+0.0444}{+0.0371, +0.0520} \\[5pt]
+    KLD   & \dci{$-$0.0747}{$-$0.1021, $-$0.0486} & \dci{$-$0.1101}{$-$0.1359, $-$0.0858} & \dci{$-$0.1270}{$-$0.1527, $-$0.1022} & \dci{$-$0.1369}{$-$0.1634, $-$0.1119} \\[5pt]
+    AUC-J & \dci{+0.0040}{+0.0022, +0.0060} & \dci{+0.0060}{+0.0042, +0.0079} & \dci{+0.0065}{+0.0048, +0.0084} & \dci{+0.0071}{+0.0053, +0.0090} \\[5pt]
+    sAUC  & \dci{+0.0230}{+0.0166, +0.0298} & \dci{+0.0208}{+0.0143, +0.0277} & \dci{+0.0304}{+0.0238, +0.0373} & \dci{+0.0275}{+0.0209, +0.0345} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Paired bootstrap differences between the ViT-g and ViT-L encoders on
+  DHF1K validation, all six metrics}\label{tab:app-boot-enc}
+  \small
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    \textbf{Metric} & \textbf{Single models} & \textbf{Three-seed ensembles} \\
+    \midrule
+    CC    & \dci{+0.0167}{+0.0116, +0.0222} & \dci{+0.0118}{+0.0077, +0.0163} \\[5pt]
+    NSS   & \dci{+0.1079}{+0.0746, +0.1423} & \dci{+0.0687}{+0.0407, +0.0974} \\[5pt]
+    SIM   & \dci{+0.0039}{+0.0000, +0.0077} & \dci{+0.0088}{+0.0058, +0.0119} \\[5pt]
+    KLD   & \dci{$-$0.0523}{$-$0.0669, $-$0.0386} & \dci{$-$0.0268}{$-$0.0381, $-$0.0158} \\[5pt]
+    AUC-J & \dci{+0.0025}{+0.0016, +0.0035} & \dci{+0.0011}{+0.0004, +0.0020} \\[5pt]
+    sAUC  & \dci{+0.0074}{+0.0041, +0.0107} & \dci{+0.0067}{+0.0038, +0.0095} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{All Metrics on the Audio-Visual Datasets}
+
+\Cref{tab:app-av} reports all six metrics of the SURGE-D ViT-g three-seed
+ensemble on the six audio-visual datasets, as fold means. The output blur was
+tuned on each fold's holdout; the selected values lay between 8 and 16
+pixels.
+
+\begin{table}[htbp]
+  \centering
+  \caption{SURGE-D ViT-g three-seed ensemble on the audio-visual datasets (fold
+  means; DIEM has one split)}\label{tab:app-av}
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{CC}$\uparrow$ & \textbf{NSS}$\uparrow$ & \textbf{SIM}$\uparrow$
+      & \textbf{KLD}$\downarrow$ & \textbf{AUC-J}$\uparrow$ & \textbf{sAUC}$\uparrow$ \\
+    \midrule
+    DIEM     & 0.729 & 2.878 & 0.584 & 0.664 & 0.923 & 0.735 \\
+    Coutrot1 & 0.657 & 3.302 & 0.504 & 0.947 & 0.911 & 0.774 \\
+    Coutrot2 & 0.819 & 6.673 & 0.601 & 0.683 & 0.966 & 0.759 \\
+    ETMD     & 0.676 & 3.687 & 0.510 & 0.930 & 0.950 & 0.765 \\
+    AVAD     & 0.740 & 4.306 & 0.565 & 0.795 & 0.942 & 0.782 \\
+    SumMe    & 0.590 & 3.261 & 0.448 & 1.148 & 0.927 & 0.763 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Encoder Comparison on the Audio-Visual Datasets}
+
+\Cref{tab:app-av-boot} gives the paired bootstrap comparison of the ViT-g and
+ViT-L ensembles on the audio-visual datasets. Because every video of these
+datasets is tested in exactly one fold, the test videos of all folds were
+pooled for the bootstrap.
+
+\begin{table}[htbp]
+  \centering
+  \caption{CC difference between the ViT-g and ViT-L three-seed ensembles on
+  the audio-visual datasets (pooled test videos, 10,000 resamples)}\label{tab:app-av-boot}
+  \small
+  \begin{tabular}{@{}lccl@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{Test videos} & $\Delta$\textbf{CC} [95\,\% CI] & \textbf{Reading} \\
+    \midrule
+    DIEM     & 17 & +0.014 [+0.003, +0.027] & ViT-g better \\
+    Coutrot1 & 60 & +0.017 [+0.005, +0.031] & ViT-g better \\
+    Coutrot2 & 15 & +0.012 [$-$0.007, +0.032] & no significant difference \\
+    ETMD     & 12 & +0.006 [+0.002, +0.010] & ViT-g better \\
+    AVAD     & 45 & +0.011 [+0.005, +0.019] & ViT-g better \\
+    SumMe    & 23 & $-$0.003 [$-$0.010, +0.004] & no significant difference \\
+    \bottomrule
+  \end{tabular}
+\end{table}

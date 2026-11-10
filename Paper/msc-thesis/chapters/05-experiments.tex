@@ -5,12 +5,27 @@
 existing methods, and then interpret them. The discussion should say what the
 results mean for each research question.}
 
-Give a short introduction to the chapter here.
+This chapter reports the experiments in the order in which they were run,
+because later experiments were planned on the basis of earlier outcomes. After
+the setup (\cref{sec:setup}) and the validation of the evaluation code
+(\cref{sec:metric-validation}), the two preliminary gates are reported: the
+choice of the video encoder (\cref{sec:g1}) and the test of predictive surprise
+as a fixation cue (\cref{sec:g2}). The main results on DHF1K, the transfer to
+eight further test sets, qualitative examples and the computational cost follow
+in \cref{sec:results}, and the ablations in \cref{sec:ablation}. The chapter
+ends with a discussion organised by research question (\cref{sec:discussion})
+and an assessment of the threats to validity (\cref{sec:threats}). Unless stated
+otherwise, every number in this chapter was produced by the code and evaluator
+described in \cref{ch:methodology}, and every test set was scored once per
+reported model.
 
 %----------------------------------------------------------------------------
 \section{Experimental Setup}\label{sec:setup}
 
-\Cref{tab:setup} lists the hardware and software used in the experiments.
+All experiments ran on a single workstation (\cref{tab:setup}), one job at a
+time. A monitoring process checked the GPU temperature, hardware events, disk
+space and memory every minute and could stop training cleanly; it was never
+triggered.
 
 \begin{table}[htbp]
   \centering
@@ -19,69 +34,704 @@ Give a short introduction to the chapter here.
     \toprule
     \textbf{Item} & \textbf{Specification} \\
     \midrule
-    \ac{GPU}            & \ldots \\
-    CPU / RAM           & \ldots \\
-    Operating system    & \ldots \\
-    Framework           & \ldots \\
+    \ac{GPU}            & NVIDIA RTX A5000, 24\,GB \\
+    CPU / RAM           & Intel Xeon w7-2475X (20 cores) / 256\,GB \\
+    Operating system    & Windows 11 Pro \\
+    Language            & Python 3.12 \\
+    Framework           & PyTorch 2.14 with CUDA 13.0~\cite{paszke2019pytorch} \\
+    Model loading       & Transformers 5.22~\cite{wolf2020transformers} \\
+    Other libraries     & NumPy~\cite{harris2020array}, OpenCV, SciPy \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \subsection{Implementation Details}
-Give the hyperparameters and other details needed to reproduce the results.
+
+The settings of \cref{tab:hyper} were used throughout. Training one
+three-epoch DHF1K model took about 15 minutes of training time with the
+ViT-L encoder (4.7 minutes per epoch of 4,320 clips) and about 31 minutes with
+ViT-g (9.9 minutes per epoch), plus the holdout evaluation after each epoch.
+ViT-g fitted in 10\,GB of GPU memory at a batch size of eight. In total, the
+experiments of this chapter comprise 13 DHF1K training runs for the gates, the
+main program and its ablations, 7 further DHF1K runs for the ViT-g, 600-video
+and 32-frame experiments, and 125 fine-tuning runs on the other datasets
+(including the 16 runs with audio). Holdout lists, configuration files and
+the log of every decision are part of the released code.
 
 %----------------------------------------------------------------------------
-\section{Results}\label{sec:results}
+\section{Validation of the Evaluator}\label{sec:metric-validation}
 
-\subsection{Quantitative Results}
+Because the metrics were implemented from scratch, the evaluator was
+validated before any SURGE-D model was scored (\cref{tab:rules}). The
+reference maps were the DHF1K validation predictions of
+SalFoM~\cite{moradi2024salfom}, produced on the same machine with the authors'
+released weights, for which per-frame scores computed with the evaluation code
+released by the TMFI-Net authors~\cite{zhou2023transformer} were available.
 
-\Cref{tab:results} compares the proposed approach with existing methods.
-Highlight the best result in each column in bold.
+The evaluator reproduced the reference scores: CC 0.5639 against 0.5642
+($\Delta=-0.0003$) and NSS 3.3264 against 3.3268 ($\Delta=-0.0004$), well within
+the tolerance of the rule. The SIM, KLD and AUC-J values of the reference code
+use other normalisations and could not be compared directly; against a second,
+independently written evaluator that follows the MIT benchmark conventions,
+CC, NSS, SIM and KLD agreed per video to within $5\times10^{-5}$ and AUC-J agreed
+in the mean. Two deviations from the reference procedures were found and
+corrected during this check, before any model was scored: the first AUC-J
+implementation lacked the tie-breaking jitter of the reference code (which
+lowered AUC-J by 0.010 on quantised maps), and the first shuffled AUC pooled all
+negatives instead of drawing them per split. With the corrected evaluator,
+SalFoM's validation maps score CC 0.5639, NSS 3.326, SIM 0.4130, KLD 1.297,
+AUC-J 0.9243 and sAUC 0.7406. These are the SalFoM numbers used in all
+comparisons below. They are slightly lower than SalFoM's published scores
+because they are computed on the validation set rather than on the official
+test set, on which the authors report CC 0.569 and NSS
+3.353~\cite{moradi2024salfom}.
+
+%----------------------------------------------------------------------------
+\section{Selection of the Video Encoder (Gate G1)}\label{sec:g1}
+
+The proposal had chosen V-JEPA~2.1~\cite{murlabadia2026vjepa21}, which extends
+the V-JEPA~2 objective with a loss on the visible tokens and with
+self-supervision at intermediate layers, specifically to obtain denser
+features. Its ViT-L model is distilled from a two-billion-parameter teacher and
+was cooled down at $384\times384$ pixels~\cite{murlabadia2026vjepa21}\footnote{Checkpoint
+\texttt{vjepa2\_1\_vitl\_dist\_vitG\_384} from the official repository.}.
+Gate G1 compared three ViT-L encoders under identical conditions: V-JEPA~2,
+V-JEPA~2.1 and UMT-L~\cite{li2023unmasked}, the encoder family used by SalFoM.
+Each was frozen and trained with the same decoder for ten epochs with seed 0,
+all V-JEPA models at $256\times256$ pixels. UMT-L received $224\times224$ input
+because its position table is fixed to that size and to 16 frames.
 
 \begin{table}[htbp]
   \centering
-  \caption{Comparison with existing methods}\label{tab:results}
-  \begin{tabular}{@{}lccc@{}}
+  \caption{Gate G1: frozen ViT-L encoders with the same decoder, internal DHF1K
+  holdout (60 videos, every fifth frame, no blur), best of ten epochs, seed 0}\label{tab:g1}
+  \begin{tabular}{@{}lccccc@{}}
     \toprule
-    \textbf{Method} & \textbf{Metric 1} $\uparrow$ & \textbf{Metric 2} $\uparrow$
-      & \textbf{Metric 3} $\downarrow$ \\
+    \textbf{Encoder} & \textbf{Best epoch} & \textbf{CC}$\uparrow$ & \textbf{NSS}$\uparrow$
+      & \textbf{SIM}$\uparrow$ & \textbf{KLD}$\downarrow$ \\
     \midrule
-    Method A~\cite{wang2018revisiting} & 0.000 & 0.000 & 0.000 \\
-    Method B~\cite{min2019tased}       & 0.000 & 0.000 & 0.000 \\
-    \midrule
-    Proposed                          & \textbf{0.000} & \textbf{0.000} & \textbf{0.000} \\
+    V-JEPA~2 ViT-L ($256^2$)   & 3 & \textbf{0.5782} & \textbf{3.314} & \textbf{0.4432} & \textbf{1.218} \\
+    V-JEPA~2.1 ViT-L ($256^2$) & 2 & 0.5692 & 3.295 & 0.4377 & 1.245 \\
+    UMT-L ($224^2$)~\cite{li2023unmasked} & 2 & 0.5464 & 3.101 & 0.4157 & 1.323 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{Qualitative Results}
+\Cref{tab:g1} shows that V-JEPA~2 led on all four metrics. V-JEPA~2.1 trailed by
+0.009 CC, outside the margin of 0.005 within which the proposal's choice would
+have been kept, so V-JEPA~2 was adopted for all later experiments. UMT-L trailed
+by 0.032 CC. With one seed per encoder, part of the gap between the two
+V-JEPA variants may be seed noise; the gap to UMT-L is several times larger
+than the seed-to-seed spread observed later (0.003 CC). The ranking of the two
+V-JEPA variants runs against the expectation that denser features help a dense
+task. Two explanations are compatible with the data and were not separated:
+the decoder reads four intermediate layers, which may already supply the local
+detail that the last layer of V-JEPA~2 lacks, and the V-JEPA~2.1 model was used
+at a lower resolution than the one at which it was cooled down.
 
-\Cref{fig:qualitative} shows example outputs.
+The learning curves in \cref{fig:g1} were the more consequential outcome of this
+gate. For every encoder, holdout CC peaked in the second or third epoch and
+then declined steadily, while training CC kept rising. A frozen encoder with a
+7-million-parameter decoder thus overfits the 540 training videos after a few
+passes. On the basis of these curves, and before any further run, the schedule
+of the main program was shortened to three epochs (\cref{sec:training}).
 
 \begin{figure}[htbp]
   \centering
-  \begin{subfigure}[b]{0.31\textwidth}
-    \includegraphics[width=\linewidth]{example-image-a}
-    \caption{Input}\label{fig:qual-input}
-  \end{subfigure}\hfill
-  \begin{subfigure}[b]{0.31\textwidth}
-    \includegraphics[width=\linewidth]{example-image-b}
-    \caption{Ground truth}\label{fig:qual-gt}
-  \end{subfigure}\hfill
-  \begin{subfigure}[b]{0.31\textwidth}
-    \includegraphics[width=\linewidth]{example-image-c}
-    \caption{Proposed}\label{fig:qual-ours}
-  \end{subfigure}
-  \caption{Qualitative results}\label{fig:qualitative}
+  \includegraphics[width=\textwidth]{g1_curves.pdf}
+  \caption{Learning curves of gate G1. (a) Holdout CC after each epoch; circles
+  mark the best epoch. (b) Mean CC on the training clips of each epoch. Holdout
+  accuracy peaks early and then declines while training accuracy keeps rising,
+  for all three encoders}\label{fig:g1}
 \end{figure}
+
+%----------------------------------------------------------------------------
+\section{Predictive Surprise as a Fixation Cue (Gate G2)}\label{sec:g2}
+
+Gate G2 tested the hypothesis that motivated the original proposal: that the
+error of V-JEPA~2's pretrained predictor indicates where people look
+(\cref{sec:surprise}). No training is involved; the surprise maps and the
+reference maps were scored directly against the fixations of the 60 holdout
+videos.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Gate G2: zero-shot fixation prediction by surprise and reference maps
+  on the DHF1K holdout (60 videos), at about 4 and 15 sampled frames per
+  second}\label{tab:g2}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    & \multicolumn{2}{c}{\textbf{NSS}$\uparrow$} & \multicolumn{2}{c}{\textbf{CC}$\uparrow$} \\
+    \cmidrule(lr){2-3}\cmidrule(l){4-5}
+    \textbf{Map} & 4\,fps & 15\,fps & 4\,fps & 15\,fps \\
+    \midrule
+    Raw surprise, \cref{eq:surprise}        & $-0.190$ & $-0.502$ & $-0.043$ & $-0.099$ \\
+    Contextual surprise (true $-$ other past) & $0.116$ & $-0.366$ & $0.018$ & $-0.072$ \\
+    Token atypicality                        & $0.454$ & $0.650$ & $0.081$ & $0.123$ \\
+    Frame difference                         & $0.810$ & $0.803$ & $0.149$ & $0.148$ \\
+    Empirical centre prior                   & $1.464$ & $1.479$ & $0.289$ & $0.292$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The outcome was unambiguous (\cref{tab:g2}). Neither surprise variant beat token
+atypicality or frame difference at either frame rate, and the raw surprise was
+\emph{anti}-correlated with fixations: its NSS is negative, so observers looked
+on average at regions that the predictor found \emph{easier} than average to
+predict. Information gain over the centre prior was negative for every map.
+The gate therefore failed, and the surprise module was never trained.
+
+A preliminary diagnostic, run before the gate on eleven clips without gaze data
+(ten Kinetics validation clips~\cite{carreira2017quo} and one animated film
+trailer), helps to explain this result. When the true past of a clip was
+replaced by another clip's past, the mean prediction error rose in every clip
+(from 0.644 to 0.731 at about 4\,fps), so the predictor does use the context.
+Yet the spatial pattern of the error correlated at $r\approx0.60$ with token
+atypicality and at $r\approx0.62$ with the error map computed from the
+\emph{wrong} past, and it correlated negatively with a central Gaussian
+($r\approx-0.11$). The error map therefore mainly reflects how unusual each
+target region is, largely independently of the past, and it is lower at the
+centre of the frame, where observers tend to look. The released training
+configuration of V-JEPA~2 offers a plausible reason: its masks span the whole
+clip in time\footnote{\texttt{temporal\_scale: [1.0, 1.0]} in the released
+pre-training configuration files of the official repository.}, so the predictor
+was trained to fill in masked scene content rather than to extrapolate into the
+future. Its error is consequently not an expectation-violation signal in the
+sense of Bayesian surprise~\cite{itti2009bayesian}.
+
+%----------------------------------------------------------------------------
+\section{Results}\label{sec:results}
+
+\subsection{Quantitative Results on DHF1K}\label{sec:main-results}
+
+The main program trained the frozen-encoder model (labelled B1 in the research
+log) with three seeds. The LoRA variant lost to it in all three seeds
+(\cref{sec:ablation}), so the frozen model became the main model. After the
+ViT-g encoder passed its own gate, the same recipe was repeated with ViT-g.
+\Cref{tab:dhf1k} reports all four configurations on the DHF1K validation set,
+next to SalFoM scored by the same evaluator and to published validation results
+of other methods.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Results on the DHF1K validation set (100 videos, 60,273 frames). The
+  upper block was scored by the evaluator of this thesis; the lower block is
+  copied from the literature and was computed with other evaluation code. Best
+  value per column in bold}\label{tab:dhf1k}
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Model} & \textbf{CC}$\uparrow$ & \textbf{NSS}$\uparrow$ & \textbf{SIM}$\uparrow$
+      & \textbf{KLD}$\downarrow$ & \textbf{AUC-J}$\uparrow$ & \textbf{sAUC}$\uparrow$ \\
+    \midrule
+    SalFoM~\cite{moradi2024salfom} (released weights) & 0.5639 & 3.326 & 0.4130 & 1.297 & 0.9243 & 0.7406 \\
+    SURGE-D ViT-L, single ($\sigma=12$)    & 0.5836 & 3.349 & 0.4492 & 1.222 & 0.9283 & 0.7636 \\
+    SURGE-D ViT-L, 3-seed ensemble ($\sigma=8$) & 0.5910 & 3.418 & 0.4486 & 1.187 & 0.9302 & 0.7614 \\
+    SURGE-D ViT-g, single ($\sigma=8$)     & 0.6003 & 3.457 & 0.4531 & 1.170 & 0.9308 & \textbf{0.7709} \\
+    SURGE-D ViT-g, 3-seed ensemble ($\sigma=8$) & \textbf{0.6029} & \textbf{3.486} & \textbf{0.4574}
+      & \textbf{1.160} & \textbf{0.9314} & 0.7680 \\
+    \midrule
+    \multicolumn{7}{@{}l}{\emph{Published, other evaluators (as reported in~\cite{girmaji2025minimalistic})}} \\
+    TMFI-Net~\cite{zhou2023transformer}      & 0.554 & 3.201 & 0.428 & -- & 0.924 & -- \\
+    THTD-Net~\cite{moradi2024transformer}    & 0.553 & 3.188 & 0.425 & -- & 0.924 & -- \\
+    ViNet-E~\cite{girmaji2025minimalistic}   & 0.549 & 3.134 & 0.409 & -- & 0.922 & -- \\
+    STSANet~\cite{wang2023spatio}            & 0.539 & 3.082 & 0.411 & -- & 0.920 & -- \\
+    DiffSal~\cite{xiong2024diffsal}          & 0.533 & 3.066 & 0.405 & -- & 0.918 & -- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Comparison with SalFoM.} SalFoM is the closest prior work: it was the
+first video saliency model built on a video foundation encoder, it reported the
+best DHF1K test results among the methods it compared
+with~\cite{moradi2024salfom}, and its released weights allowed a comparison
+under an identical protocol. \Cref{tab:dhf1k-boot} gives the paired bootstrap
+intervals. The ViT-g model is better than SalFoM on all six metrics as a single
+model and as an ensemble, with every interval excluding zero; the CC gain of
+the single model is $+0.036$ $[+0.026, +0.048]$. The ViT-L ensemble is also
+better on all six metrics, and the single ViT-L model on five, its NSS
+difference not being significant. The per-video differences in \cref{fig:valdelta} show that
+the gain is broad rather than driven by a few videos: the ViT-g ensemble has
+the higher CC on 79 of the 100 videos.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Paired bootstrap differences on DHF1K validation (100 videos, 10,000
+  resamples), with 95\,\% intervals; differences whose interval excludes zero are
+  in bold. The intervals for all six metrics are given in
+  \cref{tab:app-boot}}\label{tab:dhf1k-boot}
+  \small
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    \textbf{Comparison} & $\Delta$\textbf{CC} [95\,\% CI] & $\Delta$\textbf{NSS} [95\,\% CI] \\
+    \midrule
+    ViT-L single $-$ SalFoM           & $\mathbf{+0.020}$ [+0.010, +0.031] & +0.023 [$-$0.050, +0.097] \\
+    ViT-L ensemble $-$ SalFoM         & $\mathbf{+0.027}$ [+0.017, +0.038] & $\mathbf{+0.091}$ [+0.022, +0.164] \\
+    ViT-g single $-$ SalFoM           & $\mathbf{+0.036}$ [+0.026, +0.048] & $\mathbf{+0.130}$ [+0.060, +0.205] \\
+    ViT-g ensemble $-$ SalFoM         & $\mathbf{+0.039}$ [+0.029, +0.050] & $\mathbf{+0.160}$ [+0.089, +0.233] \\
+    ViT-g single $-$ ViT-L single     & $\mathbf{+0.017}$ [+0.012, +0.022] & $\mathbf{+0.108}$ [+0.075, +0.142] \\
+    ViT-g ensemble $-$ ViT-L ensemble & $\mathbf{+0.012}$ [+0.008, +0.016] & $\mathbf{+0.069}$ [+0.041, +0.097] \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{val_delta.pdf}
+  \caption{Per-video CC difference between the SURGE-D ViT-g ensemble and SalFoM
+  on the 100 DHF1K validation videos, sorted. The dashed line is the mean
+  difference; the interval is the paired bootstrap 95\,\% interval}\label{fig:valdelta}
+\end{figure}
+
+Two qualifications apply. First, SURGE-D uses frames on both sides of the
+predicted frame (\cref{sec:formulation}), whereas SalFoM predicts the last frame
+of its input clip; part of the difference may therefore come from access to
+future context, which SalFoM does not use. Second, the comparison involves one
+re-scored baseline. The published validation scores in the lower block of
+\cref{tab:dhf1k} were computed with other code, which agrees with the present
+evaluator to within 0.0003 CC on the reference maps
+(\cref{sec:metric-validation}); with that caveat, SURGE-D's validation CC is
+0.046--0.049 above the highest of them. Reported validation scores also differ
+between papers: UniST~\cite{xiong2025unist}, for instance, lists TMFI-Net at
+0.524 rather than 0.554 and reports 0.541 for itself. Several other
+peer-reviewed models published since 2024~\cite{li2025tm2sp,zhang2024msff,moradi2026lstd}
+report DHF1K results whose tables could not be accessed or that refer to the
+test set; test-set scores cannot be compared with the validation scores of
+this thesis.
+
+\paragraph{DHF1K test set.} Maps for the 300 official test videos were produced
+with the ViT-g three-seed ensemble and checked for format by passing five
+validation videos through the same export, which reproduced their validation
+scores to within $10^{-4}$ CC. The scores on the test set are computed by the
+dataset authors on request and were not available when this thesis was
+written, so no test-set result is claimed.
+
+\subsection{Generalisation to Other Datasets}\label{sec:transfer}
+
+\paragraph{UCF Sports.} UCF Sports differs from DHF1K in two ways: its gaze was
+recorded during an action-recognition task~\cite{mathe2015actions}, and it is
+small (103 training videos). Without any UCF training, the DHF1K model reached
+a CC of 0.608 (\cref{tab:ucf}), well below the fine-tuned models, which confirms
+that the task-driven gaze of this dataset differs from free viewing. After
+fine-tuning, the ViT-g ensemble reached CC 0.735 and the best NSS, SIM and AUC-J
+of the SURGE-D models.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Results on the UCF Sports test set (47 videos, 2,929 frames). Published
+  results were computed with other evaluation code}\label{tab:ucf}
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Model} & \textbf{CC}$\uparrow$ & \textbf{NSS}$\uparrow$ & \textbf{SIM}$\uparrow$
+      & \textbf{KLD}$\downarrow$ & \textbf{AUC-J}$\uparrow$ & \textbf{sAUC}$\uparrow$ \\
+    \midrule
+    SURGE-D ViT-L, zero-shot                & 0.6077 & 3.128 & 0.5033 & 1.113 & 0.9223 & 0.7453 \\
+    SURGE-D ViT-L, fine-tuned               & 0.7252 & 3.916 & 0.5799 & 0.773 & 0.9406 & 0.8089 \\
+    SURGE-D ViT-L, 3-seed ensemble          & 0.7331 & 4.028 & 0.5833 & 0.749 & 0.9430 & 0.8153 \\
+    SURGE-D ViT-g, fine-tuned               & 0.7305 & 4.061 & 0.5831 & 0.747 & 0.9442 & 0.8145 \\
+    SURGE-D ViT-g, 3-seed ensemble          & 0.7350 & 4.085 & 0.5857 & \textbf{0.736} & \textbf{0.9449} & \textbf{0.8173} \\
+    \midrule
+    \multicolumn{7}{@{}l}{\emph{Published (\cite{girmaji2025minimalistic}; SalFoM from~\cite{moradi2024salfom})}} \\
+    ViNet-E~\cite{girmaji2025minimalistic}   & \textbf{0.744} & \textbf{4.156} & \textbf{0.587} & -- & 0.941 & -- \\
+    ViNet-A~\cite{girmaji2025minimalistic}   & 0.734 & 4.108 & 0.586 & -- & 0.940 & -- \\
+    THTD-Net~\cite{moradi2024transformer}    & 0.711 & 3.840 & 0.565 & -- & 0.933 & -- \\
+    TMFI-Net~\cite{zhou2023transformer}      & 0.707 & 3.863 & 0.565 & -- & 0.936 & -- \\
+    SalFoM~\cite{moradi2024salfom}           & 0.631 & 3.543 & 0.516 & -- & 0.928 & -- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+On UCF Sports the encoder made a smaller difference than on DHF1K: the ViT-g
+ensemble was not significantly better than the ViT-L ensemble
+($\Delta$CC $+0.0019$ $[-0.0071, +0.0125]$), whereas the three-seed ViT-L
+ensemble was significantly better than its single member ($+0.0080$
+$[+0.0039, +0.0123]$). Against published results, SURGE-D clearly exceeds
+SalFoM (by about 0.10 CC) and TMFI-Net, ties ViNet-A ($+0.001$) and remains
+below ViNet-E ($-0.009$, a tie under the rule of \cref{tab:rules}, but below
+ViNet-E on CC, NSS and SIM, though above it on AUC-J). SURGE-D is therefore competitive on UCF Sports but not ahead of the
+best published model. Both ViNet variants use encoders pretrained for action
+recognition or action localisation~\cite{girmaji2025minimalistic}, which may
+suit the task-driven gaze of this dataset.
+
+\paragraph{Audio-visual datasets.} \Cref{tab:av} reports the six datasets of the
+STAViS benchmark~\cite{tsiami2020stavis}, as fold means. The DHF1K model already
+transferred reasonably without any training (zero-shot row), and fine-tuning
+improved every dataset, most of all Coutrot2 ($+0.17$ CC), whose meetings
+differ most from DHF1K. With ViT-g, the ensemble was significantly better than
+the ViT-L ensemble on DIEM, Coutrot1, ETMD and AVAD (paired bootstrap over the
+pooled test videos), not significantly different on Coutrot2, and tied on SumMe.
+
+\begin{table}[htbp]
+  \centering
+  \caption{CC on the six audio-visual datasets (fold means; DIEM has one split).
+  The lower block lists the best peer-reviewed results whose tables could be
+  verified, computed with other evaluation code. Visual-only: ViNet-E, or ViNet-A
+  on Coutrot2~\cite{girmaji2025minimalistic}; on SumMe, which those models do not
+  report, the visual-only variant of the relevance-guided fusion model AVRSP of
+  Yu et al.~\cite{yu2026relevance}. Audio-visual: AVRSP~\cite{yu2026relevance} on
+  DIEM and Coutrot2, DiffSal~\cite{xiong2024diffsal} on the other four}\label{tab:av}
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Model} & \textbf{DIEM} & \textbf{Coutrot1} & \textbf{Coutrot2} & \textbf{ETMD}
+      & \textbf{AVAD} & \textbf{SumMe} \\
+    \midrule
+    SURGE-D ViT-L, zero-shot       & 0.675 & 0.600 & 0.645 & 0.588 & 0.692 & 0.551 \\
+    SURGE-D ViT-L, fine-tuned      & 0.706 & 0.632 & 0.816 & 0.662 & 0.718 & 0.581 \\
+    SURGE-D ViT-L, 3-seed ensemble & 0.714 & 0.641 & 0.807 & 0.670 & 0.729 & \textbf{0.593} \\
+    SURGE-D ViT-g, fine-tuned      & 0.714 & 0.648 & 0.820 & 0.672 & 0.731 & 0.586 \\
+    SURGE-D ViT-g, 3-seed ensemble & \textbf{0.729} & \textbf{0.657} & 0.819 & \textbf{0.676} & \textbf{0.740} & 0.590 \\
+    \midrule
+    Best visual-only (published)   & 0.701 & 0.614 & \textbf{0.862} & 0.632 & 0.729 & 0.494 \\
+    Best audio-visual (published)  & 0.685 & 0.638 & 0.837 & 0.652 & 0.738 & 0.572 \\
+    \midrule
+    ViT-g ens.\ $-$ best visual-only  & $+0.028$ & $+0.043$ & $-0.043$ & $+0.044$ & $+0.011$ & $+0.096$ \\
+    ViT-g ens.\ $-$ best audio-visual & $+0.044$ & $+0.019$ & $-0.018$ & $+0.024$ & $+0.002$ & $+0.018$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Against the best peer-reviewed results that could be verified, the ViT-g
+ensemble has the higher CC on five of the six datasets. The margin is clear on
+DIEM, Coutrot1, ETMD and SumMe. On AVAD, the margin over the best visual-only
+model is at the threshold ($+0.011$), and the result ties the best audio-visual
+model. On Coutrot2 it is lower than both. The other metrics broadly agree with
+CC: the ensemble's NSS (DIEM 2.88, Coutrot1 3.30, ETMD 3.69, AVAD 4.31, SumMe
+3.26) is above the published values of both reference models on these five
+datasets, while SIM is lower than DiffSal's on Coutrot1 and AVAD.
+
+These comparisons have three limits. They cross evaluation code. They are
+restricted to peer-reviewed results, so results that had not appeared in
+peer-reviewed venues when this thesis was written are not included. And they
+are restricted to results whose published tables could be accessed: further
+recent audio-visual models, among them TM2SP~\cite{li2025tm2sp},
+FOSal~\cite{yu2026fosal} and the model of Mao et al.~\cite{mao2026audio}, could
+not be checked and are therefore not represented. The table should consequently
+not be read as establishing a state of the art on these datasets. Coutrot2 is
+discussed in \cref{sec:discussion}.
+
+\paragraph{Hollywood-2 with the Vig gaze data.} \Cref{tab:hollywood} reports the
+884 test clips of Hollywood-2 with the gaze of Vig et al.~\cite{vig2012space}
+(257,733 scored frames). These numbers are not comparable with published
+Hollywood-2 results (\cref{sec:dataset}). With this many test clips, small
+differences are resolved precisely: ViT-g was better than ViT-L on all six
+metrics as a single model ($\Delta$CC $+0.0046$ $[+0.0032, +0.0060]$) and on
+five as an ensemble ($+0.0041$ $[+0.0030, +0.0052]$). Ensembling raised CC, KLD,
+AUC-J and sAUC but significantly \emph{lowered} NSS and SIM, for both encoders.
+With at most five observers per frame, the ground truth is sparse, and the
+averaging of three members smooths the peaks that NSS and SIM reward.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Results on Hollywood-2 with the gaze of Vig et al.\ (884 test clips).
+  Not comparable with published Hollywood-2 results, which use other ground
+  truth}\label{tab:hollywood}
+  \small
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Model} & \textbf{CC}$\uparrow$ & \textbf{NSS}$\uparrow$ & \textbf{SIM}$\uparrow$
+      & \textbf{KLD}$\downarrow$ & \textbf{AUC-J}$\uparrow$ & \textbf{sAUC}$\uparrow$ \\
+    \midrule
+    SURGE-D ViT-L, zero-shot        & 0.632 & 3.595 & 0.503 & 1.061 & 0.951 & 0.780 \\
+    SURGE-D ViT-L, fine-tuned       & 0.6798 & 3.898 & 0.5178 & 0.925 & 0.9564 & 0.8167 \\
+    SURGE-D ViT-L, 3-seed ensemble  & 0.6841 & 3.875 & 0.5073 & 0.918 & 0.9574 & 0.8192 \\
+    SURGE-D ViT-g, fine-tuned       & 0.6844 & \textbf{3.933} & \textbf{0.5214} & 0.917 & 0.9569 & 0.8180 \\
+    SURGE-D ViT-g, 3-seed ensemble  & \textbf{0.6882} & 3.907 & 0.5104 & \textbf{0.911} & \textbf{0.9577} & \textbf{0.8199} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Qualitative Results}\label{sec:qualitative}
+
+\Cref{fig:qualitative} shows frames from five DHF1K validation videos, chosen by
+a rule fixed before any map was inspected: the videos at the 10th, 50th and
+90th percentile of the ensemble's per-video CC, and the videos with the largest
+gain and the largest loss relative to SalFoM; the frame shown is the middle
+frame of each video.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{qualitative.pdf}
+  \caption{Qualitative examples on DHF1K validation. Rows: videos at the 10th,
+  50th and 90th percentile of SURGE-D's per-video CC, and the videos with the
+  largest gain (0696) and loss (0663) relative to SalFoM; columns: middle frame
+  with the observers' fixations, ground-truth density, SalFoM and the SURGE-D
+  ViT-g ensemble, overlaid on the frame. Numbers give the CC of the shown frame.
+  Video-level CC (SURGE-D / SalFoM): 0650 0.455/0.376, 0632 0.613/0.639, 0685
+  0.741/0.715, 0696 0.664/0.437, 0663 0.388/0.462}\label{fig:qualitative}
+\end{figure}
+
+On these frames, the two models produce similar maps: both locate the horse
+rider, the surfer and the flying object that observers follow, and on the
+single frames shown SalFoM is in fact marginally closer to the ground truth in
+four of the five rows and equal in the fifth. Single frames are a poor guide to
+average differences that amount to a few hundredths of CC: for video 0696, for
+example, SURGE-D's CC over the whole video is 0.23 higher, yet the two maps at
+its middle frame are almost equal. The last row shows a characteristic failure.
+In a panel discussion, the observers' fixations concentrate on one person on
+the right, while SURGE-D spreads its prediction over several faces at the
+table. In conversation scenes, gaze is drawn to the faces of the people who are
+speaking~\cite{coutrot2014how}, which a model that sees only the image cannot
+determine; the same limitation reappears on Coutrot2 below.
+
+\subsection{Computational Cost}\label{sec:cost}
+
+\Cref{tab:cost} reports the cost of SURGE-D, measured with the PyTorch FLOP
+counter on one $16\times256\times256$ clip and timed on one DHF1K validation
+video with frames preloaded into memory (bfloat16, network forward pass only).
+Because one forward pass yields maps for 16 original frames, the cost per output
+frame is one sixteenth of the cost per clip.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Computational cost of SURGE-D on an RTX A5000 (forward pass only).
+  TFLOPs count multiply--add pairs as two operations}\label{tab:cost}
+  \small
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    & \textbf{ViT-L} & \textbf{ViT-g} \\
+    \midrule
+    Encoder parameters (frozen)                & 303.9\,M & 1,012.2\,M \\
+    Decoder parameters (trained)               & 6.99\,M & 7.39\,M \\
+    Encoder TFLOPs per clip                    & 1.656 & 5.088 \\
+    Decoder TFLOPs per clip                    & 0.166 & 0.168 \\
+    TFLOPs per output frame                    & 0.114 & 0.328 \\
+    Throughput, batch 4 (output frames/s)      & 301 & 129 \\
+    Latency per clip, batch 1 (ms)             & 116 & 163 \\
+    Peak GPU memory, batch 4 (GB)              & 2.8 & 7.1 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Both models run faster than real time on this GPU. For comparison, the UMT-L
+encoder that SalFoM fine-tunes requires 1.90 TFLOPs for one $16\times224\times224$
+clip (3,136 tokens; counted on a re-implementation loaded from the released
+checkpoint), and SalFoM runs it once per output frame in a sliding
+window~\cite{moradi2024salfom}. Counting the encoder alone, SalFoM therefore needs
+about 17 times the computation per output frame of SURGE-D with ViT-L, and
+about 6 times that of SURGE-D with ViT-g. The multi-frame output thus allows
+an encoder of three times the size at a fraction of the cost of a per-frame
+design.
 
 %----------------------------------------------------------------------------
 \section{Ablation Study}\label{sec:ablation}
 
-Show the effect of each component of the proposed approach.
+\Cref{tab:ablation} collects the ablations. Each was evaluated on the holdout
+under the rules of \cref{tab:rules}; for single-seed runs, the reference is the
+frozen ViT-L model of seed 0 trained with the same three-epoch schedule.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Ablations on the DHF1K holdout (60 videos) unless marked
+  \enquote{val}. $\Delta$CC is relative to the reference in each block}\label{tab:ablation}
+  \small
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright}X ccl@{}}
+    \toprule
+    \textbf{Variant} & \textbf{CC} & $\Delta$\textbf{CC} & \textbf{Outcome under the rule} \\
+    \midrule
+    \multicolumn{4}{@{}l}{\emph{Components (ViT-L, seed 0; reference CC 0.5772, NSS 3.329)}} \\
+    Without centre prior                 & 0.5772 & $-0.0000$ & no difference \\
+    Without auxiliary heads              & 0.5757 & $-0.0015$ & no difference \\
+    With SALICON co-training             & 0.5801 & $+0.0028$ & no difference \\
+    Stride 4 ($\approx$7.5\,fps, 2\,s window) & 0.5803 & $+0.0031$ & difference (at the threshold) \\
+    \midrule
+    \multicolumn{4}{@{}l}{\emph{Encoder adaptation (ViT-L, three seeds)}} \\
+    LoRA, seed 0 / 1 / 2 & 0.5743 / 0.5791 / 0.5739 & $-0.0029$ / $-0.0010$ / $-0.0037$ & rejected (lost 3 of 3) \\
+    \midrule
+    \multicolumn{4}{@{}l}{\emph{Encoder scale (seed 0; gate 0.5833)}} \\
+    ViT-g instead of ViT-L                 & 0.5866 & $+0.0083$ vs ViT-L mean & adopted \\
+    \midrule
+    \multicolumn{4}{@{}l}{\emph{Clip length (ViT-g, seed 0; gate 0.5904)}} \\
+    32 frames instead of 16                & 0.5902 & $+0.0036$ vs seed 0 & not pursued (gate missed by 0.0002) \\
+    \midrule
+    \multicolumn{4}{@{}l}{\emph{Training data (ViT-g, val, three-seed ensembles)}} \\
+    600 instead of 540 training videos (val) & 0.6044 & $+0.0015$ [$-$0.0006, +0.0037] & not adopted \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{Encoder adaptation.} LoRA was expected to help, because adapting a
+pretrained encoder to the target task usually improves on frozen features, and
+LoRA does so while training only a small fraction of the parameters that full
+fine-tuning would change~\cite{hu2022lora}. Here it did not. Each LoRA model started from the frozen model of the same seed and lost to
+it on the holdout in all three seeds (mean $-0.0025$ CC), and its best epoch was
+always the first. With only 540 training videos, adapting 1.6 million encoder
+parameters appears to add more variance than signal; the same early
+overfitting that limits the decoder (\cref{fig:g1}) would act on the adapted
+encoder as well. Full fine-tuning, as done by SalFoM, was not tested.
+
+\paragraph{Components.} Removing the learned centre prior or the auxiliary
+heads, and adding 10,000 static SALICON images per epoch, changed holdout CC by
+less than the threshold of 0.003. The centre prior's lack of effect suggests
+that the encoder features and the convolutional decoder can already represent
+the centre bias, for instance through the image borders, which the squashed
+input keeps at fixed positions; the explicit prior then adds nothing that can
+be measured. The static images,
+which helped CNN-era models~\cite{wang2018revisiting}, appear redundant once
+the encoder has been pretrained on large amounts of video. A stride of four,
+which halves the cost per output frame, reached $+0.0031$, exactly at the
+threshold; with one seed, this is a candidate for future work rather than a
+finding.
+
+\paragraph{Encoder scale.} Replacing ViT-L by ViT-g, with every other setting
+unchanged, raised holdout CC for all three seeds (0.5866, 0.5867 and 0.5829
+against 0.5772, 0.5801 and 0.5776) and validation CC by 0.017 for single models
+(\cref{tab:dhf1k-boot}). Scale was the largest single improvement found after
+the choice of encoder family.
+
+\paragraph{Temporal context and training data.} Doubling the clip to 32 frames
+(about 2.1\,s) reached a holdout CC of 0.5902, 0.0002 below its gate, so it was
+not pursued; unlike the 16-frame runs, it was still improving at its last
+epoch, so a longer schedule might change this conclusion, but that would be a
+new experiment. Training on all 600 DHF1K training videos instead of 540 gave
+validation scores within noise of the 540-video models. Neither more context
+nor 11\,\% more videos made a measurable difference.
+
+\paragraph{Ensembles and output blur.} Averaging three seeds raised validation
+CC by 0.007 for ViT-L and by 0.003 for ViT-g (\cref{tab:dhf1k}); the stronger
+encoder leaves less variance for the ensemble to remove. \Cref{fig:sigma} shows
+that the optimal blur is broad: holdout CC varied by at most 0.003 between
+$\sigma=0$ and $\sigma=12$ for every configuration. The ViT-L ensemble preferred
+less blur than its single model (8 against 12 pixels), consistent with the
+smoothing that averaging already provides.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.62\textwidth]{sigma.pdf}
+  \caption{Holdout CC as a function of the Gaussian blur applied to the output,
+  for single models and three-seed ensembles. The selected values are 12 (ViT-L
+  single) and 8 (others)}\label{fig:sigma}
+\end{figure}
+
+\paragraph{Audio.}\label{sec:audio} The audio fusion module of
+\cref{sec:audio-fusion} was trained on every fold of the six audio-visual
+datasets with the same recipe as the visual fine-tuning (ViT-L, seed 0).
+\Cref{tab:audio} shows that it did not improve the visual model on any dataset:
+the largest change was $+0.001$ CC, far below the threshold of $+0.010$. The
+control is informative nonetheless. On Coutrot2, scoring the trained model with
+the wrong soundtrack cost 0.018 CC, so the model had learned to use the audio
+there, but with the correct soundtrack it only matched the visual model, which
+already finds the faces in these meeting scenes from the image alone. With five
+test videos per fold, this observation is suggestive rather than conclusive.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Audio fusion on the audio-visual datasets (ViT-L, fold-mean CC). The
+  rule requires audio $-$ visual $\geq+0.010$ and matched $-$ rotated
+  $\geq+0.005$}\label{tab:audio}
+  \small
+  \begin{tabular}{@{}lccccc@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{Visual} & \textbf{Audio, matched} & \textbf{Audio, rotated}
+      & \textbf{Audio $-$ visual} & \textbf{Matched $-$ rotated} \\
+    \midrule
+    DIEM     & 0.706 & 0.706 & 0.706 & $+0.0008$ & $+0.0002$ \\
+    Coutrot1 & 0.632 & 0.633 & 0.630 & $+0.0010$ & $+0.0031$ \\
+    Coutrot2 & 0.816 & 0.816 & 0.797 & $-0.0003$ & $+0.0183$ \\
+    ETMD     & 0.662 & 0.661 & 0.661 & $-0.0014$ & $-0.0001$ \\
+    AVAD     & 0.718 & 0.718 & 0.717 & $+0.0002$ & $+0.0013$ \\
+    SumMe    & 0.581 & 0.579 & 0.580 & $-0.0021$ & $-0.0011$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 %----------------------------------------------------------------------------
 \section{Discussion}\label{sec:discussion}
 
-Interpret the results and answer each research question from
+This section interprets the results in terms of the research questions of
 \cref{sec:questions}.
+
+\paragraph{RQ1: Can a frozen self-supervised video encoder with a light decoder
+predict fixations better than the strongest foundation-model approach?} On
+DHF1K, yes, within the limits of the available test data. With ViT-L, a frozen
+V-JEPA~2 encoder and a 7-million-parameter decoder already exceeded SalFoM, a
+model whose 300-million-parameter encoder is fully fine-tuned, under an
+identical evaluation, on five of six metrics as a single model and on all six as
+an ensemble; with ViT-g, the margin of the single model grew to $+0.036$ CC and
+covered all six metrics. Two features of the result matter for
+its interpretation. First, the gain does not come from adapting the encoder:
+the frozen encoder outperformed its LoRA-adapted version, and the result
+therefore speaks to the quality of the pretrained V-JEPA representations
+rather than to a training technique. The gate G1 comparison, in which
+V-JEPA~2 outperformed UMT-L by 0.032 CC under the same frozen protocol,
+supports this reading, since UMT-L is the encoder family that SalFoM builds on.
+Second, the evidence is a validation-set comparison with one re-scored baseline
+and SURGE-D's access to future frames; the official test-set evaluation is
+still outstanding.
+
+\paragraph{RQ2: Does predictive surprise carry information about where people
+look?} Not in the form available from V-JEPA~2. Its predictor's error was
+anti-correlated with fixations at 15\,fps and was beaten by both trivial
+reference cues. The diagnostics point to the reason: the error tracks the
+atypicality of each region rather than violated expectations, and the
+pre-training masks give the predictor no reason to forecast. This is a
+statement about one released predictor and one way of reading it out, not a
+refutation of surprise-based accounts of attention~\cite{itti2009bayesian};
+a predictor trained to extrapolate in time could behave differently.
+
+\paragraph{RQ3: Which design factors matter when the encoder is frozen?} The
+results separate the factors cleanly. The encoder dominates: its pre-training
+(V-JEPA~2 over V-JEPA~2.1 and UMT-L) and its scale (ViT-g over ViT-L) produced
+the only gains that were large relative to seed noise on DHF1K. Seed ensembles
+added a smaller but reliable gain. Nearly everything else, including LoRA, the
+learned centre prior, deep supervision, static-image co-training, 32-frame
+clips and 11\,\% more training videos, made no measurable difference. A
+consistent explanation is that, with a strong frozen encoder, the limiting
+factor is the small number of training videos: the decoder overfits within
+three epochs (\cref{fig:g1}), and the additions that would increase its
+effective capacity do not help, whereas better features do.
+
+\paragraph{RQ4: How well does the approach transfer, and does audio help?} The
+model transferred well. Fine-tuned for three epochs, it matched or exceeded the
+best peer-reviewed visual-only and audio-visual results that could be verified
+on five of the six audio-visual datasets, and it was competitive on UCF Sports,
+where action-oriented encoders retain an edge. The one clear failure, Coutrot2,
+has a simple account: in recordings of conversations, observers look at the
+person who is speaking, which an image-only model cannot determine, as the last
+row of \cref{fig:qualitative} also illustrates. The audio experiment shows that
+adding the soundtrack in a simple way does not resolve this. The fusion module
+learned to depend on the audio on Coutrot2, but it did not improve on the visual
+model. This agrees with the observations of Jain et al.~\cite{jain2021vinet} and
+Agrawal et al.~\cite{agrawal2022does}, who found that deep audio-visual saliency
+models tend to become insensitive to their audio input and that none of a range
+of audio modules and fusion techniques improved on visual-only models across
+ten datasets. Exploiting sound in this setting probably requires explicit
+speaker localisation rather than global feature modulation.
+
+\paragraph{Relation to the original proposal.} The final model differs from the
+proposed one in three respects, each decided by a pre-registered test: the
+encoder is V-JEPA~2 rather than V-JEPA~2.1, it is frozen rather than adapted with
+LoRA, and the surprise branch that gave the project its name is absent. The
+proposal's ranking of what drives performance, which placed the encoder first,
+was confirmed. Its expectation that LoRA would help, based on results with much
+larger training sets, was not.
+
+%----------------------------------------------------------------------------
+\section{Threats to Validity}\label{sec:threats}
+
+\paragraph{Internal validity.} All selection used holdout data, every test set
+was scored once, and every rule was written in advance, which protects against
+selection bias. Two residual weaknesses remain. The component ablations used
+one seed, and they were judged against a fixed threshold rather than a
+statistical test, so effects of a few thousandths of CC cannot be excluded.
+In addition, several thresholds (for example the margin of 0.005 in the gates)
+were chosen by judgement from the observed seed spread rather than derived
+formally.
+
+\paragraph{Construct validity.} The six metrics capture different aspects of a
+saliency map~\cite{bylinskii2019metrics} and did not always agree; ensembles,
+for instance, improved CC but lowered NSS and SIM on the sparse Hollywood-2
+(Vig gaze) data. The use of one map for all metrics, with the blur chosen by CC,
+favours CC slightly over the other metrics.
+
+\paragraph{External validity and comparability.} Comparisons with published
+numbers cross evaluation code and, in places, protocol details, such as the
+handling of frames without fixations or the exact fold composition. Only one
+baseline, SalFoM, was re-scored under the protocol of this thesis. SURGE-D's
+predictions use about 0.27\,s or more of future context, which causal models do
+not have. The DHF1K test-set result and the standard Hollywood-2 ground truth
+were not available. Finally, the pre-training data of V-JEPA~2 include large
+collections of internet video, and DHF1K is drawn from YouTube; an overlap
+between pre-training and test videos cannot be ruled out. The same is true for
+every method that relies on a large pretrained video encoder, including SalFoM.

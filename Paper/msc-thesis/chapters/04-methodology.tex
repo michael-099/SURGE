@@ -1,79 +1,749 @@
 % Chapter 4: Methodology (proposed approach)
-% Rename sections to suit your work, e.g. "System Design" or "Proposed Model".
 \chapter{Methodology}\label{ch:methodology}
 
 \guide{Describe what you built or did, in enough detail that someone else
 could reproduce it. Justify each design choice and relate it back to the
 research questions.}
 
-Give a short introduction to the chapter here.
+This chapter describes how the research questions of \cref{sec:questions}
+were investigated. It first sets out the research design, which fixes every
+decision rule before the experiment that it governs
+(\cref{sec:design}), and formalises the prediction task
+(\cref{sec:formulation}). It then describes the eye-tracking data and their
+preparation (\cref{sec:dataset}), the proposed model, SURGE-D, as it is
+implemented (\cref{sec:architecture}), the components that were implemented
+and tested but not retained (\cref{sec:optional}), the training and inference
+procedures (\cref{sec:training,sec:inference}), and the evaluation metrics
+and statistical analysis (\cref{sec:evaluation-metrics}). The chapter closes
+with the ethical considerations of the work (\cref{sec:ethics}). Every
+equation in this chapter corresponds to code in the accompanying repository;
+where the implementation departs from the original research proposal, the
+departure is stated.
 
 %----------------------------------------------------------------------------
 \section{Research Design}\label{sec:design}
 
-Describe the overall research approach and why it suits the research
-questions.
+The study follows a design-science approach in which an artefact, a video
+saliency model, is built and then evaluated through controlled experiments.
+Two features of the design deserve emphasis, because they determine how the
+results in \cref{ch:experiments} may be read.
+
+\paragraph{Pre-registered decision rules.} The original proposal contained
+several components whose value was uncertain: the choice of video
+encoder, a \enquote{surprise} signal derived from the encoder's predictor,
+parameter-efficient adaptation of the encoder, static-image co-training, and
+others. Rather than include all of them and report the final configuration,
+each component was treated as a hypothesis with an explicit test. Before
+each experiment was run, its decision rule (the quantity to be measured,
+the data on which it is measured, and the threshold that decides the
+outcome) was written into a dated research log, and the rule was applied
+unchanged afterwards. \Cref{tab:rules} lists these rules. This procedure
+guards against two familiar sources of optimism in deep-learning research:
+choosing among variants after seeing test results, and adjusting thresholds
+after seeing which side of them a result falls on.
+
+\paragraph{Separation of selection and testing.} All model selection
+(the best training epoch, the output blur, every gate in \cref{tab:rules})
+was performed on internal holdout sets carved out of the training data.
+Each test set was scored once per reported model, after all of that model's
+settings had been fixed. For DHF1K, whose official test annotations are
+withheld by the dataset authors, the 100-video validation set serves as the
+test set and was never used for selection.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Decision rules, each written before the experiment that it
+  governs. Holdout CC is measured on the internal 60-video DHF1K holdout
+  unless stated otherwise; outcomes are reported in
+  \cref{ch:experiments}}\label{tab:rules}
+  \small
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright}p{3.3cm}>{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Decision} & \textbf{Rule} \\
+    \midrule
+    Evaluator validity & Re-scoring the same maps with an independent
+      evaluator must agree within $0.002$ (CC, SIM) and $0.01$ (NSS, KLD) \\
+    Backbone (gate G1) & Highest holdout CC wins; the proposal's choice,
+      V-JEPA~2.1, is kept if within $0.005$ CC of the winner \\
+    Surprise (gate G2) & Enabled only if a surprise map beats both token
+      atypicality and frame difference on NSS and has positive information
+      gain over the centre prior \\
+    LoRA adaptation & Adopted if the three-seed mean holdout gain is at least
+      $+0.003$ CC and LoRA wins in at least two of three seeds \\
+    Single-seed ablations & A difference is reported only if
+      $|\Delta\mathrm{CC}|\geq0.003$ on the holdout \\
+    Claim over a baseline & The 95\,\% bootstrap interval of $\Delta$CC over
+      test videos must lie above zero \\
+    ViT-g backbone & Adopted if its holdout CC is at least $0.5833$ (the
+      ViT-L three-seed mean plus $0.005$) \\
+    Training on 600 videos & Replaces the 540-video models if the ensemble's
+      $\Delta$CC interval is above zero and it is worse on at most two of six
+      metrics \\
+    32-frame clips & Pursued if the holdout CC is at least $0.5904$ (the
+      16-frame three-seed mean plus $0.005$) \\
+    Audio fusion & \enquote{Helps} on a dataset only if the fold-mean
+      $\Delta$CC is at least $+0.010$ and matched audio beats rotated audio by
+      at least $0.005$ \\
+    Published results & Comparisons with numbers from other evaluation code
+      treat margins below $0.01$ CC as ties \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{Unit of analysis.} Saliency metrics are computed per frame and
+averaged within each video; the video is the unit of analysis, and
+uncertainty is estimated by resampling videos (\cref{sec:statistics}).
+Ablations and gates with a single training seed are interpreted against
+the seed-to-seed spread observed for the main model, which motivates the
+$0.003$ and $0.005$ margins in \cref{tab:rules}.
 
 %----------------------------------------------------------------------------
-\section{Dataset}\label{sec:dataset}
+\section{Problem Formulation}\label{sec:formulation}
+
+Let a video be a sequence of frames $I_1,\dots,I_N$ with
+$I_n\in\mathbb{R}^{H\times W\times3}$. For each frame, an eye-tracking dataset
+provides a binary fixation map $F_n\in\{0,1\}^{H\times W}$, marking the pixels
+fixated by at least one observer, and a continuous fixation density $Y_n$,
+obtained by blurring the fixations with a Gaussian kernel. Video saliency
+prediction is the task of estimating, for every frame, a probability
+distribution $\hat S_n$ over pixel locations,
+\begin{equation}
+  \hat S_n(p)\geq0, \qquad \sum_{p}\hat S_n(p)=1,
+  \label{eq:task}
+\end{equation}
+that approximates where observers look in frame $n$. Treating saliency as a
+distribution, rather than as an unnormalised score map, is the
+probabilistic view advocated by K\"ummerer et
+al.~\cite{kummerer2015information,kummerer2018saliency}; it makes the
+training objective and the distribution-based metrics well defined.
+
+The model sees a temporal window rather than a single frame. A clip of
+$T=16$ frames is sampled with a stride of $s=2$, so that the sampled indices
+are $n_k=n_0+ks$ for $k=0,\dots,T-1$; at the 30\,frames-per-second rate of
+DHF1K the clip spans 31 original frames, or about one second. Indices that
+fall outside the video are clamped to its first or last frame. The model
+predicts maps for all $T$ sampled frames but only the central $T/2$
+positions,
+\begin{equation}
+  \mathcal{O}=\{T/4,\dots,3T/4-1\}=\{4,\dots,11\},
+  \label{eq:central}
+\end{equation}
+are used for training and inference. Each prediction therefore has at
+least eight original frames (about 0.27\,s) of context on either side. The
+formulation is thus \emph{non-causal}: a frame's map depends on frames that
+follow it. This suits offline applications such as video compression or
+summarisation but not streaming use, and it differs from methods that predict
+the last frame of a clip from past frames only, such as
+SalFoM~\cite{moradi2024salfom}. The difference is returned to when results
+are compared in \cref{ch:experiments}.
+
+%----------------------------------------------------------------------------
+\section{Datasets}\label{sec:dataset}
 
 \subsection{Data Collection}
-Describe where the data comes from, its size and how it is split.
+
+No new eye-tracking data were collected. The study uses ten public datasets,
+summarised in \cref{tab:datasets}. All were read from their original
+distributions; the splits and holdout lists used here are released with the
+code.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Eye-tracking datasets used in this thesis. \enquote{Holdout}
+  is the internal selection set drawn from the training part; the test part
+  is scored once per model}\label{tab:datasets}
+  \small
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright}p{2.6cm}>{\raggedright}X>{\raggedright\arraybackslash}p{4.6cm}@{}}
+    \toprule
+    \textbf{Dataset} & \textbf{Content and viewing condition}
+      & \textbf{Split used (train / holdout / test)} \\
+    \midrule
+    DHF1K~\cite{wang2018revisiting,wang2021revisiting} & 1,000 YouTube
+      videos, $640\times360$ at 30\,fps, free viewing, 17 observers; official
+      split 600 / 100 / 300 (test labels withheld)
+      & 540 / 60 / 100 (official validation set as test) \\
+    UCF Sports~\cite{rodriguez2008action,mathe2015actions} & 150 sports
+      videos; gaze recorded during action recognition; standard split
+      103 / 47 & 93 / 10 / 47 \\
+    Hollywood-2~\cite{marszalek2009actions} with the gaze of Vig et
+      al.~\cite{vig2012space} & 1,707 movie clips (823 / 884); four observers
+      who watched every clip plus a pooled fifth observer, recorded during
+      action recognition & 741 / 82 / 884 \\
+    DIEM~\cite{mital2011clustering} & 84 videos of many genres; audio
+      present & one standard split, 64 training and 17 test videos \\
+    Coutrot1~\cite{coutrot2012influence,coutrot2014how} & 60 clips in four
+      visual categories & \multirow{5}{=}{three folds each, every video tested
+      once~\cite{tsiami2020stavis}; holdout = 10\,\% of each training fold} \\
+    Coutrot2~\cite{coutrot2012influence,coutrot2014how} & 15 clips of four
+      people in a meeting & \\
+    ETMD~\cite{koutras2015perceptually,tsiami2019behaviorally} & 12 clips
+      from six Hollywood movies & \\
+    AVAD~\cite{min2016fixation} & 45 short audio-visual clips & \\
+    SumMe~\cite{gygli2014creating,tsiami2019behaviorally} & 25 user-made
+      videos & \\
+    SALICON~\cite{jiang2015salicon} & 10,000 static training images
+      & co-training ablation only \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+DHF1K~\cite{wang2018revisiting,wang2021revisiting} is the primary benchmark.
+Its 600 training videos were split once, with a fixed random seed, into 540
+training videos and a 60-video holdout used for all model selection. The
+official validation set (videos 601--700, 60,273 frames) is the test set of
+this thesis. Predictions for the 300 official test videos were generated with
+the final model and packaged in the format required by the dataset authors;
+their scores were not available when this thesis was written and are not
+reported.
+
+UCF Sports~\cite{rodriguez2008action} and Hollywood-2~\cite{marszalek2009actions}
+are action-recognition datasets for which Mathe and
+Sminchisescu~\cite{mathe2015actions} recorded the gaze of observers performing
+action recognition. For UCF Sports the standard 103/47 split was used, with
+ten training videos held out. The Mathe and Sminchisescu ground truth for
+Hollywood-2 could not be obtained during the project; instead, the
+independently recorded and openly licensed gaze data of Vig, Dorr and
+Cox~\cite{vig2012space} were used\footnote{Figshare item 93951, released under
+the CC~BY licence; every file was checked against its published checksum.}.
+These data come from fewer observers and cover whole clips rather than the
+shot-segmented clips used in the saliency literature, so results on them are
+reported under the separate name \enquote{Hollywood-2 (Vig gaze)} and are not
+compared with published Hollywood-2 numbers.
+
+The six audio-visual datasets (DIEM~\cite{mital2011clustering},
+Coutrot1 and Coutrot2~\cite{coutrot2012influence,coutrot2014how},
+ETMD~\cite{koutras2015perceptually}, AVAD~\cite{min2016fixation} and
+SumMe~\cite{gygli2014creating}) were used in the preprocessed form and with
+the fold lists released by Tsiami et al.~\cite{tsiami2020stavis}, whose
+protocol has become the standard for these data: DIEM has one fixed split,
+and each of the other five datasets has three folds in which every video
+appears in exactly one test set. The gaze data for ETMD and SumMe were
+recorded by Tsiami et al.~\cite{tsiami2019behaviorally}. SURGE-D is a
+visual model; the soundtracks were used only in the audio experiment of
+\cref{sec:audio-fusion}. SALICON~\cite{jiang2015salicon}, a dataset of static
+images with mouse-tracking saliency, was used only in the static co-training
+ablation.
 
 \subsection{Preprocessing}
-Describe how the data is cleaned and prepared.
+
+\paragraph{Frames.} Frames were read as distributed (DHF1K, UCF Sports and the
+STAViS releases) or decoded once with OpenCV (Hollywood-2, 487,556 frames).
+For the model, every frame is resized to $256\times256$ pixels with area
+interpolation, which changes the aspect ratio of 16:9 video, and normalised
+with the ImageNet channel means and standard deviations~\cite{deng2009imagenet}.
+Squashing was chosen over cropping because cropping removes image borders and
+alters the centre-bias statistics of the fixation maps; its effect on accuracy
+was not ablated.
+
+\paragraph{Training targets.} For each target frame, the ground-truth density
+is resized with area interpolation to the $64\times64$ output grid and
+normalised to sum to one, and the fixated pixels of the binary fixation map
+are counted on the same grid. The resulting pair $(Y_t,F_t)$ is used by the
+loss (\cref{sec:training}). Evaluation, in contrast, always takes place at
+the native resolution of the ground truth (\cref{sec:evaluation-metrics}).
+
+\paragraph{Frames without fixations.} In the STAViS releases and in the
+Hollywood-2 (Vig gaze) maps, some frames have no recorded fixation, for
+example during blinks. These frames are excluded from scoring. DHF1K and UCF
+Sports contain no such frames.
+
+\paragraph{Hollywood-2 (Vig gaze) maps.} The Vig gaze recordings provide raw
+1000\,Hz samples with confidence values and saccade annotations. A frame $f$
+of a clip with frame rate $r$ was taken to cover the interval
+$[(f-1)/r,\,f/r)$. For each observer and frame, the samples with confidence
+1.0 that do not fall inside an annotated saccade were collected. If any
+remained, the observer contributed one fixation point, the median of those
+samples, rounded and clipped to the frame. The binary fixation map thus has
+at most five points per frame. The density map is this binary map blurred
+with a Gaussian of $\sigma=20$\,pixels, following the DHF1K
+recipe~\cite{wang2018revisiting}. Of the 487,556 frames, 99.8\,\% received at
+least one point, with 4.53 points per frame on average. For model selection,
+82 of the 823 training clips were held out with a fixed seed.
+
+\paragraph{Audio features.} For the audio experiment only, each soundtrack of
+the STAViS release was mixed to mono and resampled to 16\,kHz, and the frozen
+Audio Spectrogram Transformer~\cite{gong2021ast} fine-tuned on
+AudioSet~\cite{gemmeke2017audio} was applied to consecutive 10.24\,s
+chunks\footnote{Checkpoint \texttt{MIT/ast-finetuned-audioset-10-10-0.4593},
+BSD-3-Clause licence.}. Averaging the patch tokens over the twelve frequency
+rows of the patch grid gives one 768-dimensional vector per time column, that
+is, roughly one every 0.1\,s. The feature of video frame $k$ (centred at time
+$(k-\tfrac12)/r$) is the mean of the columns whose centres lie within
+$\pm0.5$\,s of that time. Videos without a soundtrack receive zero features.
 
 %----------------------------------------------------------------------------
 \section{Proposed Architecture}\label{sec:architecture}
 
-Every figure must be referred to in the text. \Cref{fig:architecture} shows
-the overall architecture of the proposed approach.
+SURGE-D consists of a frozen self-supervised video encoder and a light
+trainable decoder (\cref{fig:architecture}). The decoder reads four
+intermediate layers of the encoder, rebuilds a multi-scale feature pyramid,
+decodes it top-down with factorised spatio-temporal convolutions, and adds a
+learned centre prior before normalising each output frame into a probability
+distribution. Only the decoder and the prior are trained: 6.99 million
+parameters with the ViT-L encoder and 7.39 million with ViT-g.
 
 \begin{figure}[htbp]
   \centering
-  % Replace example-image with your own file in figures/,
-  % e.g. \includegraphics[width=0.8\textwidth]{architecture.pdf}
-  \includegraphics[width=0.7\textwidth]{example-image}
-  \caption{Overall architecture of the proposed approach}\label{fig:architecture}
+  \includegraphics[width=\textwidth]{architecture.pdf}
+  \caption{Architecture of SURGE-D. A clip of 16 frames passes through the
+  frozen V-JEPA~2 encoder; four intermediate layers (blocks 6/12/18/24 of
+  ViT-L or 10/20/30/40 of ViT-g) feed a three-dimensional simple feature
+  pyramid, which a top-down (2+1)D decoder turns into logits at
+  $64\times64$ resolution for eight tubelet steps. After temporal
+  interpolation to 16 frames and the addition of a learned centre prior, a
+  softmax over pixels yields one saliency distribution per frame; the central
+  eight frames are kept. Tensor sizes are given as time $\times$ height
+  $\times$ width}\label{fig:architecture}
 \end{figure}
 
-\subsection{[Component One]}
-Describe the first component.
+\subsection{Frozen Video Encoder}\label{sec:encoder}
 
-\subsection{[Component Two]}
-Describe the second component. \Cref{alg:example} shows how an algorithm is
-written.
+The encoder is a Vision Transformer~\cite{dosovitskiy2021image} trained with
+the video joint-embedding predictive architecture (V-JEPA) objective of Bardes
+et al.~\cite{bardes2024revisiting}. In this objective, which extends the image
+model I-JEPA~\cite{assran2023self} to video, parts of a clip are masked and a
+predictor network is trained to predict the \emph{representations} of the
+masked regions, produced by an exponential-moving-average target encoder, from
+the representations of the visible ones. Because the loss is computed in
+representation space rather than pixel space, the encoder is not required to
+model unpredictable pixel detail, which Bardes et al.\ argue leads to features
+that transfer well with a frozen backbone~\cite{bardes2024revisiting}.
 
-\begin{algorithm}[htbp]
-  \caption{Example algorithm}\label{alg:example}
-  \begin{algorithmic}[1]
-    \Require input $x$
-    \Ensure output $y$
-    \State $y \gets 0$
-    \For{$i \gets 1$ \textbf{to} $n$}
-      \State $y \gets y + f(x_i)$
-    \EndFor
-    \State \Return $y$
-  \end{algorithmic}
-\end{algorithm}
+The checkpoints used are the publicly released V-JEPA~2 models\footnote{
+\texttt{facebook/vjepa2-vitl-fpc64-256} and \texttt{facebook/vjepa2-vitg-fpc64-256},
+released under the MIT licence through the Hugging Face hub and loaded with the
+Transformers library~\cite{wolf2020transformers}. The technical report that
+introduced them had not appeared in a peer-reviewed venue when this thesis was
+written and is therefore not cited; their properties are taken from the
+checkpoints themselves and from the peer-reviewed follow-up study of
+Mur-Labadia et al.~\cite{murlabadia2026vjepa21}.}, which follow this objective:
+as Mur-Labadia et al.\ describe it, an $L_1$ loss between the predictor's
+outputs and the target encoder's representations is applied to the masked
+tokens only~\cite{murlabadia2026vjepa21}. The same study reports that this
+choice leaves the visible tokens without a direct training signal and that
+frozen V-JEPA~2 features consequently carry little local structure, reaching
+only 22.2 mIoU in linear-probe semantic segmentation on ADE20K. Whether such
+features suit a dense task such as saliency prediction was therefore an open
+question, which gate G1 addresses (\cref{sec:g1}). Two sizes were used. ViT-L/16 has 24 transformer blocks of width
+$D=1024$ and 303.9 million encoder parameters; ViT-g/16 has 40 blocks of
+width $D=1408$ and 1,012.2 million parameters (both counts measured on the
+loaded checkpoints, excluding the predictor). Both embed the video in
+\emph{tubelets} of $2\times16\times16$ pixels, so a $16\times256\times256$ clip
+becomes $8\times16\times16=2{,}048$ tokens.
+
+Let $h^{(\ell)}\in\mathbb{R}^{2048\times D}$ denote the output of block
+$\ell$. Four blocks at equal fractions of the depth are tapped, $\ell\in\{6,12,18,24\}$
+for ViT-L and $\ell\in\{10,20,30,40\}$ for ViT-g, and each tap is reshaped into
+a feature volume of size $D\times8\times16\times16$. Intermediate layers are
+used because dense prediction benefits from features at several levels of
+abstraction~\cite{lin2017feature,ranftl2021vision}. The encoder is frozen: its
+weights are not updated and no gradient is propagated into it. Freezing was
+the outcome of an experiment rather than an assumption; the alternative,
+low-rank adaptation of the encoder, is described in \cref{sec:lora} and
+evaluated in \cref{ch:experiments}.
+
+\subsection{Three-Dimensional Simple Feature Pyramid}
+
+A plain Vision Transformer produces features at a single resolution. Li et
+al.~\cite{li2022exploring} showed that a feature pyramid for dense prediction
+can be built from such a backbone by simple up- and down-sampling of its
+features. SURGE-D uses a three-dimensional variant built from the four
+taps rather than from the last layer only. With $\phi(\cdot)$ denoting group
+normalisation~\cite{wu2018group} followed by a GELU non-linearity,
+$W_\ell$ a $1\times1\times1$ convolution from $D$ to $C=256$ channels, and
+$U(\cdot)$ a spatial $\times2$ transposed convolution (kernel and stride
+$1\times2\times2$) followed by $\phi$, the pyramid levels are
+\begin{equation}
+\begin{aligned}
+  P_4 &= U\!\left(U\!\left(\phi(W_{1}h^{(\ell_1)})\right)\right) \in\mathbb{R}^{C\times8\times64\times64},&
+  P_8 &= U\!\left(\phi(W_{2}h^{(\ell_2)})\right) \in\mathbb{R}^{C\times8\times32\times32},\\
+  P_{16a} &= \phi(W_{3}h^{(\ell_3)}) \in\mathbb{R}^{C\times8\times16\times16},&
+  P_{16b} &= \phi(W_{4}h^{(\ell_4)}) \in\mathbb{R}^{C\times8\times16\times16}.
+\end{aligned}
+\label{eq:fpn}
+\end{equation}
+The shallowest tap feeds the finest level, as in standard feature pyramids,
+and the two deepest taps both remain at the token resolution of $1/16$. The
+temporal resolution of eight tubelet steps is preserved throughout.
+
+\subsection{Top-Down (2+1)D Decoder}
+
+The decoder refines the pyramid from coarse to fine. Its building block is
+a residual block that factorises a three-dimensional convolution into a
+spatial and a temporal part, in the manner of R(2+1)D~\cite{tran2018closer},
+\begin{equation}
+  \mathcal{B}(x) = \mathrm{GELU}\!\Big(x + \mathrm{GN}\big(\mathrm{Conv}_{3\times1\times1}
+  \big(\mathrm{GELU}(\mathrm{GN}(\mathrm{Conv}_{1\times3\times3}(x)))\big)\big)\Big),
+  \label{eq:r21}
+\end{equation}
+where the subscripts give the kernel size as time $\times$ height $\times$
+width and $\mathrm{GN}$ is group normalisation. Let $\mathcal{R}$ denote two
+such blocks in sequence and ${\uparrow}$ nearest-neighbour spatial upsampling
+by a factor of two. The decoder computes
+\begin{equation}
+\begin{aligned}
+  D_{16} &= \mathcal{R}\big(\phi(\mathrm{Conv}_{1\times1\times1}[P_{16a};P_{16b}])\big),\\
+  D_{8} &= \mathcal{R}\big(P_{8} + {\uparrow}D_{16}\big),\\
+  D_{4} &= \mathcal{R}\big(P_{4} + {\uparrow}D_{8}\big),
+\end{aligned}
+\label{eq:decoder}
+\end{equation}
+where $[\cdot;\cdot]$ concatenates channels. A head with a $1\times3\times3$
+convolution to 128 channels, a GELU and a $1\times1\times1$ convolution to one
+channel turns $D_4$ into logits $L\in\mathbb{R}^{8\times64\times64}$. During
+training, two auxiliary heads ($1\times1\times1$ convolutions) produce
+additional logits from $D_{16}$ and $D_8$; they are upsampled to
+$64\times64$ and supervised with the same targets, a form of deep
+supervision~\cite{lee2015deeply}. The auxiliary heads are not used at
+inference.
+
+\subsection{Temporal Upsampling, Centre Prior and Output}
+
+The logits have one time step per tubelet. They are interpolated trilinearly
+to the $T=16$ sampled frames, giving $L_t$ for $t=1,\dots,T$.
+
+Human fixations in videos are biased towards the centre of the screen, partly
+because of how scenes are framed and partly because of viewing
+strategy~\cite{tatler2007central,tseng2009quantifying}. SURGE-D models this
+bias with a learned, input-independent prior. With pixel positions
+$p\in[0,1]^2$ in normalised coordinates, the prior is a mixture of $K=8$
+Gaussians with diagonal covariance,
+\begin{equation}
+  \log G_\theta(p) = \alpha\left[\log\sum_{k=1}^{K}\pi_k\,
+  \mathcal{N}\!\left(p;\mu_k,\mathrm{diag}(\sigma_k^2)\right)
+  - \log\sum_{p'}\sum_{k=1}^{K}\pi_k\,\mathcal{N}\!\left(p';\mu_k,\mathrm{diag}(\sigma_k^2)\right)\right],
+  \label{eq:prior}
+\end{equation}
+where the mixture weights $\pi=\mathrm{softmax}(w)$, the means $\mu_k$, the
+scales $\sigma_k$ and the strength $\alpha$ are learned (41 parameters in
+total). The means are initialised on a grid in the central
+$[0.35,0.65]^2$ region, the scales at $0.25$ and the strength at one. The
+prediction for frame $t$ is
+\begin{equation}
+  S_t(p) = \frac{\exp\big(L_t(p)+\log G_\theta(p)\big)}
+  {\sum_{p'}\exp\big(L_t(p')+\log G_\theta(p')\big)},
+  \label{eq:output}
+\end{equation}
+a softmax over the $64\times64$ positions, so that every output frame is a
+probability distribution as required by \cref{eq:task}. The prior is also
+added to the auxiliary logits during training.
+
+The design of the decoder follows from three considerations. First, the
+encoder carries most of the representational capacity, so the decoder can be
+small; its 7 million parameters are about 2\,\% of the ViT-L encoder.
+Second, the (2+1)D factorisation adds temporal mixing at every scale at a
+lower cost than full three-dimensional kernels~\cite{tran2018closer}. Third,
+predicting maps for many frames in one forward pass amortises the cost of the
+encoder: a single pass over a 16-frame clip yields usable maps for 16 original
+frames (\cref{sec:inference}). The measured cost is reported in
+\cref{sec:cost}.
+
+%----------------------------------------------------------------------------
+\section{Components Evaluated but Not Retained}\label{sec:optional}
+
+Four further components were implemented, tested under the rules of
+\cref{tab:rules}, and not retained. They are described here because their
+negative results are part of the contribution of the thesis.
+
+\subsection{Predictive Surprise from the V-JEPA~2 Predictor}\label{sec:surprise}
+
+The original proposal was built around the hypothesis that the prediction
+error of a self-supervised video model indicates where something unexpected
+happens, and therefore where people look, in the spirit of the Bayesian
+surprise account of attention~\cite{itti2009bayesian}. V-JEPA~2 provides the
+means to test this, because its released checkpoint includes the predictor
+used during pre-training.
+
+For a window of 16 sampled frames, the first eight frames (four tubelets) are
+the context and the last eight the target. The context is encoded on its own,
+so that no information from the target frames leaks into it, and the
+predictor maps the context tokens to predicted target tokens $\hat z_p$. The
+target tokens $z_p$ are taken from an encoding of the full window. With
+$\mathrm{LN}$ a parameter-free layer normalisation over the channel dimension,
+the \emph{raw surprise} of target token $p$ is
+\begin{equation}
+  e(p) = \frac{1}{D}\sum_{c=1}^{D}\big|\mathrm{LN}(\hat z_p)_c - \mathrm{LN}(z_p)_c\big|.
+  \label{eq:surprise}
+\end{equation}
+A \emph{contextual} variant subtracts the error obtained when the context is
+replaced by the context of a different video, $e(p)-e_{\mathrm{wrong}}(p)$, so
+that only the part of the error that depends on the true past remains. Two
+reference maps tested whether surprise adds anything beyond simpler cues:
+\emph{token atypicality}, the mean absolute deviation of each target token
+from the mean token of its frame, and \emph{frame difference}, the absolute
+grey-level difference between consecutive frames pooled to the $16\times16$
+token grid. All maps were upsampled to $640\times360$, blurred with a Gaussian
+of $\sigma=16$\,pixels and scored on the first frame of each target tubelet of
+the 60 holdout videos, at about 4 and 15 frames per second. A decoder module
+that injects the surprise map through zero-initialised feature-wise
+modulation was implemented but, following the outcome of the gate, never
+trained.
+
+\subsection{Low-Rank Adaptation of the Encoder}\label{sec:lora}
+
+Low-rank adaptation (LoRA)~\cite{hu2022lora} fine-tunes a frozen linear layer
+$W\in\mathbb{R}^{d_{\mathrm{out}}\times d_{\mathrm{in}}}$ by adding a trainable
+low-rank update,
+\begin{equation}
+  W'x = Wx + \frac{\alpha}{r}BAx, \qquad A\in\mathbb{R}^{r\times d_{\mathrm{in}}},\;
+  B\in\mathbb{R}^{d_{\mathrm{out}}\times r},
+  \label{eq:lora}
+\end{equation}
+with $B$ initialised to zero so that training starts from the frozen model.
+LoRA with $r=\alpha=16$ was applied to the query, key, value and output
+projections of the last twelve blocks of ViT-L (48 layers, 1.57 million
+parameters). Each LoRA model was initialised from the frozen model of the same
+seed and trained for three epochs with learning rates of $10^{-4}$ for the
+LoRA weights and $10^{-5}$ for the decoder.
+
+\subsection{Audio Fusion}\label{sec:audio-fusion}
+
+To test whether the soundtrack helps on the audio-visual datasets, an audio
+fusion module was added to three pyramid levels ($P_8$, $P_{16a}$,
+$P_{16b}$). For each tubelet, the audio vector $a$ (the mean of the features of
+its two frames) is embedded as $e=\mathrm{GELU}(W_p\,\mathrm{LN}(a))\in\mathbb{R}^{256}$.
+A pyramid level $F$ is then modulated as
+\begin{equation}
+  \tilde F = F\odot(1+\gamma) + \beta + W_r\big(F\odot s\big), \qquad
+  s(x)=\mathrm{sigmoid}\!\left(\frac{\langle W_q F(x),\,W_k e\rangle}{\sqrt{256}}\right),
+  \label{eq:audio}
+\end{equation}
+where $(\gamma,\beta)=W_f e$ is a feature-wise linear modulation
+(FiLM)~\cite{perez2018film}, $s(x)$ is an audio-visual correspondence map at
+each position $x$, and $W_r$ is a $1\times1\times1$ convolution. Because $W_f$
+and $W_r$ are initialised to zero, the module is exactly the visual model at
+the start of training. As a control, the trained model was also scored with
+the audio of each test video replaced by that of another test video
+(\enquote{rotated audio}); a model that uses sound should do better with the
+matched soundtrack.
+
+\subsection{Static-Image Co-Training}
+
+Training on static images helped early video saliency
+models~\cite{wang2018revisiting}. To test whether it still helps on top of a
+video foundation encoder, the 10,000 SALICON training
+images~\cite{jiang2015salicon} were added to each training epoch, each image
+repeated over the 16 input frames, with the same loss.
 
 %----------------------------------------------------------------------------
 \section{Training Procedure}\label{sec:training}
 
-Describe the loss function, optimiser and training strategy. Number equations
-so they can be referred to, e.g.\ \cref{eq:loss}:
+\paragraph{Loss.} The loss combines three standard saliency objectives:
+the Kullback--Leibler divergence of the prediction from the ground-truth
+density, the linear correlation coefficient, and the normalised scanpath
+saliency~\cite{bylinskii2019metrics}. For a predicted distribution $S$, a
+target density $Y$ and fixation counts $F$ on the $64\times64$ grid,
+\begin{align}
+  \mathrm{KL}(Y\,\|\,S) &= \sum_p Y(p)\big[\log(Y(p)+\epsilon) - \log S(p)\big], \label{eq:kl}\\
+  \mathrm{CC}(S,Y) &= \frac{\sum_p (S(p)-\bar S)(Y(p)-\bar Y)}
+     {\big\|S-\bar S\big\|_2\,\big\|Y-\bar Y\big\|_2+\epsilon}, \label{eq:cc-loss}\\
+  \mathrm{NSS}(S,F) &= \frac{1}{\sum_p F(p)}\sum_p F(p)\,\frac{S(p)-\bar S}{\mathrm{std}(S)}, \label{eq:nss-loss}
+\end{align}
+with $\epsilon=10^{-8}$. The training loss over the central frames
+$\mathcal{O}$ of a clip is
 \begin{equation}
-  \mathcal{L} = \frac{1}{N} \sum_{i=1}^{N} \ell\left(\hat{y}_i, y_i\right).
-  \label{eq:loss}
+\begin{split}
+  \mathcal{L} = {}& \frac{1}{|\mathcal{O}|}\sum_{t\in\mathcal{O}}
+  \Big[\mathrm{KL}(Y_t\|S_t) + \big(1-\mathrm{CC}(S_t,Y_t)\big) - 0.1\,\mathrm{NSS}(S_t,F_t)\Big]\\
+  &+ 0.25\sum_{a\in\{8,16\}}\frac{1}{|\mathcal{O}|}\sum_{t\in\mathcal{O}}
+  \Big[\mathrm{KL}(Y_t\|S^{a}_t) + \big(1-\mathrm{CC}(S^{a}_t,Y_t)\big)\Big],
+\end{split}
+\label{eq:loss}
 \end{equation}
+where $S^{a}_t$ are the predictions of the auxiliary heads and the NSS term is
+averaged over frames with at least one fixation. The KL and CC terms follow
+the loss of SalFoM~\cite{moradi2024salfom}; the small NSS term additionally
+rewards high predicted values at the fixated locations themselves, which the
+two distribution-based terms do not address directly. The loss is averaged
+over the clips of a batch.
+
+\paragraph{Optimisation.} The decoder was trained with
+AdamW~\cite{loshchilov2019decoupled} at a learning rate of $3\times10^{-4}$
+and weight decay $0.01$; the prior used a learning rate of $10^{-3}$ without
+weight decay. The learning rate rose linearly during the first quarter epoch
+and then followed a cosine decay to zero~\cite{loshchilov2017sgdr}. Gradients
+were clipped to a norm of 1.0, and the forward pass ran in bfloat16 mixed
+precision. Each epoch drew eight random clips from every training video, and
+the batch size was eight. Clip start positions were drawn uniformly, allowing
+up to a quarter of the clip to extend beyond the start or end of the video,
+where frames are repeated. The only data augmentation was a horizontal flip
+of frames and targets with probability 0.5; the colour jitter mentioned in the
+original proposal was not implemented.
+
+\paragraph{Schedule and model selection.} The proposal foresaw 20 epochs. In
+the backbone comparison (\cref{sec:g1}), however, the holdout CC of every
+backbone peaked after the second or third epoch and then fell while the
+training CC kept rising. The schedule for all later runs was therefore fixed,
+before any of them started, at three epochs, with the checkpoint chosen by
+holdout CC after each epoch (computed on every fifth frame).
+
+\paragraph{Fine-tuning on other datasets.} For UCF Sports, the six
+audio-visual datasets and Hollywood-2 (Vig gaze), each model was initialised
+from the DHF1K model and trained for three further epochs with a learning rate
+of $10^{-4}$ ($3\times10^{-4}$ for the prior). The number of clips per training
+video was set so that an epoch contained about 1,500 clips (16 clips per video
+for UCF Sports). Each fold of the audio-visual datasets was trained and
+selected on its own holdout and its test videos were scored once.
+
+\paragraph{Seeds and ensembles.} The main models were trained with three seeds
+(0, 1 and 2). A three-seed ensemble averages the members' probability maps
+before post-processing. On the fine-tuning datasets, ensemble member $k$ is
+fine-tuned from the DHF1K model of seed $k$. \Cref{tab:hyper} summarises the
+settings.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Training and inference settings of SURGE-D}\label{tab:hyper}
+  \small
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    \textbf{Setting} & \textbf{Value} \\
+    \midrule
+    Input & 16 frames, stride 2, $256\times256$, ImageNet normalisation \\
+    Encoder & V-JEPA~2 ViT-L/16 or ViT-g/16, frozen \\
+    Decoder channels & 256 (head: 128) \\
+    Output & $64\times64$ per frame, central 8 of 16 sampled frames \\
+    Loss weights & KL 1, CC 1, NSS 0.1, auxiliary 0.25 \\
+    Optimiser & AdamW, weight decay 0.01 (prior: 0) \\
+    Learning rate (DHF1K) & $3\times10^{-4}$ (prior $10^{-3}$), warm-up 0.25 epoch, cosine \\
+    Learning rate (fine-tuning) & $10^{-4}$ (prior $3\times10^{-4}$) \\
+    Epochs, batch size & 3, 8 \\
+    Clips per video and epoch & 8 (DHF1K); about 1,500 clips per epoch elsewhere \\
+    Augmentation & horizontal flip ($p=0.5$) \\
+    Precision & bfloat16 autocast, gradient clipping at 1.0 \\
+    Selection & best epoch by holdout CC \\
+    Output blur $\sigma$ & tuned on the holdout over $\{0,4,8,12,16,24\}$ pixels \\
+    Seeds & 0, 1, 2; ensemble = mean of probability maps \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 %----------------------------------------------------------------------------
-\section{Evaluation Metrics}\label{sec:evaluation-metrics}
+\section{Inference and Post-Processing}\label{sec:inference}
 
-Define the metrics used to evaluate the approach and explain why they were
-chosen.
+A whole video is processed with overlapping windows
+(\cref{alg:inference}). Successive windows advance by $(T/2)\,s=16$ original
+frames, so the central sampled positions of consecutive windows tile the
+video without gaps or overlaps. An original frame that lies between two
+sampled positions receives the linear interpolation of their maps. The
+$64\times64$ map is upsampled bilinearly to the native resolution, smoothed
+with a Gaussian of standard deviation $\sigma$ (in native pixels) and
+normalised to sum to one. The value of $\sigma$ was chosen on the holdout by
+CC for each model and each ensemble, and the same map is then used for all
+metrics, as recommended by K\"ummerer et al.~\cite{kummerer2018saliency}.
+
+\begin{algorithm}[htbp]
+  \caption{Whole-video inference with SURGE-D}\label{alg:inference}
+  \begin{algorithmic}[1]
+    \Require frames $I_0,\dots,I_{N-1}$; model $f$; clip length $T=16$; stride $s=2$; blur $\sigma$
+    \Ensure saliency maps $\hat S_0,\dots,\hat S_{N-1}$ at native resolution
+    \State $h \gets (T/2)\,s$;\quad $c \gets (T/4)\,s$;\quad $b \gets -c$ \Comment{hop, offset of first central frame, window start}
+    \While{$b + c < N$}
+      \State $n_k \gets \min(\max(b+ks,\,0),\,N-1)$ for $k=0,\dots,T-1$ \Comment{clamp at the video ends}
+      \State $(S_0,\dots,S_{T-1}) \gets f(I_{n_0},\dots,I_{n_{T-1}})$ \Comment{one forward pass, $64\times64$ maps}
+      \For{$m \gets b+c$ \textbf{to} $\min(b+c+h,\,N)-1$}
+        \State $q \gets (m-b)/s$;\quad $j \gets \lfloor q\rfloor$;\quad $w \gets q-j$
+        \State $M \gets (1-w)\,S_j + w\,S_{j+1}$ \Comment{linear interpolation in time}
+        \State $\hat S_m \gets \mathrm{normalise}\big(\mathrm{Gauss}_\sigma(\mathrm{upsample}_{H\times W}(M))\big)$
+      \EndFor
+      \State $b \gets b + h$
+    \EndWhile
+  \end{algorithmic}
+\end{algorithm}
+
+For an ensemble, the members' maps $M$ are averaged before upsampling and
+blurring. Horizontal-flip test-time augmentation was implemented but not used
+in any reported result.
+
+%----------------------------------------------------------------------------
+\section{Evaluation Metrics and Statistical Analysis}\label{sec:evaluation-metrics}
+
+\subsection{Metrics}
+
+Six metrics were computed, covering the two families distinguished by
+Bylinskii et al.~\cite{bylinskii2019metrics}: distribution-based metrics,
+which compare the predicted map $P$ with the ground-truth density $Q$, and
+location-based metrics, which evaluate $P$ at the fixated pixels of $F$. All
+are computed at the native resolution of the ground truth. Let $z(P)$ denote
+$P$ standardised to zero mean and unit standard deviation over the frame,
+$\hat P=P/\sum P$ and $\hat Q=Q/\sum Q$.
+
+\begin{itemize}
+  \item \textbf{Correlation coefficient (CC)}, the Pearson correlation
+    between $P$ and $Q$, $\mathrm{CC}=\frac{1}{|\Omega|}\sum_{p}z(P)(p)\,z(Q)(p)$, where
+    $\Omega$ is the set of pixels.
+  \item \textbf{Normalised scanpath saliency (NSS)}~\cite{peters2005components},
+    the mean standardised saliency at fixated pixels,
+    $\mathrm{NSS}=\frac{1}{\sum_p F(p)}\sum_p F(p)\,z(P)(p)$.
+  \item \textbf{Similarity (SIM)}, the histogram intersection
+    $\sum_p\min(\hat P(p),\hat Q(p))$.
+  \item \textbf{Kullback--Leibler divergence (KLD)},
+    $\sum_p\hat Q(p)\log\big(\varepsilon+\hat Q(p)/(\hat P(p)+\varepsilon)\big)$, with
+    $\varepsilon$ the machine epsilon of double precision as in the MIT
+    benchmark code~\cite{bylinskii2019metrics}; lower is better.
+  \item \textbf{AUC-Judd (AUC-J)}~\cite{judd2009learning}, the area under the
+    ROC curve obtained by thresholding $P$ at the saliency values of the
+    fixated pixels, with fixated pixels as positives and all other pixels as
+    negatives. As in the reference implementation, a tiny random jitter breaks
+    ties between quantised values.
+  \item \textbf{Shuffled AUC (sAUC)}~\cite{zhang2008sun,borji2013quantitative},
+    which takes its negatives from the fixations of other videos instead of
+    from all pixels and therefore does not reward a centre bias. For each
+    video, the fixations of one random frame of each of ten other videos of
+    the same test set are pooled; for each frame, 100 random draws of as many
+    negatives as there are fixations are scored with thresholds in steps of
+    $0.1$ and the areas are averaged.
+\end{itemize}
+
+Each metric is averaged over the frames of a video and then over the videos
+of the test set; on the audio-visual datasets, the dataset score is the mean
+over its folds. The shuffled AUC depends on the sampling of negatives, so its
+values are compared only within this thesis.
+
+\paragraph{Validation of the evaluator.} The metrics were implemented
+independently of any existing saliency code. Before any model of this thesis
+was scored, the evaluator was checked against reference code by re-scoring a
+fixed set of saliency maps (\cref{sec:metric-validation}).
+
+\subsection{Statistical Analysis}\label{sec:statistics}
+
+When two models are scored on the same test videos, their difference is
+assessed with a paired bootstrap over videos~\cite{efron1979bootstrap}. For a
+metric $m$ and videos $v=1,\dots,V$, let $d_v=m_A(v)-m_B(v)$. The mean
+difference $\bar d$ is reported with a 95\,\% percentile interval obtained
+from 10,000 resamples of the $V$ videos with replacement. A model is said to
+be better on a metric only if the interval excludes zero. The bootstrap
+treats videos as the independent units and therefore accounts for the strong
+correlation between frames of the same video. On the audio-visual datasets,
+the test videos of all folds are pooled for this purpose, which is possible
+because each video is tested exactly once.
+
+Published results of other methods were computed with other evaluation code
+and, sometimes, other protocol details. They cannot enter a paired test. They
+are reported side by side with the results of this thesis, and margins below
+$0.01$ CC are treated as ties (\cref{tab:rules}).
 
 %----------------------------------------------------------------------------
 \section{Ethical Considerations}\label{sec:ethics}
 
-Discuss any ethical issues, for example the privacy of people in the data.
+The thesis uses only eye-tracking data that were collected and released by
+other research groups under their own ethical procedures; no human
+participants were recruited, and no personal data beyond the anonymised gaze
+recordings and the public video content of these datasets were processed. The
+licences of the data and models were respected: the Vig gaze data and the
+V-JEPA~2 checkpoints carry permissive licences, and the benchmark videos were
+used for research only, as their distributors require.
+
+Saliency prediction has dual-use potential. Models of where people look can
+improve video compression, accessibility and the evaluation of user
+interfaces, but they can also be used to design content that captures
+attention against the viewer's interest. The models of this thesis predict
+average gaze over groups of observers and contain no information about
+individuals; the work does not, however, remove the broader risk, and the
+released code is intended for research use.
+
+Finally, the experiments consumed electricity on a single workstation
+graphics card. The design choices that keep the encoder frozen and amortise
+its cost over many output frames reduce this footprint compared with fully
+fine-tuned alternatives, and every result was obtained with a fixed number of
+runs decided in advance rather than by open-ended search.
