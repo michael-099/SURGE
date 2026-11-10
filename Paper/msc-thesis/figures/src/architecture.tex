@@ -2,7 +2,7 @@
 % Shapes follow surge/model.py and surge/backbones.py (ViT-L numbers first, ViT-g second where they differ).
 \documentclass[tikz,border=3pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newtxtext,newtxmath}
+\usepackage{lmodern}   % Latin Modern, as in the thesis text
 \usetikzlibrary{arrows.meta,calc}
 \begin{document}
 \begin{tikzpicture}[
@@ -23,22 +23,22 @@
 }
 \node[lab] at (0.95,1.6) {Input clip\\$16\times3\times256\times256$\\stride 2 ($\approx$15\,fps)};
 % ------------------------------------------------------------------ encoder
-\node[draw, rounded corners=3pt, fill=black!7, minimum width=23mm, minimum height=61mm, anchor=south] at (3.75,-0.35) {};
-\node[grp] at (3.75,6.2) {V-JEPA 2\\encoder};
-\node[lab] at (3.75,5.35) {(frozen)};
-\node[lab] at (3.75,0.2) {tubelets $2\times16\times16$\\$8\times16\times16$ tokens\\$D=1024$ / $1408$};
+\node[draw, rounded corners=3pt, fill=black!7, minimum width=26mm, minimum height=61mm, anchor=south] at (3.8,-0.35) {};
+\node[grp] at (3.8,6.2) {V-JEPA 2\\encoder};
+\node[lab] at (3.8,5.35) {(frozen)};
+\node[lab] at (3.8,0.2) {tubelets $2\times16\times16$\\$8\times16\times16$ tokens\\$D=1024$ / $1408$};
 \foreach \y/\t in {\rA/{block 6 / 10}, \rB/{block 12 / 20}, \rC/{block 18 / 30}, \rD/{block 24 / 40}} {
-  \draw[black!55] (2.65,\y) -- (4.85,\y);
-  \node[lab, anchor=south] at (3.75,\y) {\t};
+  \draw[black!55] (2.55,\y) -- (5.05,\y);
+  \node[lab, anchor=south] at (3.8,\y) {\t};
 }
-\draw[arr] (2.15,2.9) -- (2.6,2.9);
+\draw[arr] (2.15,2.9) -- (2.5,2.9);
 % ------------------------------------------------------------------ SimpleFPN-3D
 \node[grp] at (7.25,6.2) {SimpleFPN-3D\\($C=256$)};
 \node[fpn] (p4)   at (7.25,\rA) {$P_4$: $1{\times}1{\times}1$ conv, up $\times4$\\$8\times64\times64$};
 \node[fpn] (p8)   at (7.25,\rB) {$P_8$: $1{\times}1{\times}1$ conv, up $\times2$\\$8\times32\times32$};
 \node[fpn] (p16a) at (7.25,\rC) {$P_{16a}$: $1{\times}1{\times}1$ conv\\$8\times16\times16$};
 \node[fpn] (p16b) at (7.25,\rD) {$P_{16b}$: $1{\times}1{\times}1$ conv\\$8\times16\times16$};
-\foreach \n/\y in {p4/\rA, p8/\rB, p16a/\rC, p16b/\rD} { \draw[arr] (4.86,\y) -- (\n.west); }
+\foreach \n/\y in {p4/\rA, p8/\rB, p16a/\rC, p16b/\rD} { \draw[arr] (5.06,\y) -- (\n.west); }
 % ------------------------------------------------------------------ decoder
 \node[grp] at (11.0,6.2) {Top-down (2+1)D\\decoder};
 \node[dec] (d4)  at (11.0,\rA) {$D_4=\mathcal{R}(P_4+{\uparrow}D_8)$\\$8\times64\times64$};

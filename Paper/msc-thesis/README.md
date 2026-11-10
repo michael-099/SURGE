@@ -44,14 +44,18 @@ create a file with a `\chapter{...}` in `appendices/` and `\input` it after `\ap
    everywhere.
 2. **AAiT logo:** save it as `figures/aait-logo.png`. Until you do, the title page shows a
    placeholder box. The AAU logo is already included.
-3. Write each chapter. Each section starts with a grey **Guide** box saying what belongs there.
-   Before you submit, hide all of them with `\documentclass[noguidance]{aaitthesis}`.
+3. Write each chapter. Each section has a grey **Guide** box saying what belongs there. The
+   boxes are hidden; uncomment `\showguidestrue` in `main.tex` to show them while writing.
 4. Replace the example entries in `references.bib` with your own.
 
 ## Writing tips
 
 - **Cite** with `\cite{key}`. The style is IEEE, and only cited works are listed.
-- **Acronyms:** use `\ac{CNN}` (plural `\acp{CNN}`). The first use prints the long form.
+- **Acronyms** use the `glossaries` package. Define each one in `frontmatter/acronyms.tex` with
+  `\newacronym[sort=cnn]{CNN}{CNN}{Convolutional Neural Network}`. In the text, write
+  `\acrshort{CNN}` for the short form, `\acrlong{CNN}` for the long form or `\acrfull{CNN}`
+  for "Convolutional Neural Network (CNN)". Each use links to the List of Acronyms, which is
+  built automatically during the normal build and lists every defined acronym alphabetically.
 - **Cross-references:** use `\cref{fig:...}`, `\cref{tab:...}`, `\cref{eq:...}`,
   `\cref{alg:...}` or `\cref{ch:...}`. These print "Figure 4.1", "Table 5.2", "Equation (4.1)",
   "Algorithm 4.1", "Chapter 3" and so on. Refer to every figure and table in the text.
@@ -61,9 +65,16 @@ create a file with a `\chapter{...}` in `appendices/` and `\input` it after `\ap
 
 ## Formatting
 
-- **Type and spacing:** 12 pt Times with 1.5 line spacing, on A4 paper.
+- **Class and preamble:** the standard `report` class (12 pt, A4, one-sided). All formatting
+  is in `preamble.tex`, which `main.tex` loads right after `\documentclass`.
+- **Type and spacing:** Latin Modern (text and maths), justified, with 1.5 line spacing. The
+  figures use the same font: `figures/src/architecture.tex` loads `lmodern`, and
+  `figures/src/make_plots.py` finds Latin Modern Roman through `kpsewhich`.
+- **Links:** `hyperref` with blue links for citations, cross-references, acronyms and URLs. To
+  print the acronyms in black while keeping them clickable, add
+  `\renewcommand*{\glstextformat}[1]{\textcolor{black}{#1}}` to `preamble.tex`.
 - **Margins:** 3 cm on the left (for binding) and 2.5 cm on the other sides. Change them in the
-  `geometry` line of `aaitthesis.cls`.
+  `geometry` line of `preamble.tex`.
 - **Headings:** chapters are headed "CHAPTER ONE / INTRODUCTION". Sections are numbered "1.1.",
   as in the SiTE guideline.
 - **Page numbering:** preliminary pages use roman numerals and the title page has no number.
@@ -78,4 +89,4 @@ sections. The rest follows common AAU/AAiT practice and is not set by any SiTE d
 the six-chapter outline, the approval page signatories, the declaration wording and the order of
 the preliminary pages. **Check these against your school's thesis guideline or a recently
 approved SiTE thesis**, and against what your advisor expects. Each of them can be changed in
-`main.tex` or `aaitthesis.cls`.
+`main.tex` or `preamble.tex`.

@@ -15,15 +15,15 @@ result with the folder it was read from.
   \centering
   \caption{Main files of the implementation}\label{tab:code}
   \small
-  \begin{tabularx}{\textwidth}{@{}>{\ttfamily\raggedright}p{4.4cm}>{\raggedright\arraybackslash}X@{}}
+  \begin{tabularx}{\textwidth}{@{}>{\ttfamily\raggedright}p{6.2cm}>{\raggedright\arraybackslash}X@{}}
     \toprule
     \textrm{\textbf{File}} & \textbf{Content} \\
     \midrule
-    surge/backbones.py & frozen encoders (V-JEPA~2 ViT-L and ViT-g, V-JEPA~2.1, UMT-L) and their taps; predictor error for gate G2 \\
+    surge/backbones.py & frozen encoders (\acrshort{V-JEPA}~2 \acrshort{ViT}-L and \acrshort{ViT}-g, \acrshort{V-JEPA}~2.1, \acrshort{UMT}-L) and their taps; predictor error for gate G2 \\
     surge/model.py & feature pyramid, (2+1)D decoder, auxiliary heads, centre prior, surprise and audio modules \\
     surge/data.py & dataset readers, clip sampling, targets, inference windows \\
     surge/losses.py & training loss (\cref{eq:loss}) \\
-    surge/metrics.py & CC, NSS, SIM, KLD, AUC-J and sAUC \\
+    surge/metrics.py & \acrshort{CC}, \acrshort{NSS}, \acrshort{SIM}, \acrshort{KLD}, \acrshort{AUC-J} and \acrshort{sAUC} \\
     surge/infer.py & whole-video inference (\cref{alg:inference}) and scoring \\
     surge/lora.py & low-rank adaptation (\cref{eq:lora}) \\
     scripts/train.py & training with holdout selection and clean stop/resume \\
@@ -42,7 +42,7 @@ result with the folder it was read from.
 
 \section{Commands for the Main Results}
 
-The main DHF1K model with the ViT-g encoder (seed 0) is trained, its blur is
+The main DHF1K model with the \acrshort{ViT}-g encoder (seed 0) is trained, its blur is
 tuned on the holdout, and it is scored once on the validation set with:
 
 \begin{small}

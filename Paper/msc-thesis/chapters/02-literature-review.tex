@@ -179,7 +179,7 @@ same way at every position and therefore cannot represent location-dependent
 patterns; DeepFix~\cite{kruthiventi2017deepfix} added location-biased
 convolutional layers for this purpose, and Cornia et
 al.~\cite{cornia2018predicting}, who refined the prediction iteratively with an
-attentive convolutional LSTM, learned a set of Gaussian prior maps, a design
+attentive convolutional \acrshort{LSTM}, learned a set of Gaussian prior maps, a design
 that recurs in later models, including the one proposed in this thesis. The
 second theme is global context: TranSalNet~\cite{lou2022transalnet} integrated
 transformer components into a convolutional saliency model to capture long-range
@@ -264,7 +264,7 @@ recent saliency models on action-oriented datasets~\cite{girmaji2025minimalistic
 
 The Transformer~\cite{vaswani2017attention} replaced recurrence and convolution
 by self-attention, which relates every element of a sequence to every other. The
-Vision Transformer (ViT)~\cite{dosovitskiy2021image} applied it to images by
+Vision Transformer (\acrshort{ViT})~\cite{dosovitskiy2021image} applied it to images by
 splitting them into patches of $16\times16$ pixels that are embedded as tokens.
 For video, ViViT~\cite{arnab2021vivit} and TimeSformer~\cite{bertasius2021space}
 extract spatio-temporal tokens and factorise attention over space and time to
@@ -272,14 +272,14 @@ cope with the long token sequences, while Video Swin~\cite{liu2022video}
 restricts attention to local windows, reintroducing an inductive bias of
 locality.
 
-A plain ViT produces features at a single resolution, whereas dense prediction
+A plain \acrshort{ViT} produces features at a single resolution, whereas dense prediction
 tasks need several. Feature pyramid networks~\cite{lin2017feature} build
 multi-scale representations from convolutional backbones with a top-down
 pathway and lateral connections. For transformers, DPT~\cite{ranftl2021vision}
 assembles tokens from several stages into image-like maps at different
 resolutions and fuses them with a convolutional decoder, and Li et
 al.~\cite{li2022exploring} showed that a simple pyramid built by up- and
-down-sampling the features of a plain ViT suffices for object detection. The
+down-sampling the features of a plain \acrshort{ViT} suffices for object detection. The
 decoder of this thesis follows these designs (\cref{sec:architecture}).
 
 \subsection{Self-Supervised Representation Learning}\label{sec:ssl}
@@ -308,12 +308,12 @@ learned from 400 million image--text pairs to predict which caption belongs to
 which image, which allows zero-shot transfer to new tasks.
 
 \emph{Masked modelling} learns by reconstructing hidden parts of the input.
-Masked autoencoders (MAE)~\cite{he2022masked} mask a large fraction of image
+Masked autoencoders (\acrshort{MAE})~\cite{he2022masked} mask a large fraction of image
 patches and train the network to reconstruct their pixels, and
 VideoMAE~\cite{tong2022videomae} applied the same principle to video with very
-high masking ratios. UMT~\cite{li2023unmasked} instead aligns the unmasked tokens
+high masking ratios. \acrshort{UMT}~\cite{li2023unmasked} instead aligns the unmasked tokens
 of a video student with the features of an image foundation model, which speeds
-up training and gives semantically rich features; for the UMT-L encoder on which
+up training and gives semantically rich features; for the \acrshort{UMT}-L encoder on which
 SalFoM builds (\cref{sec:related-vfm}), that teacher is CLIP~\cite{moradi2024salfom}. Such video foundation models have since been scaled
 further: InternVideo2~\cite{wang2024internvideo2} combines masked video
 modelling, cross-modal contrastive learning and next-token prediction and scales
@@ -321,12 +321,12 @@ the video encoder to six billion parameters.
 
 \subsection{Joint-Embedding Predictive Architectures}\label{sec:jepa}
 
-Joint-embedding predictive architectures (JEPA) take a further route. Rather than
+Joint-embedding predictive architectures (\acrshort{JEPA}) take a further route. Rather than
 reconstructing pixels or contrasting views, they predict the
 \emph{representations} of masked parts of the input from the visible parts.
-I-JEPA~\cite{assran2023self} predicts the representations of several target
+I-\acrshort{JEPA}~\cite{assran2023self} predicts the representations of several target
 blocks of an image from a single context block, and
-V-JEPA~\cite{bardes2024revisiting} extends this to video. With $x$ the visible
+\acrshort{V-JEPA}~\cite{bardes2024revisiting} extends this to video. With $x$ the visible
 (context) part of a clip, $y$ the full clip, $E_\theta$ the encoder,
 $\bar E$ an exponential-moving-average copy of it, $P_\phi$ the predictor and
 $\mathcal{M}$ the set of masked tokens, the objective can be written
@@ -350,17 +350,17 @@ fine-tuning~\cite{oquab2024dinov2}.
 
 Since the loss in \cref{eq:jepa} is applied only to the masked tokens, the
 visible tokens receive no direct training signal. Mur-Labadia et
-al.~\cite{murlabadia2026vjepa21} found that the features of the V-JEPA~2 models
-consequently carry little local structure (22.2 mIoU in linear-probe semantic
-segmentation on ADE20K), and proposed V-JEPA~2.1, which adds a loss on the
+al.~\cite{murlabadia2026vjepa21} found that the features of the \acrshort{V-JEPA}~2 models
+consequently carry little local structure (22.2 \acrshort{mIoU} in linear-probe semantic
+segmentation on ADE20K), and proposed \acrshort{V-JEPA}~2.1, which adds a loss on the
 visible tokens and self-supervision at intermediate layers to obtain denser
 features. Both model families are used in this thesis.
 
-A JEPA model also contains its predictor $P_\phi$. Models that learn to predict
+A \acrshort{JEPA} model also contains its predictor $P_\phi$. Models that learn to predict
 how their environment evolves are often called \emph{world models}. Ha and
 Schmidhuber~\cite{ha2018recurrent}, for example, trained a generative recurrent
 model of reinforcement-learning environments and used its compressed
-spatio-temporal representation for control. A JEPA video model resembles a world model in that its predictor
+spatio-temporal representation for control. A \acrshort{JEPA} video model resembles a world model in that its predictor
 anticipates unseen content, but it predicts representations rather than pixels,
 and the content it predicts need not lie in the future: masks may cover any part
 of a clip. After training, the predictor's error on a new video, the difference
@@ -389,11 +389,11 @@ shift, it was on average about 2\,\% more accurate than training only a linear
 head on the training distribution but about 7\,\% less accurate on shifted data.
 Parameter-efficient methods adapt a model with few trainable parameters:
 adapters insert small bottleneck layers into a frozen
-network~\cite{houlsby2019parameter}, and LoRA~\cite{hu2022lora} adds trainable
+network~\cite{houlsby2019parameter}, and \acrshort{LoRA}~\cite{hu2022lora} adds trainable
 low-rank updates to the weight matrices of a frozen transformer, matching full
 fine-tuning on language tasks while training a small fraction of the
 parameters. Conditioning information, such as an audio signal, can be injected
-into a network through feature-wise linear modulation (FiLM), which scales and
+into a network through feature-wise linear modulation (\acrshort{FiLM}), which scales and
 shifts intermediate features as a function of the conditioning
 input~\cite{perez2018film}. Finally, averaging the predictions of several
 independently trained models, a deep ensemble, is a simple way of improving
@@ -462,26 +462,26 @@ al.~\cite{bylinskii2019metrics} analysed the common metrics and grouped them int
 \emph{location-based} metrics, which evaluate the predicted map at the fixated
 locations, and \emph{distribution-based} metrics, which compare the predicted map
 with the continuous ground-truth density. The location-based family includes the
-normalised scanpath saliency (NSS)~\cite{peters2005components}, the mean of the
-standardised prediction at fixated pixels, and the area under the ROC curve in
-the variant of Judd et al.\ (AUC-J)~\cite{judd2009learning}, which separates
-fixated from non-fixated pixels. The shuffled AUC (sAUC) draws its negatives
+normalised scanpath saliency (\acrshort{NSS})~\cite{peters2005components}, the mean of the
+standardised prediction at fixated pixels, and the area under the \acrshort{ROC} curve in
+the variant of Judd et al.\ (\acrshort{AUC-J})~\cite{judd2009learning}, which separates
+fixated from non-fixated pixels. The shuffled \acrshort{AUC} (\acrshort{sAUC}) draws its negatives
 from the fixations made on other images or videos, so that a model is not
 rewarded merely for predicting the centre
 bias~\cite{zhang2008sun,borji2013quantitative}. The distribution-based family
-includes the linear correlation coefficient (CC), the histogram intersection
-(SIM) and the Kullback--Leibler divergence (KLD). Le Meur and
+includes the linear correlation coefficient (\acrshort{CC}), the histogram intersection
+(\acrshort{SIM}) and the Kullback--Leibler divergence (\acrshort{KLD}). Le Meur and
 Baccino~\cite{lemeur2013methods} discuss the strengths and weaknesses of these
 comparisons, and Wilming et al.~\cite{wilming2011measures} concluded that no
-single measure has all the properties one would want, although the AUC and the
-KL divergence combine many of them. \Cref{sec:evaluation-metrics} gives the exact
+single measure has all the properties one would want, although the \acrshort{AUC} and the
+\acrshort{KL} divergence combine many of them. \Cref{sec:evaluation-metrics} gives the exact
 definitions used in this thesis.
 
 The metrics respond differently to the same map~\cite{bylinskii2019metrics}.
-KLD heavily penalises predictions that assign almost no probability to regions
-that observers fixate; SIM measures the overlap of two distributions and is
-sensitive to ground-truth mass that the prediction misses; the AUC metrics
-depend only on the ranking of saliency values; and sAUC penalises centre bias.
+\acrshort{KLD} heavily penalises predictions that assign almost no probability to regions
+that observers fixate; \acrshort{SIM} measures the overlap of two distributions and is
+sensitive to ground-truth mass that the prediction misses; the \acrshort{AUC} metrics
+depend only on the ranking of saliency values; and \acrshort{sAUC} penalises centre bias.
 K\"ummerer et al.~\cite{kummerer2015information} proposed to compare models in
 terms of information gain over a baseline, which unifies several metrics in a
 probabilistic framework, and later showed that the ranking of models depends on

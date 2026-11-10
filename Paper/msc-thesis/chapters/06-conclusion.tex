@@ -11,7 +11,7 @@ This thesis asked whether the representations of a self-supervised video
 encoder trained by feature prediction are sufficient for video saliency
 prediction without adapting the encoder, and whether the encoder's own
 prediction error indicates where people look. To answer these questions, it
-developed SURGE-D, which combines a frozen V-JEPA~2 encoder with a light decoder
+developed SURGE-D, which combines a frozen \acrshort{V-JEPA}~2 encoder with a light decoder
 that reads four intermediate layers, rebuilds a multi-scale pyramid, decodes it
 with factorised spatio-temporal convolutions and predicts saliency maps for
 sixteen frames per forward pass. Every design decision was tested under a rule
@@ -20,9 +20,9 @@ their test sets by a single evaluator validated against reference code, and
 differences were assessed with paired statistics. The answers to the research
 questions are as follows.
 
-\paragraph{RQ1.} A frozen V-JEPA~2 encoder with a light decoder predicted
+\paragraph{RQ1.} A frozen \acrshort{V-JEPA}~2 encoder with a light decoder predicted
 fixations more accurately than SalFoM, the closest foundation-model approach,
-under an identical protocol. On the DHF1K validation set, the ViT-g model
+under an identical protocol. On the DHF1K validation set, the \acrshort{ViT}-g model
 reached a correlation coefficient of 0.600 as a single model and 0.603 as a
 three-seed ensemble, against 0.564 for SalFoM, and was better on all six metrics
 with paired bootstrap intervals that exclude zero. This result was obtained
@@ -31,7 +31,7 @@ computation per output frame. It is a validation-set result; the official
 test-set evaluation was pending when the thesis was written, and SURGE-D, unlike
 SalFoM, uses frames on both sides of the predicted frame.
 
-\paragraph{RQ2.} The prediction error of the pretrained V-JEPA~2 predictor did
+\paragraph{RQ2.} The prediction error of the pretrained \acrshort{V-JEPA}~2 predictor did
 not carry useful information about where people look. It was outperformed by
 frame difference and token atypicality and was anti-correlated with fixations at
 15 frames per second. The error map mainly reflects how atypical each region is
@@ -41,7 +41,7 @@ forecast. This finding concerns one released predictor and one way of reading
 it; it does not refute surprise-based accounts of attention.
 
 \paragraph{RQ3.} With a frozen encoder, the encoder itself dominated. Its
-pre-training (V-JEPA~2 over V-JEPA~2.1 and UMT-L) and its scale (ViT-g over ViT-L)
+pre-training (\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L) and its scale (\acrshort{ViT}-g over \acrshort{ViT}-L)
 produced the only large gains, and seed ensembles a small one. Low-rank
 adaptation of the encoder, the learned centre prior, deep supervision,
 static-image co-training, 32-frame clips and 11\,\% more training videos made no
@@ -97,9 +97,9 @@ model was still improving at the end of its schedule and merits a longer
 training run under a new pre-registered rule.
 
 \paragraph{Adapting the stronger encoder.} Low-rank adaptation was tested only
-with ViT-L, and full fine-tuning not at all. Whether adaptation helps the larger
-ViT-g encoder, or helps once more training data are available, remains open.
-The V-JEPA~2.1 encoder should also be compared at the resolution at which it
+with \acrshort{ViT}-L, and full fine-tuning not at all. Whether adaptation helps the larger
+\acrshort{ViT}-g encoder, or helps once more training data are available, remains open.
+The \acrshort{V-JEPA}~2.1 encoder should also be compared at the resolution at which it
 was trained.
 
 \paragraph{Speaker-aware audio-visual prediction.} The failure on conversations

@@ -1,39 +1,44 @@
-% List of acronyms.
-% Define every acronym here and use \ac{KEY} in the text: the first use prints
-% "Long Form (KEY)" and later uses print "KEY". Use \acp{KEY} for plurals.
-% The text in [brackets] should be your longest acronym; it sets the column width.
-\prelimchapter{List of Acronyms}
+% Acronyms (glossaries package). This file is loaded by preamble.tex.
+% Define every acronym here with
+%   \newacronym[sort=<lower-case key>]{KEY}{SHORT}{Long Form}
+% and refer to it in the text with \acrshort{KEY}, which prints the short form
+% and links it to the List of Acronyms. All entries defined here are printed
+% in the list (\glsaddall in \printacronyms), in alphabetical order.
 
-\begin{acronym}[ConvLSTM]
-  \acro{AAiT}{Addis Ababa Institute of Technology}
-  \acro{AAU}{Addis Ababa University}
-  \acro{AST}{Audio Spectrogram Transformer}
-  \acro{AUC}{Area Under the ROC Curve}
-  \acro{AUC-J}{Area Under the ROC Curve, Judd variant}
-  \acro{CC}{Linear Correlation Coefficient}
-  \acro{CI}{Confidence Interval}
-  \acro{CNN}{Convolutional Neural Network}
-  \acro{ConvLSTM}{Convolutional Long Short-Term Memory}
-  \acro{FiLM}{Feature-wise Linear Modulation}
-  \acro{FLOPs}{Floating-Point Operations}
-  \acro{FPN}{Feature Pyramid Network}
-  \acro{GELU}{Gaussian Error Linear Unit}
-  \acro{GN}{Group Normalisation}
-  \acro{GPU}{Graphics Processing Unit}
-  \acro{JEPA}{Joint-Embedding Predictive Architecture}
-  \acro{KL}{Kullback--Leibler}
-  \acro{KLD}{Kullback--Leibler Divergence}
-  \acro{LoRA}{Low-Rank Adaptation}
-  \acro{LSTM}{Long Short-Term Memory}
-  \acro{MAE}{Masked Autoencoder}
-  \acro{NSS}{Normalised Scanpath Saliency}
-  \acro{RNN}{Recurrent Neural Network}
-  \acro{ROC}{Receiver Operating Characteristic}
-  \acro{sAUC}{Shuffled Area Under the ROC Curve}
-  \acro{SIM}{Similarity (histogram intersection)}
-  \acro{SiTE}{School of Information Technology and Engineering}
-  \acro{UMT}{Unmasked Teacher}
-  \acro{V-JEPA}{Video Joint-Embedding Predictive Architecture}
-  \acro{ViT}{Vision Transformer}
-  \acro{VSP}{Video Saliency Prediction}
-\end{acronym}
+\newacronym[sort=aait]{AAiT}{AAiT}{Addis Ababa Institute of Technology}
+\newacronym[sort=aau]{AAU}{AAU}{Addis Ababa University}
+\newacronym[sort=ast]{AST}{AST}{Audio Spectrogram Transformer}
+\newacronym[sort=auc]{AUC}{AUC}{Area Under the ROC Curve}
+\newacronym[sort=auc-j]{AUC-J}{AUC-J}{Area Under the ROC Curve, Judd variant}
+\newacronym[sort=av]{AV}{AV}{Audio-Visual}
+\newacronym[sort=cc]{CC}{CC}{Linear Correlation Coefficient}
+\newacronym[sort=ci]{CI}{CI}{Confidence Interval}
+\newacronym[sort=cnn]{CNN}{CNN}{Convolutional Neural Network}
+\newacronym[sort=convlstm]{ConvLSTM}{ConvLSTM}{Convolutional Long Short-Term Memory}
+\newacronym[sort=cpu]{CPU}{CPU}{Central Processing Unit}
+\newacronym[sort=cuda]{CUDA}{CUDA}{Compute Unified Device Architecture}
+\newacronym[sort=film]{FiLM}{FiLM}{Feature-wise Linear Modulation}
+\newacronym[sort=flops]{FLOPs}{FLOPs}{Floating-Point Operations}
+\newacronym[sort=fpn]{FPN}{FPN}{Feature Pyramid Network}
+\newacronym[sort=gelu]{GELU}{GELU}{Gaussian Error Linear Unit}
+\newacronym[sort=gn]{GN}{GN}{Group Normalisation}
+\newacronym[sort=gpu]{GPU}{GPU}{Graphics Processing Unit}
+\newacronym[sort=jepa]{JEPA}{JEPA}{Joint-Embedding Predictive Architecture}
+\newacronym[sort=kl]{KL}{KL}{Kullback--Leibler}
+\newacronym[sort=kld]{KLD}{KLD}{Kullback--Leibler Divergence}
+\newacronym[sort=lora]{LoRA}{LoRA}{Low-Rank Adaptation}
+\newacronym[sort=lstm]{LSTM}{LSTM}{Long Short-Term Memory}
+\newacronym[sort=mae]{MAE}{MAE}{Masked Autoencoder}
+\newacronym[sort=miou]{mIoU}{mIoU}{Mean Intersection over Union}
+\newacronym[sort=nss]{NSS}{NSS}{Normalised Scanpath Saliency}
+\newacronym[sort=ram]{RAM}{RAM}{Random-Access Memory}
+\newacronym[sort=rnn]{RNN}{RNN}{Recurrent Neural Network}
+\newacronym[sort=roc]{ROC}{ROC}{Receiver Operating Characteristic}
+\newacronym[sort=sauc]{sAUC}{sAUC}{Shuffled Area Under the ROC Curve}
+\newacronym[sort=sim]{SIM}{SIM}{Similarity (histogram intersection)}
+\newacronym[sort=site]{SiTE}{SiTE}{School of Information Technology and Engineering}
+\newacronym[sort=tflops]{TFLOPs}{TFLOPs}{Tera Floating-Point Operations ($10^{12}$)}
+\newacronym[sort=umt]{UMT}{UMT}{Unmasked Teacher}
+\newacronym[sort=v-jepa]{V-JEPA}{V-JEPA}{Video Joint-Embedding Predictive Architecture}
+\newacronym[sort=vit]{ViT}{ViT}{Vision Transformer}
+\newacronym[sort=vsp]{VSP}{VSP}{Video Saliency Prediction}

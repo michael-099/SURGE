@@ -2,13 +2,17 @@
 %%  MSc Thesis: AAU, AAiT, School of Information Technology and Engineering
 %%
 %%  Build:  latexmk main.tex    (pdflatex + biber; see README.md)
+%%
+%%  Standard report class, 12 pt; formatting in preamble.tex (Latin Modern
+%%  fonts, justified text, blue hyperlinks, glossaries for acronyms).
 %% ===========================================================================
 
-% While writing, the grey "Guide" boxes remind you what each section needs.
-% The chapters are now written, so the boxes are hidden; use the first line to
-% show them again.
-% \documentclass{aaitthesis}
-\documentclass[noguidance]{aaitthesis}
+\documentclass[12pt,a4paper,oneside]{report}
+\input{preamble}
+
+% The grey "Guide" boxes that describe each section are hidden; uncomment the
+% next line to show them while writing.
+% \showguidestrue
 
 \addbibresource{references.bib}
 
@@ -51,7 +55,7 @@
 \tableofcontents
 \listoffigures
 \listoftables
-\input{frontmatter/acronyms}            % list of acronyms
+\printacronyms                          % list of acronyms (frontmatter/acronyms.tex)
 
 %------------------------------ Main matter --------------------------------
 \mainmatter

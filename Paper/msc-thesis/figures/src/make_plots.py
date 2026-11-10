@@ -24,9 +24,34 @@ ROOT = Path(__file__).resolve().parents[4]
 OUT = ROOT / "Paper/msc-thesis/figures"
 TEXTW = 6.1  # inches; text width of the thesis class (A4, 3 cm + 2.5 cm margins)
 
+
+
+def latin_modern() -> list[str]:
+    """Register Latin Modern Roman, the font of the thesis text, from the TeX distribution (found with kpsewhich).
+
+    Returns the family name, or an empty list if no TeX distribution is found; the figures then fall back to the
+    Computer Modern font bundled with matplotlib, from which Latin Modern is derived."""
+    import shutil
+    import subprocess
+
+    from matplotlib import font_manager
+
+    kpse = shutil.which("kpsewhich")
+    if kpse is None:
+        return []
+    found = False
+    for style in ("regular", "italic", "bold", "bolditalic"):
+        path = subprocess.run([kpse, f"lmroman10-{style}.otf"], capture_output=True, text=True).stdout.strip()
+        if path:
+            font_manager.fontManager.addfont(path)
+            found = True
+    return ["Latin Modern Roman"] if found else []
+
+
+LM = latin_modern()
 plt.rcParams.update({
-    "font.family": "serif", "font.serif": ["Times New Roman", "STIXGeneral", "DejaVu Serif"],
-    "mathtext.fontset": "stix", "font.size": 9, "axes.titlesize": 9, "axes.labelsize": 9, "legend.fontsize": 8,
+    "font.family": "serif", "font.serif": LM + ["cmr10", "DejaVu Serif"], "axes.formatter.use_mathtext": not LM,
+    "mathtext.fontset": "cm", "font.size": 9, "axes.titlesize": 9, "axes.labelsize": 9, "legend.fontsize": 8,
     "xtick.labelsize": 8, "ytick.labelsize": 8, "axes.spines.top": False, "axes.spines.right": False,
     "savefig.bbox": "tight", "savefig.pad_inches": 0.02, "pdf.fonttype": 42,
 })

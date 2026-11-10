@@ -96,7 +96,7 @@ information about where people look. Finally, because comparisons in the field
 are rarely made under a common evaluation protocol with uncertainty estimates,
 it is unclear which design choices, beyond the encoder, still matter once a
 strong encoder is used. This thesis addresses these questions with a frozen
-V-JEPA~2 encoder~\cite{murlabadia2026vjepa21}, a purpose-built decoder, and a
+\acrshort{V-JEPA}~2 encoder~\cite{murlabadia2026vjepa21}, a purpose-built decoder, and a
 pre-registered evaluation on nine eye-tracking test sets.
 
 %----------------------------------------------------------------------------
@@ -107,7 +107,7 @@ answer each one explicitly.}
 
 This study answers the following research questions:
 \begin{enumerate}[label=\textbf{RQ\arabic*.},leftmargin=*]
-  \item Can a frozen self-supervised video encoder of the V-JEPA family, combined
+  \item Can a frozen self-supervised video encoder of the \acrshort{V-JEPA} family, combined
     with a lightweight spatio-temporal decoder, predict human fixations in video
     more accurately than the closest foundation-model approach, SalFoM, when both
     are evaluated under an identical protocol?
@@ -146,8 +146,8 @@ To achieve the general objective, the study will:
     implementation is validated against reference code, including a new
     ground truth for Hollywood-2 from openly licensed gaze recordings;
   \item design and implement a decoder that turns the intermediate features of a
-    frozen V-JEPA~2 encoder into saliency maps for many frames per forward pass;
-  \item test the predictive surprise of the V-JEPA~2 predictor as a fixation
+    frozen \acrshort{V-JEPA}~2 encoder into saliency maps for many frames per forward pass;
+  \item test the predictive surprise of the \acrshort{V-JEPA}~2 predictor as a fixation
     cue against simple reference cues;
   \item compare encoders and design choices under decision rules fixed before
     each experiment;
@@ -199,7 +199,7 @@ decision was governed by a rule written before the corresponding experiment
 \paragraph{Scope.} The study covers offline (non-causal) saliency prediction for
 video, in which the map of a frame may depend on the frames around it. The main
 model is visual; the soundtrack is examined in one separate experiment. The
-encoders are frozen V-JEPA~2 models in two sizes; V-JEPA~2.1 and UMT-L are
+encoders are frozen \acrshort{V-JEPA}~2 models in two sizes; \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L are
 included in the encoder comparison. Evaluation covers nine test sets: DHF1K,
 UCF Sports, Hollywood-2 with the Vig gaze data, and six audio-visual datasets.
 
@@ -221,17 +221,17 @@ results, analysis) and how they extend existing knowledge.}
 
 The main contributions of this thesis are:
 \begin{itemize}
-  \item \textbf{SURGE-D}, a video saliency model that combines a frozen V-JEPA~2
+  \item \textbf{SURGE-D}, a video saliency model that combines a frozen \acrshort{V-JEPA}~2
     encoder with a light feature-pyramid decoder of factorised spatio-temporal
     convolutions and predicts maps for sixteen frames per forward pass. With
-    7.4 million trained parameters, its three-seed ViT-g ensemble reaches a
+    7.4 million trained parameters, its three-seed \acrshort{ViT}-g ensemble reaches a
     correlation coefficient of 0.603 on the DHF1K validation set, against 0.564
     for SalFoM scored by the same evaluator, and is better on all six metrics
     with paired bootstrap intervals that exclude zero. Counting the encoder
     alone, SalFoM's per-frame design requires about six times more computation
     per output frame.
   \item \textbf{A negative result on predictive surprise}: the error of the
-    pretrained V-JEPA~2 predictor does not indicate where people look; it is
+    pretrained \acrshort{V-JEPA}~2 predictor does not indicate where people look; it is
     beaten by frame difference and is even anti-correlated with fixations,
     because it mainly reflects the atypicality of regions rather than violated
     expectations.

@@ -53,7 +53,7 @@ test set and was never used for selection.
 \begin{table}[htbp]
   \centering
   \caption{Decision rules, each written before the experiment that it
-  governs, except the last (see text). Holdout CC is measured on the internal
+  governs, except the last (see text). Holdout \acrshort{CC} is measured on the internal
   60-video DHF1K holdout unless stated otherwise; outcomes are reported in
   \cref{ch:experiments}}\label{tab:rules}
   \small
@@ -62,37 +62,37 @@ test set and was never used for selection.
     \textbf{Decision} & \textbf{Rule} \\
     \midrule
     Evaluator validity & Re-scoring the same maps with an independent
-      evaluator must agree within $0.002$ (CC, SIM) and $0.01$ (NSS, KLD) \\
-    Backbone (gate G1) & Highest holdout CC wins; the proposal's choice,
-      V-JEPA~2.1, is kept if within $0.005$ CC of the winner \\
+      evaluator must agree within $0.002$ (\acrshort{CC}, \acrshort{SIM}) and $0.01$ (\acrshort{NSS}, \acrshort{KLD}) \\
+    Backbone (gate G1) & Highest holdout \acrshort{CC} wins; the proposal's choice,
+      \acrshort{V-JEPA}~2.1, is kept if within $0.005$ \acrshort{CC} of the winner \\
     Surprise (gate G2) & Enabled only if a surprise map beats both token
-      atypicality and frame difference on NSS and has positive information
+      atypicality and frame difference on \acrshort{NSS} and has positive information
       gain over the centre prior \\
-    LoRA adaptation & Adopted if the three-seed mean holdout gain is at least
-      $+0.003$ CC and LoRA wins in at least two of three seeds \\
+    \acrshort{LoRA} adaptation & Adopted if the three-seed mean holdout gain is at least
+      $+0.003$ \acrshort{CC} and \acrshort{LoRA} wins in at least two of three seeds \\
     Single-seed ablations & A difference is reported only if
       $|\Delta\mathrm{CC}|\geq0.003$ on the holdout \\
-    Claim over a baseline & The 95\,\% bootstrap interval of $\Delta$CC over
+    Claim over a baseline & The 95\,\% bootstrap interval of $\Delta$\acrshort{CC} over
       test videos must lie above zero \\
-    ViT-g backbone & Adopted if its holdout CC is at least $0.5833$ (the
-      ViT-L three-seed mean plus $0.005$) \\
+    \acrshort{ViT}-g backbone & Adopted if its holdout \acrshort{CC} is at least $0.5833$ (the
+      \acrshort{ViT}-L three-seed mean plus $0.005$) \\
     Training on 600 videos & Replaces the 540-video models if the ensemble's
-      $\Delta$CC interval is above zero and it is worse on at most two of six
+      $\Delta$\acrshort{CC} interval is above zero and it is worse on at most two of six
       metrics \\
-    32-frame clips & Pursued if the holdout CC is at least $0.5904$ (the
+    32-frame clips & Pursued if the holdout \acrshort{CC} is at least $0.5904$ (the
       16-frame three-seed mean plus $0.005$) \\
     Audio fusion & \enquote{Helps} on a dataset only if the fold-mean
-      $\Delta$CC is at least $+0.010$ and matched audio beats rotated audio by
+      $\Delta$\acrshort{CC} is at least $+0.010$ and matched audio beats rotated audio by
       at least $0.005$ \\
     Published results$^{\ast}$ & Comparisons with numbers from other evaluation code
-      treat margins below $0.01$ CC as ties \\
+      treat margins below $0.01$ \acrshort{CC} as ties \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
 The rule for published results (marked $^{\ast}$) differs from the others in one
 respect. The rule written before the first audio-visual experiment required only
-a higher fold-mean CC than the published value, and noted that cross-paper
+a higher fold-mean \acrshort{CC} than the published value, and noted that cross-paper
 numbers disagree by a few hundredths. The tie margin of $0.01$ was introduced
 when the first audio-visual results were interpreted and was then applied
 unchanged to every later comparison with published numbers.
@@ -102,8 +102,8 @@ averaged within each video; the video is the unit of analysis, and
 uncertainty is estimated by resampling videos (\cref{sec:statistics}).
 The margins of the early rules ($0.003$ for single-seed ablations and $0.005$
 for gate G1) were set by judgement before any seed variation had been measured.
-The seed-to-seed spread later observed for the main model, about $0.003$ CC,
-informed the margins of the later gates for ViT-g and for 32-frame clips.
+The seed-to-seed spread later observed for the main model, about $0.003$ \acrshort{CC},
+informed the margins of the later gates for \acrshort{ViT}-g and for 32-frame clips.
 
 %----------------------------------------------------------------------------
 \section{Problem Formulation}\label{sec:formulation}
@@ -290,7 +290,7 @@ intermediate layers of the encoder, rebuilds a multi-scale feature pyramid,
 decodes it top-down with factorised spatio-temporal convolutions, and adds a
 learned centre prior before normalising each output frame into a probability
 distribution. Only the decoder and the prior are trained: 6.99 million
-parameters with the ViT-L encoder and 7.39 million with ViT-g. The name
+parameters with the \acrshort{ViT}-L encoder and 7.39 million with \acrshort{ViT}-g. The name
 derives from the original design of the project, a \emph{SURprise-Gated
 Encoder}--decoder in which the predictor's error was to modulate the decoder;
 the suffix D marks the reduced design that remained after the tests of
@@ -300,8 +300,8 @@ the suffix D marks the reduced design that remained after the tests of
   \centering
   \includegraphics[width=\textwidth]{architecture.pdf}
   \caption{Architecture of SURGE-D. A clip of 16 frames passes through the
-  frozen V-JEPA~2 encoder; four intermediate layers (blocks 6/12/18/24 of
-  ViT-L or 10/20/30/40 of ViT-g) feed a three-dimensional simple feature
+  frozen \acrshort{V-JEPA}~2 encoder; four intermediate layers (blocks 6\slash 12\slash 18\slash 24 of
+  \acrshort{ViT}-L or 10\slash 20\slash 30\slash 40 of \acrshort{ViT}-g) feed a three-dimensional simple feature
   pyramid, which a top-down (2+1)D decoder turns into logits at
   $64\times64$ resolution for eight tubelet steps. After temporal
   interpolation to 16 frames and the addition of a learned centre prior, a
@@ -313,9 +313,9 @@ the suffix D marks the reduced design that remained after the tests of
 \subsection{Frozen Video Encoder}\label{sec:encoder}
 
 The encoder is a Vision Transformer~\cite{dosovitskiy2021image} trained with
-the video joint-embedding predictive architecture (V-JEPA) objective of Bardes
+the video joint-embedding predictive architecture (\acrshort{V-JEPA}) objective of Bardes
 et al.~\cite{bardes2024revisiting}. In this objective, which extends the image
-model I-JEPA~\cite{assran2023self} to video, parts of a clip are masked and a
+model I-\acrshort{JEPA}~\cite{assran2023self} to video, parts of a clip are masked and a
 predictor network is trained to predict the \emph{representations} of the
 masked regions, produced by an exponential-moving-average target encoder, from
 the representations of the visible ones. Because the loss is computed in
@@ -323,7 +323,7 @@ representation space rather than pixel space, the encoder is not required to
 model unpredictable pixel detail, which Bardes et al.\ argue leads to features
 that transfer well with a frozen backbone~\cite{bardes2024revisiting}.
 
-The checkpoints used are the publicly released V-JEPA~2 models\footnote{
+The checkpoints used are the publicly released \acrshort{V-JEPA}~2 models\footnote{
 \texttt{facebook/vjepa2-vitl-fpc64-256} and \texttt{facebook/vjepa2-vitg-fpc64-256},
 released under the MIT licence through the Hugging Face hub and loaded with the
 Transformers library~\cite{wolf2020transformers}. The technical report that
@@ -335,11 +335,11 @@ as Mur-Labadia et al.\ describe it, an $L_1$ loss between the predictor's
 outputs and the target encoder's representations is applied to the masked
 tokens only~\cite{murlabadia2026vjepa21}. The same study reports that this
 choice leaves the visible tokens without a direct training signal and that
-frozen V-JEPA~2 features consequently carry little local structure, reaching
-only 22.2 mIoU in linear-probe semantic segmentation on ADE20K. Whether such
+frozen \acrshort{V-JEPA}~2 features consequently carry little local structure, reaching
+only 22.2 \acrshort{mIoU} in linear-probe semantic segmentation on ADE20K. Whether such
 features suit a dense task such as saliency prediction was therefore an open
-question, which gate G1 addresses (\cref{sec:g1}). Two sizes were used. ViT-L/16 has 24 transformer blocks of width
-$D=1024$ and 303.9 million encoder parameters; ViT-g/16 has 40 blocks of
+question, which gate G1 addresses (\cref{sec:g1}). Two sizes were used. \acrshort{ViT}-L/16 has 24 transformer blocks of width
+$D=1024$ and 303.9 million encoder parameters; \acrshort{ViT}-g/16 has 40 blocks of
 width $D=1408$ and 1,012.2 million parameters (both counts measured on the
 loaded checkpoints, excluding the predictor). Both embed the video in
 \emph{tubelets} of $2\times16\times16$ pixels, so a $16\times256\times256$ clip
@@ -347,7 +347,7 @@ becomes $8\times16\times16=2{,}048$ tokens.
 
 Let $h^{(\ell)}\in\mathbb{R}^{2048\times D}$ denote the output of block
 $\ell$. Four blocks at equal fractions of the depth are tapped, $\ell\in\{6,12,18,24\}$
-for ViT-L and $\ell\in\{10,20,30,40\}$ for ViT-g, and each tap is reshaped into
+for \acrshort{ViT}-L and $\ell\in\{10,20,30,40\}$ for \acrshort{ViT}-g, and each tap is reshaped into
 a feature volume of size $D\times8\times16\times16$. Intermediate layers are
 used because dense prediction benefits from features at several levels of
 abstraction~\cite{lin2017feature,ranftl2021vision}. The encoder is frozen: its
@@ -363,7 +363,7 @@ al.~\cite{li2022exploring} showed that a feature pyramid for dense prediction
 can be built from such a backbone by simple up- and down-sampling of its
 features. SURGE-D uses a three-dimensional variant built from the four
 taps rather than from the last layer only. With $\phi(\cdot)$ denoting group
-normalisation~\cite{wu2018group} followed by a GELU non-linearity,
+normalisation~\cite{wu2018group} followed by a \acrshort{GELU} non-linearity,
 $W_\ell$ a $1\times1\times1$ convolution from $D$ to $C=256$ channels, and
 $U(\cdot)$ a spatial $\times2$ transposed convolution (kernel and stride
 $1\times2\times2$) followed by $\phi$, the pyramid levels are
@@ -403,7 +403,7 @@ by a factor of two. The decoder computes
 \label{eq:decoder}
 \end{equation}
 where $[\cdot;\cdot]$ concatenates channels. A head with a $1\times3\times3$
-convolution to 128 channels, a GELU and a $1\times1\times1$ convolution to one
+convolution to 128 channels, a \acrshort{GELU} and a $1\times1\times1$ convolution to one
 channel turns $D_4$ into logits $L\in\mathbb{R}^{8\times64\times64}$. During
 training, two auxiliary heads ($1\times1\times1$ convolutions) produce
 additional logits from $D_{16}$ and $D_8$; they are upsampled to
@@ -444,7 +444,7 @@ added to the auxiliary logits during training.
 
 The design of the decoder follows from three considerations. First, the
 encoder carries most of the representational capacity, so the decoder can be
-small; its 7 million parameters are about 2\,\% of the ViT-L encoder.
+small; its 7 million parameters are about 2\,\% of the \acrshort{ViT}-L encoder.
 Second, the (2+1)D factorisation adds temporal mixing at every scale at a
 lower cost than full three-dimensional kernels~\cite{tran2018closer}. Third,
 predicting maps for many frames in one forward pass amortises the cost of the
@@ -464,7 +464,7 @@ negative results are part of the contribution of the thesis.
 The original proposal was built around the hypothesis that the prediction
 error of a self-supervised video model indicates where something unexpected
 happens, and therefore where people look, in the spirit of the Bayesian
-surprise account of attention~\cite{itti2009bayesian}. V-JEPA~2 provides the
+surprise account of attention~\cite{itti2009bayesian}. \acrshort{V-JEPA}~2 provides the
 means to test this, because its released checkpoint includes the predictor
 used during pre-training.
 
@@ -495,7 +495,7 @@ trained.
 
 \subsection{Low-Rank Adaptation of the Encoder}\label{sec:lora}
 
-Low-rank adaptation (LoRA)~\cite{hu2022lora} fine-tunes a frozen linear layer
+Low-rank adaptation (\acrshort{LoRA})~\cite{hu2022lora} fine-tunes a frozen linear layer
 $W\in\mathbb{R}^{d_{\mathrm{out}}\times d_{\mathrm{in}}}$ by adding a trainable
 low-rank update,
 \begin{equation}
@@ -504,11 +504,11 @@ low-rank update,
   \label{eq:lora}
 \end{equation}
 with $B$ initialised to zero so that training starts from the frozen model.
-LoRA with $r=\alpha=16$ was applied to the query, key, value and output
-projections of the last twelve blocks of ViT-L (48 layers, 1.57 million
-parameters). Each LoRA model was initialised from the frozen model of the same
+\acrshort{LoRA} with $r=\alpha=16$ was applied to the query, key, value and output
+projections of the last twelve blocks of \acrshort{ViT}-L (48 layers, 1.57 million
+parameters). Each \acrshort{LoRA} model was initialised from the frozen model of the same
 seed and trained for three epochs with learning rates of $10^{-4}$ for the
-LoRA weights and $10^{-5}$ for the decoder.
+\acrshort{LoRA} weights and $10^{-5}$ for the decoder.
 
 \subsection{Audio Fusion}\label{sec:audio-fusion}
 
@@ -523,7 +523,7 @@ A pyramid level $F$ is then modulated as
   \label{eq:audio}
 \end{equation}
 where $(\gamma,\beta)=W_f e$ is a feature-wise linear modulation
-(FiLM)~\cite{perez2018film}, $s(x)$ is an audio-visual correspondence map at
+(\acrshort{FiLM})~\cite{perez2018film}, $s(x)$ is an audio-visual correspondence map at
 each position $x$, and $W_r$ is a $1\times1\times1$ convolution. Because $W_f$
 and $W_r$ are initialised to zero, the module is exactly the visual model at
 the start of training. As a control, the trained model was also scored with
@@ -564,9 +564,9 @@ $\mathcal{O}$ of a clip is
 \end{split}
 \label{eq:loss}
 \end{equation}
-where $S^{a}_t$ are the predictions of the auxiliary heads and the NSS term is
-averaged over frames with at least one fixation. The KL and CC terms follow
-the loss of SalFoM~\cite{moradi2024salfom}; the small NSS term additionally
+where $S^{a}_t$ are the predictions of the auxiliary heads and the \acrshort{NSS} term is
+averaged over frames with at least one fixation. The \acrshort{KL} and \acrshort{CC} terms follow
+the loss of SalFoM~\cite{moradi2024salfom}; the small \acrshort{NSS} term additionally
 rewards high predicted values at the fixated locations themselves, which the
 two distribution-based terms do not address directly. The loss is averaged
 over the clips of a batch.
@@ -585,11 +585,11 @@ of frames and targets with probability 0.5; the colour jitter mentioned in the
 original proposal was not implemented.
 
 \paragraph{Schedule and model selection.} The proposal foresaw 20 epochs. In
-the backbone comparison (\cref{sec:g1}), however, the holdout CC of every
+the backbone comparison (\cref{sec:g1}), however, the holdout \acrshort{CC} of every
 backbone peaked after the second or third epoch and then fell while the
-training CC kept rising. The schedule for all later runs was therefore fixed,
+training \acrshort{CC} kept rising. The schedule for all later runs was therefore fixed,
 before any of them started, at three epochs, with the checkpoint chosen by
-holdout CC after each epoch (computed on every fifth frame).
+holdout \acrshort{CC} after each epoch (computed on every fifth frame).
 
 \paragraph{Fine-tuning on other datasets.} For UCF Sports, the six
 audio-visual datasets and Hollywood-2 (Vig gaze), each model was initialised
@@ -614,10 +614,10 @@ settings.
     \textbf{Setting} & \textbf{Value} \\
     \midrule
     Input & 16 frames, stride 2, $256\times256$, ImageNet normalisation \\
-    Encoder & V-JEPA~2 ViT-L/16 or ViT-g/16, frozen \\
+    Encoder & \acrshort{V-JEPA}~2 \acrshort{ViT}-L/16 or \acrshort{ViT}-g/16, frozen \\
     Decoder channels & 256 (head: 128) \\
     Output & $64\times64$ per frame, central 8 of 16 sampled frames \\
-    Loss weights & KL 1, CC 1, NSS 0.1, auxiliary 0.25 \\
+    Loss weights & \acrshort{KL} 1, \acrshort{CC} 1, \acrshort{NSS} 0.1, auxiliary 0.25 \\
     Optimiser & AdamW, weight decay 0.01 (prior: 0) \\
     Learning rate (DHF1K) & $3\times10^{-4}$ (prior $10^{-3}$), warm-up 0.25 epoch, cosine \\
     Learning rate (fine-tuning) & $10^{-4}$ (prior $3\times10^{-4}$) \\
@@ -625,7 +625,7 @@ settings.
     Clips per video and epoch & 8 (DHF1K); about 1,500 clips per epoch elsewhere \\
     Augmentation & horizontal flip ($p=0.5$) \\
     Precision & bfloat16 autocast, gradient clipping at 1.0 \\
-    Selection & best epoch by holdout CC \\
+    Selection & best epoch by holdout \acrshort{CC} \\
     Output blur $\sigma$ & tuned on the holdout over $\{0,4,8,12,16,24\}$ pixels \\
     Seeds & 0, 1, 2; ensemble = mean of probability maps \\
     \bottomrule
@@ -643,11 +643,11 @@ sampled positions receives the linear interpolation of their maps. The
 $64\times64$ map is upsampled bilinearly to the native resolution, smoothed
 with a Gaussian of standard deviation $\sigma$ (in native pixels) and
 normalised to sum to one. The value of $\sigma$ was chosen on the holdout by
-CC for each model and each ensemble, and the same map is then used for all
+\acrshort{CC} for each model and each ensemble, and the same map is then used for all
 metrics, as is common practice in video saliency evaluation. K\"ummerer et
 al.~\cite{kummerer2018saliency} argue instead that each metric should receive
 the map that is optimal for it under the model's probabilistic prediction; the
-single CC-tuned map treats all models alike but may understate the scores a
+single \acrshort{CC}-tuned map treats all models alike but may understate the scores a
 model could reach on the other metrics (\cref{sec:threats}).
 
 \begin{algorithm}[htbp]
@@ -687,24 +687,24 @@ $P$ standardised to zero mean and unit standard deviation over the frame,
 $\hat P=P/\sum P$ and $\hat Q=Q/\sum Q$.
 
 \begin{itemize}
-  \item \textbf{Correlation coefficient (CC)}, the Pearson correlation
+  \item \textbf{Correlation coefficient (\acrshort{CC})}, the Pearson correlation
     between $P$ and $Q$, $\mathrm{CC}=\frac{1}{|\Omega|}\sum_{p}z(P)(p)\,z(Q)(p)$, where
     $\Omega$ is the set of pixels.
-  \item \textbf{Normalised scanpath saliency (NSS)}~\cite{peters2005components},
+  \item \textbf{Normalised scanpath saliency (\acrshort{NSS})}~\cite{peters2005components},
     the mean standardised saliency at fixated pixels,
     $\mathrm{NSS}=\frac{1}{\sum_p F(p)}\sum_p F(p)\,z(P)(p)$.
-  \item \textbf{Similarity (SIM)}, the histogram intersection
+  \item \textbf{Similarity (\acrshort{SIM})}, the histogram intersection
     $\sum_p\min(\hat P(p),\hat Q(p))$.
-  \item \textbf{Kullback--Leibler divergence (KLD)},
+  \item \textbf{Kullback--Leibler divergence (\acrshort{KLD})},
     $\sum_p\hat Q(p)\log\big(\varepsilon+\hat Q(p)/(\hat P(p)+\varepsilon)\big)$, with
     $\varepsilon$ the machine epsilon of double precision as in the MIT
     benchmark code~\cite{bylinskii2019metrics}; lower is better.
-  \item \textbf{AUC-Judd (AUC-J)}~\cite{judd2009learning}, the area under the
-    ROC curve obtained by thresholding $P$ at the saliency values of the
+  \item \textbf{\acrshort{AUC}-Judd (\acrshort{AUC-J})}~\cite{judd2009learning}, the area under the
+    \acrshort{ROC} curve obtained by thresholding $P$ at the saliency values of the
     fixated pixels, with fixated pixels as positives and all other pixels as
     negatives. As in the reference implementation, a tiny random jitter breaks
     ties between quantised values.
-  \item \textbf{Shuffled AUC (sAUC)}~\cite{zhang2008sun,borji2013quantitative},
+  \item \textbf{Shuffled \acrshort{AUC} (\acrshort{sAUC})}~\cite{zhang2008sun,borji2013quantitative},
     which takes its negatives from the fixations of other videos instead of
     from all pixels and therefore does not reward a centre bias. For each
     video, the fixations of one random frame of each of ten other videos of
@@ -715,7 +715,7 @@ $\hat P=P/\sum P$ and $\hat Q=Q/\sum Q$.
 
 Each metric is averaged over the frames of a video and then over the videos
 of the test set; on the audio-visual datasets, the dataset score is the mean
-over its folds. The shuffled AUC depends on the sampling of negatives, so its
+over its folds. The shuffled \acrshort{AUC} depends on the sampling of negatives, so its
 values are compared only within this thesis.
 
 \paragraph{Validation of the evaluator.} The metrics were implemented
@@ -739,7 +739,7 @@ because each video is tested exactly once.
 Published results of other methods were computed with other evaluation code
 and, sometimes, other protocol details. They cannot enter a paired test. They
 are reported side by side with the results of this thesis, and margins below
-$0.01$ CC are treated as ties (\cref{tab:rules}).
+$0.01$ \acrshort{CC} are treated as ties (\cref{tab:rules}).
 
 %----------------------------------------------------------------------------
 \section{Ethical Considerations}\label{sec:ethics}
@@ -749,7 +749,7 @@ other research groups under their own ethical procedures; no human
 participants were recruited, and no personal data beyond the anonymised gaze
 recordings and the public video content of these datasets were processed. The
 licences of the data and models were respected: the Vig gaze data and the
-V-JEPA~2 checkpoints carry permissive licences, and the benchmark videos were
+\acrshort{V-JEPA}~2 checkpoints carry permissive licences, and the benchmark videos were
 used for research only, as their distributors require.
 
 Saliency prediction has dual-use potential. Models of where people look can

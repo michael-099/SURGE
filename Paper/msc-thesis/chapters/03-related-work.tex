@@ -34,16 +34,16 @@ attention.
 
 Recurrence on top of per-frame convolutional features became the dominant
 design. DeepVS~\cite{jiang2018deepvs} combined an object-to-motion network with
-a saliency-structured convolutional LSTM, motivated by the observation, made
+a saliency-structured convolutional \acrshort{LSTM}, motivated by the observation, made
 on its own large eye-tracking dataset, that moving objects attract gaze.
 ACLNet~\cite{wang2018revisiting,wang2021revisiting}, introduced together with
 DHF1K, added a supervised attention module that encodes static saliency to a
-CNN-LSTM, so that the recurrent part can concentrate on temporal change; it was
+\acrshort{CNN}-\acrshort{LSTM}, so that the recurrent part can concentrate on temporal change; it was
 trained with static images from SALICON alongside the videos. Linardos et
 al.~\cite{linardos2019simple} showed that a simple exponential moving average
-of features can perform on a par with a convolutional LSTM, which suggests that
+of features can perform on a par with a convolutional \acrshort{LSTM}, which suggests that
 much of the temporal modelling in these networks amounts to smoothing.
-UNISAL~\cite{droste2020unified} pursued a lightweight encoder--RNN--decoder
+UNISAL~\cite{droste2020unified} pursued a lightweight encoder--\acrshort{RNN}--decoder
 design trained jointly on image and video saliency data, with domain-adaptive
 priors, fusion and smoothing to cope with the differences between datasets,
 and reached strong results at a fraction of the size of its competitors.
@@ -122,13 +122,13 @@ million parameters and STSANet about 169 million~\cite{girmaji2025minimalistic}.
 
 Foundation models trained with self-supervision on large video collections
 offer a different starting point. SalFoM~\cite{moradi2024salfom} was the first
-video saliency model built on such an encoder. It fine-tunes the UMT-L
-encoder~\cite{li2023unmasked}, a ViT-L trained by masked video modelling guided
+video saliency model built on such an encoder. It fine-tunes the \acrshort{UMT}-L
+encoder~\cite{li2023unmasked}, a \acrshort{ViT}-L trained by masked video modelling guided
 by an image--text teacher, together with a heterogeneous decoder that includes
 a locality-aware spatio-temporal transformer. Given 16 frames at
 $224\times224$ pixels, it predicts the saliency map of the last frame, and
 maps for a whole video are produced with a sliding window. SalFoM reported the
-best DHF1K test results among the methods it compared with (CC 0.569, NSS
+best DHF1K test results among the methods it compared with (\acrshort{CC} 0.569, \acrshort{NSS}
 3.353), but it was weaker than earlier models on UCF Sports, which its authors
 attribute to the task-driven gaze of that dataset and to overfitting on its
 small training set~\cite{moradi2024salfom}.
@@ -189,8 +189,8 @@ context~\cite{rao1999predictive}, and deep networks built on this principle have
 been trained to predict future video frames~\cite{lotter2017deep}.
 
 Modern self-supervised video models contain an explicit predictor. In the
-joint-embedding predictive architectures I-JEPA~\cite{assran2023self} and
-V-JEPA~\cite{bardes2024revisiting}, a predictor network learns to predict the
+joint-embedding predictive architectures I-\acrshort{JEPA}~\cite{assran2023self} and
+\acrshort{V-JEPA}~\cite{bardes2024revisiting}, a predictor network learns to predict the
 representations of masked regions from the visible ones. Such a predictor
 offers, in principle, a learned and high-level analogue of surprise: its error
 indicates which parts of a scene the model could not anticipate. In the
@@ -215,25 +215,25 @@ emerge from the review.
     \textbf{Work} & \textbf{Approach} & \textbf{Evaluation}
       & \textbf{Limitation relevant to this thesis} \\
     \midrule
-    ACLNet~\cite{wang2021revisiting} & CNN-LSTM with static-saliency attention & DHF1K, Hollywood-2, UCF
+    ACLNet~\cite{wang2021revisiting} & \acrshort{CNN}-\acrshort{LSTM} with static-saliency attention & DHF1K, Hollywood-2, UCF
       & image features; needs static data \\
-    UNISAL~\cite{droste2020unified} & lightweight encoder--RNN--decoder, image and video jointly
+    UNISAL~\cite{droste2020unified} & lightweight encoder--\acrshort{RNN}--decoder, image and video jointly
       & DHF1K, Hollywood-2, UCF, SALICON & recurrent temporal model on image features \\
     TASED-Net~\cite{min2019tased} & S3D encoder, temporally aggregating decoder & DHF1K, Hollywood-2, UCF
       & one map per clip; action-recognition encoder \\
     ViNet-S/A/E~\cite{girmaji2025minimalistic} & S3D or action-localisation encoder, light decoder
-      & DHF1K val, Hollywood-2, UCF, six AV sets & supervised encoders; one map per clip \\
+      & DHF1K val, Hollywood-2, UCF, six \acrshort{AV} sets & supervised encoders; one map per clip \\
     TinyHD~\cite{hu2023tinyhd} & heterogeneous decoders, distillation, multi-output
-      & DHF1K, Hollywood-2, UCF & efficiency focus; CNN encoder \\
-    STSANet~\cite{wang2023spatio} & self-attention on a 3D CNN & DHF1K, Hollywood-2, UCF, DIEM
+      & DHF1K, Hollywood-2, UCF & efficiency focus; \acrshort{CNN} encoder \\
+    STSANet~\cite{wang2023spatio} & self-attention on a 3D \acrshort{CNN} & DHF1K, Hollywood-2, UCF, DIEM
       & large (about 169\,M parameters) \\
     TMFI-Net~\cite{zhou2023transformer} & video transformer, multi-scale integration
       & four video datasets & trained on few videos; large \\
-    SalFoM~\cite{moradi2024salfom} & fine-tuned UMT-L, heterogeneous decoder & DHF1K test, Hollywood-2, UCF
+    SalFoM~\cite{moradi2024salfom} & fine-tuned \acrshort{UMT}-L, heterogeneous decoder & DHF1K test, Hollywood-2, UCF
       & full fine-tuning; one encoder pass per output frame \\
-    STAViS~\cite{tsiami2020stavis} & visual saliency with sound localisation and fusion & six AV datasets
+    STAViS~\cite{tsiami2020stavis} & visual saliency with sound localisation and fusion & six \acrshort{AV} datasets
       & audio benefit later disputed~\cite{agrawal2022does} \\
-    DiffSal~\cite{xiong2024diffsal} & audio-visual conditional diffusion & six AV datasets
+    DiffSal~\cite{xiong2024diffsal} & audio-visual conditional diffusion & six \acrshort{AV} datasets
       & iterative generation; audio-dependent design \\
     Itti and Baldi~\cite{itti2009bayesian} & Bayesian surprise of low-level features & gaze in video
       & hand-crafted features, no learned predictor \\
@@ -248,7 +248,7 @@ foundation models. The decoders, by contrast, have converged on variations of
 multi-scale fusion. Yet the encoders used for saliency have all been trained
 with supervision or with objectives that reconstruct or align tokens, and they
 have been adapted to the saliency data. Encoders trained with a
-feature-prediction objective, such as V-JEPA~\cite{bardes2024revisiting}, whose
+feature-prediction objective, such as \acrshort{V-JEPA}~\cite{bardes2024revisiting}, whose
 authors report that its features perform well without adapting the model's
 parameters, have not been evaluated for this task in the peer-reviewed studies
 whose full texts could be consulted.
@@ -256,7 +256,7 @@ whose full texts could be consulted.
 Second, the evaluation practice of the field makes small differences hard to
 interpret. DHF1K results are reported on the validation or the test set,
 published numbers for the same model differ between papers by up to 0.03
-CC~\cite{girmaji2025minimalistic,xiong2025unist}, and comparisons are almost
+\acrshort{CC}~\cite{girmaji2025minimalistic,xiong2025unist}, and comparisons are almost
 always made against numbers copied from other papers rather than against
 re-scored predictions with an uncertainty estimate.
 
@@ -265,7 +265,7 @@ prediction error marks where people look, has support in classical models of
 surprise~\cite{itti2009bayesian} but had not been tested with the predictor of a
 modern self-supervised video model.
 
-This thesis addresses these gaps. It evaluates a frozen V-JEPA~2 encoder with a
+This thesis addresses these gaps. It evaluates a frozen \acrshort{V-JEPA}~2 encoder with a
 light decoder that predicts many frames per pass, compares it with SalFoM, the
 closest foundation-model approach, under one validated evaluator with
 paired statistics, tests the encoder's own predictor as a source of attention

@@ -10,7 +10,7 @@ to content design and tests our understanding of human attention. Recent video
 saliency models draw their accuracy from large pretrained encoders, which they
 fine-tune on small eye-tracking datasets and run once for every output frame.
 This thesis asks whether a self-supervised video encoder trained by feature
-prediction, V-JEPA~2, is sufficient for the task without adapting it, and
+prediction, \acrshort{V-JEPA}~2, is sufficient for the task without adapting it, and
 whether the error of the encoder's own pretrained predictor, a learned measure
 of surprise, indicates where people look.
 
@@ -24,7 +24,7 @@ differences were assessed with a paired bootstrap over videos. The evaluation
 covers DHF1K, UCF Sports, Hollywood-2 with openly licensed gaze recordings, and
 six audio-visual datasets.
 
-On the DHF1K validation set, a three-seed ensemble with the ViT-g encoder reached
+On the DHF1K validation set, a three-seed ensemble with the \acrshort{ViT}-g encoder reached
 a correlation coefficient of 0.603 and a normalised scanpath saliency of 3.49,
 against 0.564 and 3.33 for SalFoM, the closest foundation-model approach, scored
 by the same evaluator. It was better on all six metrics, with bootstrap intervals

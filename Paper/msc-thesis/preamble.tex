@@ -1,67 +1,51 @@
-%% aaitthesis.cls
-%% MSc thesis class for the School of Information Technology and Engineering
-%% (SiTE), Addis Ababa Institute of Technology (AAiT), Addis Ababa University.
+%% ===========================================================================
+%%  preamble.tex -- formatting of the thesis, loaded by main.tex after
+%%  \documentclass[12pt,a4paper,oneside]{report}.
 %%
-%% Formatting follows the SiTE "Guideline for MSc Thesis Proposal Writing and
-%% Evaluation" (October 2022) where it applies to the thesis as well:
-%%   * 12 pt type and 1.5 interline spacing
-%%   * title page with AAU/AAiT logos, title, student, advisor(s), department,
-%%     school, institute, university, month and year; no page number
-%%   * section numbering 1. / 1.1.
-%%   * IEEE referencing style
-%% The thesis-only pages (approval by the board of examiners, declaration)
-%% follow common AAU practice.
-%%
-%% Class options:
-%%   guidance    (default) show the grey writing-guide boxes
-%%   noguidance  hide them, which is what you submit
-%%   Any other option is passed on to the standard report class.
-\NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{aaitthesis}[2026/11/06 v1.0 AAU AAiT SiTE MSc thesis]
-
-\newif\ifaait@guidance
-\aait@guidancetrue
-\DeclareOption{guidance}{\aait@guidancetrue}
-\DeclareOption{noguidance}{\aait@guidancefalse}
-\DeclareOption*{\PassOptionsToClass{\CurrentOption}{report}}
-\ProcessOptions\relax
-
-\LoadClass[12pt,a4paper,oneside]{report}
+%%  Standard thesis style: report class, 12 pt, Latin Modern fonts, justified
+%%  text, hyperref with blue links, glossaries for all acronyms.
+%%  The SiTE/AAiT/AAU requirements are kept: 1.5 line spacing, A4 margins,
+%%  section numbering "1." / "1.1.", chapter headings "CHAPTER ONE", title,
+%%  approval and declaration pages, IEEE references.
+%% ===========================================================================
+\makeatletter
 
 %----------------------------------------------------------------------------
 % Fonts, page layout and spacing
 %----------------------------------------------------------------------------
-\RequirePackage[T1]{fontenc}
-\RequirePackage{amsmath}
-\RequirePackage{newtxtext}   % Times-like text font
-\RequirePackage{newtxmath}   % matching maths font (provides AMS symbols)
-\RequirePackage{microtype}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}          % Latin Modern text and maths fonts
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{microtype}        % better spacing of justified text
 
-% Wider left margin for binding. Adjust if your school asks for other values.
-\RequirePackage[a4paper,top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm]{geometry}
+% Wider left margin for binding.
+\usepackage[a4paper,top=2.5cm,bottom=2.5cm,left=3cm,right=2.5cm]{geometry}
 
 % 1.5 interline spacing; setspace keeps floats and footnotes single spaced.
-\RequirePackage{setspace}
+\usepackage{setspace}
 \onehalfspacing
+
+% Text is justified (the default of the report class); no ragged-right setting
+% is applied to the body text.
 
 %----------------------------------------------------------------------------
 % General packages
 %----------------------------------------------------------------------------
-\RequirePackage{graphicx}
-\RequirePackage{xcolor}
-\RequirePackage{array}
-\RequirePackage{booktabs}
-\RequirePackage{tabularx}
-\RequirePackage{multirow}
-\RequirePackage{enumitem}
-\RequirePackage{caption}
-\RequirePackage{subcaption}
-\RequirePackage{csquotes}
-\RequirePackage{fmtcount}
-\RequirePackage[chapter]{algorithm} % numbered per chapter: Algorithm 4.1
-\RequirePackage{algpseudocode}
-\RequirePackage[breakable]{tcolorbox}
-\RequirePackage[nohyperlinks]{acronym}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{csquotes}
+\usepackage{fmtcount}
+\usepackage[chapter]{algorithm}   % numbered per chapter: Algorithm 4.1
+\usepackage{algpseudocode}
+\usepackage[breakable]{tcolorbox}
 
 \graphicspath{{figures/}}
 \setlist{itemsep=0pt,topsep=4pt}
@@ -73,7 +57,11 @@
 %----------------------------------------------------------------------------
 % References: IEEE style. Only works cited in the text are listed.
 %----------------------------------------------------------------------------
-\RequirePackage[backend=biber,style=ieee,dashed=false]{biblatex}
+\usepackage[backend=biber,style=ieee,dashed=false]{biblatex}
+% Let long DOIs and URLs break after digits and letters so they stay inside the margin.
+\setcounter{biburlnumpenalty}{9000}
+\setcounter{biburllcpenalty}{9000}
+\setcounter{biburlucpenalty}{9000}
 
 %----------------------------------------------------------------------------
 % Headings
@@ -81,7 +69,7 @@
 %   Sections:     1.1. Background
 %   Unnumbered:   ABSTRACT, TABLE OF CONTENTS, REFERENCES, ...
 %----------------------------------------------------------------------------
-\RequirePackage{titlesec}
+\usepackage{titlesec}
 \setcounter{secnumdepth}{3}
 \newcommand\aait@chapnum{\NUMBERstring{chapter}}
 \titleformat{\chapter}[display]
@@ -105,7 +93,7 @@
 %----------------------------------------------------------------------------
 % Table of contents and lists of figures / tables
 %----------------------------------------------------------------------------
-\RequirePackage[titles]{tocloft}
+\usepackage[titles]{tocloft}
 \setcounter{tocdepth}{2}   % chapters, sections and subsections
 \renewcommand{\contentsname}{Table of Contents}
 \renewcommand{\listfigurename}{List of Figures}
@@ -164,22 +152,21 @@
   April\or May\or June\or July\or August\or September\or October\or
   November\or December\fi}
 
-% Use these in your own text if needed.
 \newcommand{\thethesistitle}{\aait@thesistitle}
 \newcommand{\thestudentname}{\aait@studentname}
 
 %----------------------------------------------------------------------------
-% Writing-guide boxes
+% Writing-guide boxes. Hidden in the finished thesis; write \showguidestrue
+% in main.tex (after \input{preamble}) to show them while writing.
 %----------------------------------------------------------------------------
+\newif\ifshowguides
+\showguidesfalse
 \newtcolorbox{aait@guidebox}{breakable,colback=black!4,colframe=black!30,
   boxrule=0.4pt,arc=1.5pt,left=5pt,right=5pt,top=3pt,bottom=3pt,
   before skip=6pt,after skip=8pt,
   fontupper=\small\setstretch{1.1}\color{black!80}}
-
-% \guide{text}: what to write in this section. Hidden by the noguidance option.
 \newcommand{\guide}[1]{%
-  \ifaait@guidance\expandafter\@firstofone\else\expandafter\@gobble\fi
-  {\begin{aait@guidebox}\textbf{Guide:}~#1\end{aait@guidebox}}}
+  \ifshowguides\begin{aait@guidebox}\textbf{Guide:}~#1\end{aait@guidebox}\fi}
 
 %----------------------------------------------------------------------------
 % Title page: first page, no page number.
@@ -231,10 +218,8 @@
 \newcommand\aait@nameorline[1]{\ifx#1\@empty\aait@sigline\else#1\fi}
 \newlength\aait@rowgap
 \setlength\aait@rowgap{0.75cm}
-% \aait@sigrow{role}{\name-macro}
 \newcommand\aait@sigrow[2]{%
   #1 & \aait@nameorline{#2} & \aait@sigline & \aait@sigline \\[\aait@rowgap]}
-% Same, but the row is left out when the name is empty (e.g. no co-advisor).
 \newcommand\aait@optsigrow[2]{%
   \ifx#2\@empty\expandafter\@gobbletwo\else\expandafter\aait@sigrow\fi{#1}{#2}}
 \newenvironment{aait@sigtable}
@@ -245,8 +230,7 @@
   {\endtabularx\par}
 
 %----------------------------------------------------------------------------
-% Approval page: signed by the board of examiners. Names left empty in
-% main.tex print as a blank line to be filled in by hand.
+% Approval page: signed by the board of examiners.
 %----------------------------------------------------------------------------
 \newcommand{\makeapprovalpage}{%
   \clearpage\phantomsection\addcontentsline{toc}{chapter}{Approval Page}%
@@ -279,8 +263,7 @@
   \clearpage}
 
 %----------------------------------------------------------------------------
-% Declaration page: originality statement by the student and approval for
-% submission by the advisor(s).
+% Declaration page
 %----------------------------------------------------------------------------
 \newcommand{\makedeclaration}{%
   \prelimchapter{Declaration}%
@@ -309,7 +292,7 @@
 % Preliminary pages (roman numbers) and main matter (arabic numbers)
 %----------------------------------------------------------------------------
 % \prelimchapter{Title}: unnumbered, centred heading that is listed in the
-% table of contents (Abstract, Acknowledgment, List of Acronyms, ...).
+% table of contents (Abstract, Acknowledgment, ...).
 \newcommand{\prelimchapter}[1]{%
   \clearpage\phantomsection\addcontentsline{toc}{chapter}{#1}\chapter*{#1}}
 
@@ -330,12 +313,33 @@
   \printbibliography[heading=bibintoc,title={References}]}
 
 %----------------------------------------------------------------------------
-% Hyperlinks and cross-references (load last)
+% Hyperlinks (blue) and cross-references (load after the packages above)
 %----------------------------------------------------------------------------
-\RequirePackage[hidelinks,bookmarksnumbered]{hyperref}
-\RequirePackage[capitalise,noabbrev]{cleveref}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue,
+            filecolor=blue,bookmarksnumbered]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
 \crefname{algorithm}{Algorithm}{Algorithms}
 \AtBeginDocument{%
   \hypersetup{pdftitle={\aait@thesistitle},pdfauthor={\aait@studentname}}}
 
-\endinput
+%----------------------------------------------------------------------------
+% Acronyms: glossaries package (loaded after hyperref). Entries are defined
+% in frontmatter/acronyms.tex; in the text, \acrshort{KEY} prints the
+% abbreviation and links it to the List of Acronyms. The list is sorted
+% without an external indexing tool (\makenoidxglossaries).
+%----------------------------------------------------------------------------
+\usepackage[acronym,nomain,nonumberlist,nogroupskip,nopostdot,toc]{glossaries}
+\setacronymstyle{long-short}
+\renewcommand*{\glsnamefont}[1]{\textbf{#1}}
+\setlength{\glsdescwidth}{0.72\textwidth}
+\makenoidxglossaries
+\input{frontmatter/acronyms}
+
+% List of Acronyms: every defined acronym, alphabetically, without page lists.
+\newcommand{\printacronyms}{%
+  \clearpage
+  \glsaddall
+  \printnoidxglossary[type=\acronymtype,style=long,sort=word,
+    title={List of Acronyms},toctitle={List of Acronyms}]}
+
+\makeatother
