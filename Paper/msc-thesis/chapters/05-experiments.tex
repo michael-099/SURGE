@@ -556,12 +556,18 @@ frozen ViT-L model of seed 0 trained with the same three-epoch schedule.
 \paragraph{Encoder adaptation.} LoRA was expected to help, because adapting a
 pretrained encoder to the target task usually improves on frozen features, and
 LoRA does so while training only a small fraction of the parameters that full
-fine-tuning would change~\cite{hu2022lora}. Here it did not. Each LoRA model started from the frozen model of the same seed and lost to
-it on the holdout in all three seeds (mean $-0.0025$ CC), and its best epoch was
-always the first. With only 540 training videos, adapting 1.6 million encoder
-parameters appears to add more variance than signal; the same early
-overfitting that limits the decoder (\cref{fig:g1}) would act on the adapted
-encoder as well. Full fine-tuning, as done by SalFoM, was not tested.
+fine-tuning would change~\cite{hu2022lora}. Here it did not. Each LoRA model
+started from the frozen model of the same seed and lost to it on the holdout in
+all three seeds (mean $-0.0025$ CC), and its best epoch was always the first.
+With only 540 training videos, adapting 1.6 million encoder parameters appears
+to add more variance than signal; the same early overfitting that limits the
+decoder (\cref{fig:g1}) would act on the adapted encoder as well. A second,
+compatible explanation is that adaptation degrades features that already suit
+the task. Kumar et al.~\cite{kumar2022fine} showed that fine-tuning can distort
+good pretrained features, although the harm they measured was clearest under
+distribution shift, whereas the holdout here comes from the training
+distribution; the explanation therefore remains a hypothesis. Full fine-tuning,
+as done by SalFoM, was not tested.
 
 \paragraph{Components.} Removing the learned centre prior or the auxiliary
 heads, and adding 10,000 static SALICON images per epoch, changed holdout CC by

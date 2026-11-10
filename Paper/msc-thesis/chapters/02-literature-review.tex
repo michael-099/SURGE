@@ -6,11 +6,14 @@ understand the rest of the thesis. Organise the chapter by topic, cite the
 original sources, and keep it focused on what your work builds on.}
 
 This chapter introduces the concepts on which the thesis builds. It begins with
-the study of visual attention and the notion of a saliency map
-(\cref{sec:overview}), follows the development of computational saliency models
-from hand-crafted features to deep networks trained on large datasets
-(\cref{sec:concept}), and then reviews how video representations are learned,
-with emphasis on the self-supervised video encoders that this thesis uses
+human visual attention: how eye movements are recorded and summarised as
+fixation data, what draws attention in static and dynamic scenes, and the notion
+of a saliency map (\cref{sec:overview}). It then follows the development of
+computational saliency models from hand-crafted features to deep networks that
+predict saliency as a probability distribution (\cref{sec:concept}), and reviews
+how video representations are learned, from spatio-temporal convolutions to the
+self-supervised and predictive video encoders that this thesis uses, together
+with what is known about transferring such representations to new tasks
 (\cref{sec:video-repr}). The last two sections describe the eye-tracking
 datasets and the evaluation metrics of the field (\cref{sec:datasets,sec:metrics}).
 Specific video saliency models are reviewed in \cref{ch:related}.
@@ -18,16 +21,51 @@ Specific video saliency models are reviewed in \cref{ch:related}.
 %----------------------------------------------------------------------------
 \section{Visual Attention and Saliency}\label{sec:overview}
 
-\subsection{Bottom-Up and Top-Down Attention}
+\subsection{Eye Movements and Fixation Data}\label{sec:eye-movements}
 
 The human visual system cannot process the whole visual field at full
 resolution. High acuity is limited to the fovea, so the eyes move several times
 per second to bring regions of interest into central vision, and the sequence of
-fixations reveals what the observer attends to. Two broad influences on this
-selection are usually distinguished: \emph{bottom-up} factors, which depend on
-the properties of the image, such as local contrast in colour, orientation or
-motion; and \emph{top-down} factors, which depend on the observer's goals,
-knowledge and task~\cite{itti2001computational,borji2013state}.
+fixations reveals what the observer attends to. An eye tracker samples the
+direction of gaze at a fixed rate, often several hundred times per second, and
+the resulting record alternates between \emph{fixations}, periods during which
+gaze rests on one location and visual information is taken in, and
+\emph{saccades}, the rapid movements between them. Raw gaze samples must
+therefore be segmented before they can be analysed. Salvucci and
+Goldberg~\cite{salvucci2000identifying} organised the algorithms used for this
+purpose by the criterion they apply, chiefly the velocity of the gaze or the
+spatial dispersion of consecutive samples, and compared how they differ in
+accuracy and robustness. The construction of the
+Hollywood-2 ground truth in this thesis (\cref{sec:dataset}) relies on such a
+segmentation, provided with the recordings.
+
+Saliency datasets summarise the fixations of many observers on each image or
+video frame in two forms~\cite{lemeur2013methods}. A \emph{fixation map} marks
+the fixated pixels, and a continuous \emph{fixation density map} is obtained by
+convolving the fixation map with a Gaussian kernel whose width approximates the
+extent of foveal vision. The first form is used to evaluate a prediction at the
+fixated locations, the second to compare distributions, and both are used in
+this thesis.
+
+Observers do not all look at the same places, so no model can be expected to
+predict the fixations of a new observer perfectly. Wilming et
+al.~\cite{wilming2011measures} formalised this by deriving a lower bound on
+achievable performance from image-independent regularities of fixation data,
+such as the preference for the centre, and an upper bound from the consistency
+between observers. In the same spirit, K\"ummerer et
+al.~\cite{kummerer2015information} expressed the quality of a model as the
+fraction of the explainable information about fixations, between a
+centre-bias baseline and a gold standard derived from the observers themselves,
+that the model captures. Both views imply that differences between models must
+be judged relative to the room that the data leave for improvement.
+
+\subsection{Bottom-Up and Top-Down Attention}
+
+Two broad influences on the selection of fixations are usually distinguished:
+\emph{bottom-up} factors, which depend on the properties of the image, such as
+local contrast in colour, orientation or motion; and \emph{top-down} factors,
+which depend on the observer's goals, knowledge and
+task~\cite{itti2001computational,borji2013state}.
 
 The feature-integration theory of Treisman and Gelade~\cite{treisman1980feature}
 proposed that simple features are registered in parallel across the visual field,
@@ -54,6 +92,19 @@ fixations better than purely bottom-up models. This shift, from
 designing saliency features to learning them from human data, set the
 direction for the deep models that followed.
 
+The observer's task changes where people look. Castelhano et
+al.~\cite{castelhano2009viewing} showed that the same scenes are explored
+differently under instructions to search and to memorise: the task changed which
+regions were fixated and how long gaze dwelt on particular objects, but not basic
+parameters such as the average saccade amplitude or the duration of individual
+fixations. Borji and Itti~\cite{borji2014defending} revisited Yarbus's classic
+demonstration that eye movements depend on the question put to the observer and
+showed that the task can be decoded from eye-movement features above chance.
+Eye-tracking data recorded under a task, such as the action-recognition task of
+two datasets used in this thesis (\cref{sec:datasets}), therefore measure a
+different quantity from free-viewing data, and a model trained on one need not
+transfer to the other.
+
 \subsection{Attention in Dynamic Scenes}
 
 Video adds time, and with it motion, events and narrative. In dynamic scenes,
@@ -63,6 +114,20 @@ Itti~\cite{carmi2006visual} distinguished features that cause attentional
 selection from features that merely correlate with it, using video clips with
 abrupt scene cuts, after which the influence of memory and expectation on gaze
 is briefly disrupted.
+
+Gaze in video is also remarkably consistent across viewers. Dorr et
+al.~\cite{dorr2010variability} recorded 54 observers watching high-resolution
+videos of outdoor scenes. In some parts of the videos up to about 80\,\% of the
+observers looked at the same region, although the variability was usually much
+greater, and the authors used professionally edited Hollywood trailers to probe
+the upper limit of coherence that camera work and cuts can produce. Smith and
+Mital~\cite{smith2013attentional} called this clustering of gaze \emph{attentional
+synchrony}. In their experiments, free viewing of dynamic scenes produced more
+synchrony, longer fixations and more gaze on people and on regions of high
+flicker than viewing static scenes, but a task that required identifying where
+a video was filmed reduced these differences. Gaze in video is thus strongly, but
+not exclusively, driven by the stimulus. This regularity is what makes video
+saliency prediction possible, and a task can override it.
 
 Two further biases are prominent in video. The first is the \emph{centre bias}.
 Observers tend to fixate the centre of the screen, and Tatler~\cite{tatler2007central}
@@ -96,6 +161,8 @@ examined in this thesis.
 %----------------------------------------------------------------------------
 \section{Deep Saliency Prediction for Images}\label{sec:concept}
 
+\subsection{From Hand-Crafted to Learned Features}
+
 The arrival of large eye-tracking and attention datasets enabled saliency models
 to be learned end to end. SALICON~\cite{jiang2015salicon} collected
 mouse-contingent attention data, a scalable proxy for eye tracking, on images
@@ -104,10 +171,20 @@ for saliency. Pan et al.~\cite{pan2016shallow} trained convolutional
 networks directly on such data, while Huang et al.~\cite{huang2015salicon}
 fine-tuned networks pretrained for object recognition and argued that their
 semantic features close much of the gap between low-level saliency and human
-fixations. Cornia et al.~\cite{cornia2018predicting} refined the prediction
-iteratively with an attentive convolutional LSTM and learned a set of Gaussian
-prior maps to model the centre bias, a design that recurs in later models,
-including the one proposed in this thesis.
+fixations.
+
+Two architectural themes of these models recur in video saliency. The first is
+the modelling of the centre bias. Fully convolutional networks respond in the
+same way at every position and therefore cannot represent location-dependent
+patterns; DeepFix~\cite{kruthiventi2017deepfix} added location-biased
+convolutional layers for this purpose, and Cornia et
+al.~\cite{cornia2018predicting}, who refined the prediction iteratively with an
+attentive convolutional LSTM, learned a set of Gaussian prior maps, a design
+that recurs in later models, including the one proposed in this thesis. The
+second theme is global context: TranSalNet~\cite{lou2022transalnet} integrated
+transformer components into a convolutional saliency model to capture long-range
+contextual information, which convolutions with local receptive fields encode
+poorly.
 
 The DeepGaze line of work clarified \emph{why} deep models succeed. K\"ummerer
 et al.~\cite{kummerer2017understanding} separated the contributions of low- and
@@ -121,6 +198,37 @@ classification. Borji~\cite{borji2021saliency} reviewed the deep-learning era of
 saliency prediction for images and videos, and identified the remaining gap to
 human performance, the failure cases of current models and the difficulty of
 fair model comparison as open issues.
+
+\subsection{Saliency as a Probability Distribution}\label{sec:saliency-prob}
+
+Early deep models were trained with losses borrowed from regression or
+classification, such as the per-pixel squared error~\cite{pan2016shallow}. Jetley et
+al.~\cite{jetley2016end} argued that a saliency map should instead be treated as
+a probability distribution over image locations. They formulated the map as a
+generalised Bernoulli distribution, produced it with a softmax over pixels, and
+trained it with losses that measure distances between probability
+distributions, which outperformed standard losses on four benchmarks. The
+probabilistic view also clarifies evaluation: a model that outputs a
+distribution can be compared with others by the likelihood it assigns to the
+observed fixations~\cite{kummerer2015information}. Many recent video saliency
+models follow this view, training with the Kullback--Leibler divergence and the
+correlation coefficient between the predicted and the ground-truth
+distributions~\cite{moradi2024salfom,girmaji2025minimalistic}, and the model of
+this thesis does the same (\cref{sec:training}).
+
+\subsection{Fixation Prediction and Salient Object Detection}\label{sec:sod}
+
+A related but distinct task is \emph{salient object detection}, which segments
+the full extent of the objects that stand out in an image rather than predicting
+the distribution of fixations~\cite{wang2022salient}. The outputs differ in kind:
+a fixation map is a smooth density concentrated on the few points that people
+actually look at, such as the eyes of a face, whereas a salient-object mask is a
+binary segmentation of whole objects. Fan et al.~\cite{fan2019shifting} connected
+the two in video. Their DAVSOD dataset of 226 videos uses human eye-fixation data
+to decide which objects are salient, and it emphasises the \emph{saliency shift},
+the change of the salient object over time. Some recent models address both
+tasks with one architecture~\cite{xiong2025unist}. This thesis is concerned with
+fixation prediction only.
 
 %----------------------------------------------------------------------------
 \section{Learning Representations of Video}\label{sec:video-repr}
@@ -139,6 +247,18 @@ video saliency models of the following years use as their encoder. Tran et
 al.~\cite{tran2018closer} analysed such factorisations systematically; their
 R(2+1)D block, a spatial convolution followed by a temporal one, is the basis of
 the decoder blocks in this thesis.
+
+Other designs separate appearance from motion explicitly. The two-stream
+networks of Simonyan and Zisserman~\cite{simonyan2014two} combine a spatial
+network that sees still frames with a temporal network that sees stacked optical
+flow, and showed that a network trained on dense optical flow performs well
+despite limited training data; two-stream designs were also among the first deep
+video saliency models (\cref{sec:related-a}). SlowFast
+networks~\cite{feichtenhofer2019slowfast} use two pathways at different frame
+rates: a slow pathway that captures spatial semantics and a lightweight fast
+pathway that captures motion at fine temporal resolution. A SlowFast encoder
+trained for spatio-temporal action localisation underlies one of the strongest
+recent saliency models on action-oriented datasets~\cite{girmaji2025minimalistic}.
 
 \subsection{Video Transformers and Dense Prediction}
 
@@ -162,23 +282,50 @@ al.~\cite{li2022exploring} showed that a simple pyramid built by up- and
 down-sampling the features of a plain ViT suffices for object detection. The
 decoder of this thesis follows these designs (\cref{sec:architecture}).
 
-\subsection{Self-Supervised Video Encoders}\label{sec:ssl}
+\subsection{Self-Supervised Representation Learning}\label{sec:ssl}
 
 Supervised pre-training ties a representation to a fixed set of labels.
 Self-supervised learning instead derives the training signal from the data
-itself, which allows much larger and more varied training sets. Masked
-autoencoders (MAE)~\cite{he2022masked} mask a large fraction of image patches
-and train the network to reconstruct their pixels; VideoMAE~\cite{tong2022videomae}
-applied the same principle to video with very high masking ratios.
-UMT~\cite{li2023unmasked} instead aligns the unmasked tokens of a video student
-with the features of an image foundation model, which speeds up training and
-gives semantically rich features; its ViT-L is the encoder of SalFoM
-(\cref{sec:related-vfm}).
+itself, which allows much larger and more varied training sets. Several families
+of methods can be distinguished by the signal they use.
 
-Joint-embedding predictive architectures (JEPA) take a third route. Rather than
-reconstructing pixels, they predict the \emph{representations} of masked parts
-of the input. I-JEPA~\cite{assran2023self} predicts the representations of
-several target blocks of an image from a single context block, and
+\emph{Contrastive} methods learn by making the representations of two augmented
+views of the same image similar and those of different images dissimilar.
+SimCLR~\cite{chen2020simple} identified the composition of data augmentations,
+a learnable non-linear projection between the representation and the loss, and
+large batches as the keys to this approach, and MoCo~\cite{he2020momentum}
+maintained a large and consistent set of negative examples with a queue of
+encoded samples and a slowly updated momentum encoder. \emph{Non-contrastive}
+methods dispense with negative examples. In BYOL~\cite{grill2020bootstrap}, an
+online network is trained to predict the representation that a target network,
+updated as a slow-moving average of the online network, produces for another
+view of the same image. DINO~\cite{caron2021emerging} interpreted a similar
+scheme as self-distillation without labels and found that the features of
+self-supervised Vision Transformers contain explicit information about the
+segmentation of objects, which does not emerge as clearly with supervised
+training. \emph{Language supervision} offers yet another signal: CLIP~\cite{radford2021learning}
+learned from 400 million image--text pairs to predict which caption belongs to
+which image, which allows zero-shot transfer to new tasks.
+
+\emph{Masked modelling} learns by reconstructing hidden parts of the input.
+Masked autoencoders (MAE)~\cite{he2022masked} mask a large fraction of image
+patches and train the network to reconstruct their pixels, and
+VideoMAE~\cite{tong2022videomae} applied the same principle to video with very
+high masking ratios. UMT~\cite{li2023unmasked} instead aligns the unmasked tokens
+of a video student with the features of an image foundation model, which speeds
+up training and gives semantically rich features; for the UMT-L encoder on which
+SalFoM builds (\cref{sec:related-vfm}), that teacher is CLIP~\cite{moradi2024salfom}. Such video foundation models have since been scaled
+further: InternVideo2~\cite{wang2024internvideo2} combines masked video
+modelling, cross-modal contrastive learning and next-token prediction and scales
+the video encoder to six billion parameters.
+
+\subsection{Joint-Embedding Predictive Architectures}\label{sec:jepa}
+
+Joint-embedding predictive architectures (JEPA) take a further route. Rather than
+reconstructing pixels or contrasting views, they predict the
+\emph{representations} of masked parts of the input from the visible parts.
+I-JEPA~\cite{assran2023self} predicts the representations of several target
+blocks of an image from a single context block, and
 V-JEPA~\cite{bardes2024revisiting} extends this to video. With $x$ the visible
 (context) part of a clip, $y$ the full clip, $E_\theta$ the encoder,
 $\bar E$ an exponential-moving-average copy of it, $P_\phi$ the predictor and
@@ -190,12 +337,16 @@ as~\cite{murlabadia2026vjepa21}
   \label{eq:jepa}
 \end{equation}
 where $\Delta_y$ are learnable tokens that mark the positions to be predicted and
-$\mathrm{sg}$ stops the gradient. Because the target is a representation rather
-than pixels, the encoder can ignore unpredictable detail. Bardes et
-al.~\cite{bardes2024revisiting} report that the resulting features perform well
-on both appearance- and motion-oriented tasks without adapting the encoder,
-that is, with a frozen backbone. A related observation for images is that
-self-supervised features can serve many tasks without fine-tuning~\cite{oquab2024dinov2}.
+$\mathrm{sg}$ stops the gradient. The moving-average target and the stop-gradient,
+which prevent the trivial solution in which all representations collapse to a
+constant, follow the non-contrastive methods described
+above~\cite{grill2020bootstrap,murlabadia2026vjepa21}. Because the target is a
+representation rather than pixels, the encoder can ignore unpredictable detail.
+Bardes et al.~\cite{bardes2024revisiting} report that the resulting features
+perform well on both appearance- and motion-oriented tasks without adapting the
+encoder, that is, with a frozen backbone. A related observation for images is
+that self-supervised features can serve many tasks without
+fine-tuning~\cite{oquab2024dinov2}.
 
 Since the loss in \cref{eq:jepa} is applied only to the masked tokens, the
 visible tokens receive no direct training signal. Mur-Labadia et
@@ -205,18 +356,39 @@ segmentation on ADE20K), and proposed V-JEPA~2.1, which adds a loss on the
 visible tokens and self-supervision at intermediate layers to obtain denser
 features. Both model families are used in this thesis.
 
-A JEPA model also contains its predictor $P_\phi$. After training, the
-predictor's error on a new video, the difference between what it predicted for
-a region and what the encoder actually computed there, is a learned measure of
-how unexpected that region is. This is the quantity examined as a possible
-attention cue in \cref{sec:g2}.
+A JEPA model also contains its predictor $P_\phi$. Models that learn to predict
+how their environment evolves are often called \emph{world models}. Ha and
+Schmidhuber~\cite{ha2018recurrent}, for example, trained a generative recurrent
+model of reinforcement-learning environments and used its compressed
+spatio-temporal representation for control. A JEPA video model resembles a world model in that its predictor
+anticipates unseen content, but it predicts representations rather than pixels,
+and the content it predicts need not lie in the future: masks may cover any part
+of a clip. After training, the predictor's error on a new video, the difference
+between what it predicted for a region and what the encoder actually computed
+there, is a learned measure of how unexpected that region is. This is the
+quantity examined as a possible attention cue in \cref{sec:g2}.
 
-\subsection{Adapting Pretrained Models}
+\subsection{Transferring and Adapting Pretrained Models}\label{sec:transfer-learning}
 
-A pretrained encoder can be used frozen, with only a task-specific head
-trained on top, or adapted to the task. Full fine-tuning updates all parameters
-and can overfit small datasets. Parameter-efficient methods adapt a model with
-few trainable parameters: adapters insert small bottleneck layers into a frozen
+How well pretrained features transfer depends on the depth at which they are
+taken and on how different the new task is. Yosinski et
+al.~\cite{yosinski2014transferable} showed that the features of a deep network
+change from general to task-specific with depth and that their transferability
+decreases as the source and target tasks diverge. Intermediate layers, which
+dense prediction models already combine because they offer different
+resolutions~\cite{lin2017feature,ranftl2021vision}, are therefore also likely to
+carry features that are less specific to the pre-training task than those of
+the last layer.
+
+A pretrained encoder can be used frozen, with only a task-specific head trained
+on top, or adapted to the task. Full fine-tuning updates all parameters and can
+overfit small datasets. It can also damage good features: Kumar et
+al.~\cite{kumar2022fine} showed that fine-tuning distorts pretrained features
+while the head is still being learned. Across ten benchmarks with distribution
+shift, it was on average about 2\,\% more accurate than training only a linear
+head on the training distribution but about 7\,\% less accurate on shifted data.
+Parameter-efficient methods adapt a model with few trainable parameters:
+adapters insert small bottleneck layers into a frozen
 network~\cite{houlsby2019parameter}, and LoRA~\cite{hu2022lora} adds trainable
 low-rank updates to the weight matrices of a frozen transformer, matching full
 fine-tuning on language tasks while training a small fraction of the
@@ -277,8 +449,10 @@ The differences in task are central to interpreting results across datasets.
 Free viewing (DHF1K, DIEM) captures where people look spontaneously; the action
 recognition task (Hollywood-2, UCF Sports) concentrates gaze on the actors and
 their movements; and in conversations (Coutrot2) gaze follows the speaker.
-A model trained on one condition need not transfer to another, which is why
-results on these datasets are usually obtained after fine-tuning on each.
+Because the viewing task changes where people
+look~\cite{castelhano2009viewing,smith2013attentional}, a model trained on one
+condition need not transfer to another, which is why results on these datasets
+are usually obtained after fine-tuning on each.
 
 %----------------------------------------------------------------------------
 \section{Evaluation Metrics}\label{sec:metrics}
@@ -298,8 +472,10 @@ bias~\cite{zhang2008sun,borji2013quantitative}. The distribution-based family
 includes the linear correlation coefficient (CC), the histogram intersection
 (SIM) and the Kullback--Leibler divergence (KLD). Le Meur and
 Baccino~\cite{lemeur2013methods} discuss the strengths and weaknesses of these
-comparisons, and \cref{sec:evaluation-metrics} gives the exact definitions used
-in this thesis.
+comparisons, and Wilming et al.~\cite{wilming2011measures} concluded that no
+single measure has all the properties one would want, although the AUC and the
+KL divergence combine many of them. \Cref{sec:evaluation-metrics} gives the exact
+definitions used in this thesis.
 
 The metrics respond differently to the same map~\cite{bylinskii2019metrics}.
 KLD heavily penalises predictions that assign almost no probability to regions
@@ -322,16 +498,23 @@ approximately comparable.
 %----------------------------------------------------------------------------
 \section{Summary}\label{sec:literature-summary}
 
-Visual attention is shaped by image features, by the observer's task and by
-strong regularities such as the centre bias and the attraction of faces, and in
-video additionally by motion, events and sound. Computational models moved from
-hand-crafted feature contrast to deep networks whose success rests largely on
-pretrained representations. Video representation learning followed a parallel
-path from three-dimensional convolutions to transformers and, most recently, to
-self-supervised encoders trained on large video collections; among these, the
-joint-embedding predictive models are distinctive in learning by predicting
-representations, and in containing a predictor whose errors could indicate what
-is unexpected. The datasets and metrics of the field are diverse in task and in
-what they reward, which makes careful and consistent evaluation essential. The
-next chapter reviews how these ingredients have been combined into video
-saliency models.
+Visual attention is measured through eye movements that are segmented into
+fixations and summarised as fixation and density maps, whose consistency across
+observers bounds what any model can achieve. Attention is shaped by image
+features, by the observer's task and by strong regularities such as the centre
+bias and the attraction of faces, and in video additionally by motion, events
+and sound; free viewing of video produces a marked synchrony of gaze across
+observers, which a task can reduce. Computational models moved from hand-crafted
+feature contrast to deep networks that predict saliency as a probability
+distribution and whose success rests largely on pretrained representations.
+Video representation learning followed a parallel path from three-dimensional
+convolutions and two-stream designs to transformers and, most recently, to
+self-supervised encoders trained on large video collections with contrastive,
+masked or predictive objectives. Among these, the joint-embedding predictive
+models are distinctive in learning by predicting representations and in
+containing a predictor whose errors could indicate what is unexpected. Whether
+such encoders should be adapted or kept frozen depends on the quality of their
+features and on the size of the target data. The datasets and metrics of the
+field are diverse in task and in what they reward, which makes careful and
+consistent evaluation essential. The next chapter reviews how these ingredients
+have been combined into video saliency models.
