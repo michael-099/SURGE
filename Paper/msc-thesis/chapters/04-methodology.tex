@@ -40,7 +40,12 @@ outcome) was written into a dated research log, and the rule was applied
 unchanged afterwards. \Cref{tab:rules} lists these rules. This procedure
 guards against two familiar sources of optimism in deep-learning research:
 choosing among variants after seeing test results, and adjusting thresholds
-after seeing which side of them a result falls on.
+after seeing which side of them a result falls on. The log is kept in the
+repository of the thesis, so the rules are specified in advance in an internal,
+dated record rather than registered with an external service. Choices that were
+fixed without a test, such as the decoder architecture, the tapped layers, the
+loss weights, the squashing of the input and the learning rates
+(\cref{tab:hyper}), were not governed by a rule.
 
 \paragraph{Separation of selection and testing.} All model selection
 (the best training epoch, the output blur, every gate in \cref{tab:rules})
@@ -48,13 +53,17 @@ was performed on internal holdout sets carved out of the training data.
 Each test set was scored once per reported model, after all of that model's
 settings had been fixed. For DHF1K, whose official test annotations are
 withheld by the dataset authors, the 100-video validation set serves as the
-test set and was never used for selection.
+test set. No reported model or setting was selected on it. It did inform two
+decisions about the predictions prepared for the official test set; these are
+listed with every other use of the set in \cref{tab:val-ledger}.
 
 \begin{table}[htbp]
   \centering
   \caption{Decision rules, each written before the experiment that it
-  governs, except the last (see text). Holdout \acrshort{CC} is measured on the internal
-  60-video DHF1K holdout unless stated otherwise; outcomes are reported in
+  governs, except the one marked $^{\ast}$ (see text). Rules marked $^{\dagger}$
+  were written in a follow-up after the first draft of this thesis, before the
+  runs they govern. Holdout \acrshort{CC} is measured on the internal 60-video DHF1K
+  holdout unless stated otherwise; outcomes are reported in
   \cref{ch:experiments}}\label{tab:rules}
   \small
   \begin{tabularx}{\textwidth}{@{}>{\raggedright}p{3.3cm}>{\raggedright\arraybackslash}X@{}}
@@ -86,6 +95,16 @@ test set and was never used for selection.
       at least $0.005$ \\
     Published results$^{\ast}$ & Comparisons with numbers from other evaluation code
       treat margins below $0.01$ \acrshort{CC} as ties \\
+    Baseline blur$^{\dagger}$ & A claim over SalFoM stands only if it also holds
+      against SalFoM's maps with the blur of the same grid that is best for SalFoM
+      on the test set \\
+    Causal control$^{\dagger}$ & SURGE-D is better than SalFoM under an identical
+      protocol only if the 95\,\% interval of $\Delta$\acrshort{CC} between its causal
+      three-seed ensemble and SalFoM at its best blur lies above zero \\
+    Ablations, three seeds$^{\dagger}$ & An effect if the 95\,\% interval of the
+      seed-averaged $\Delta$\acrshort{CC} excludes zero and $|\Delta\mathrm{CC}|\geq0.003$;
+      equivalence if the 90\,\% interval lies within $\pm0.003$; otherwise
+      inconclusive \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -147,6 +166,15 @@ the last frame of a clip from past frames only, such as
 SalFoM~\cite{moradi2024salfom}. The difference is returned to when results
 are compared in \cref{ch:experiments}.
 
+\paragraph{Causal variant.} To measure how much of the accuracy of SURGE-D
+depends on frames after the predicted one, a causal variant was trained as a
+control (\cref{sec:causal}). It predicts the map of frame $n$ from the window
+$n-30, n-28, \dots, n$ (sixteen frames with a stride of two; indices below zero
+are clamped to the first frame) and uses the output at the last sampled
+position. During training, each clip is supervised on its last sampled frame
+only. The causal variant sees no frame after the predicted one, as in SalFoM,
+but it needs one forward pass for every output frame.
+
 %----------------------------------------------------------------------------
 \section{Datasets}\label{sec:dataset}
 
@@ -182,8 +210,9 @@ code.
     DIEM~\cite{mital2011clustering} & 84 videos of many genres; audio
       present & one standard split, 64 training and 17 test videos \\
     Coutrot1~\cite{coutrot2012influence,coutrot2014how} & 60 clips in four
-      visual categories & \multirow{5}{=}{three folds each, every video tested
-      once~\cite{tsiami2020stavis}; holdout = 10\,\% of each training fold} \\
+      visual categories & \multirow{5}{=}{three folds each, every listed test
+      video tested once~\cite{tsiami2020stavis} (SumMe: 23 of 25); holdout =
+      10\,\% of each training fold (1--4 videos)} \\
     Coutrot2~\cite{coutrot2012influence,coutrot2014how} & 15 clips of four
       people in a meeting & \\
     ETMD~\cite{koutras2015perceptually,tsiami2019behaviorally} & 12 clips
@@ -226,8 +255,10 @@ ETMD~\cite{koutras2015perceptually}, AVAD~\cite{min2016fixation} and
 SumMe~\cite{gygli2014creating}) were used in the preprocessed form and with
 the fold lists released by Tsiami et al.~\cite{tsiami2020stavis}, whose
 protocol has become the standard for these data: DIEM has one fixed split,
-and each of the other five datasets has three folds in which every video
-appears in exactly one test set. The gaze data for ETMD and SumMe were
+which uses 81 of its 84 videos, and each of the other five datasets has three
+folds in which every listed test video appears in exactly one test set. In
+SumMe, 23 of the 25 videos are test videos; the other two appear only in
+training lists. The gaze data for ETMD and SumMe were
 recorded by Tsiami et al.~\cite{tsiami2019behaviorally}. SURGE-D is a
 visual model; the soundtracks were used only in the audio experiment of
 \cref{sec:audio-fusion}. SALICON~\cite{jiang2015salicon}, a dataset of static
@@ -597,7 +628,10 @@ from the DHF1K model and trained for three further epochs with a learning rate
 of $10^{-4}$ ($3\times10^{-4}$ for the prior). The number of clips per training
 video was set so that an epoch contained about 1,500 clips (16 clips per video
 for UCF Sports). Each fold of the audio-visual datasets was trained and
-selected on its own holdout and its test videos were scored once.
+selected on its own holdout and its test videos were scored once. These
+holdouts are small: one video per fold for Coutrot2 and ETMD, two for SumMe,
+three for AVAD, four for Coutrot1 and six for the single DIEM split, so the
+selected epoch and blur are noisy on these datasets.
 
 \paragraph{Seeds and ensembles.} The main models were trained with three seeds
 (0, 1 and 2). A three-seed ensemble averages the members' probability maps
@@ -671,7 +705,9 @@ model could reach on the other metrics (\cref{sec:threats}).
 
 For an ensemble, the members' maps $M$ are averaged before upsampling and
 blurring. Horizontal-flip test-time augmentation was implemented but not used
-in any reported result.
+in any reported result. The causal variant of \cref{sec:formulation} is run with
+one window per output frame, ending at that frame; because this costs one
+forward pass per frame, it is scored on every tenth frame (\cref{sec:causal}).
 
 %----------------------------------------------------------------------------
 \section{Evaluation Metrics and Statistical Analysis}\label{sec:evaluation-metrics}

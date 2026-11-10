@@ -34,6 +34,10 @@ result with the folder it was read from.
     scripts/prep\_hollywood\_gaze.py & Hollywood-2 (Vig gaze) maps \\
     scripts/prep\_stavis\_audio.py & audio features for the audio experiment \\
     scripts/thesis\_qualitative.py & qualitative examples and cost measurements \\
+    scripts/g2\_intervals.py & bootstrap intervals of gate G2 \\
+    scripts/ablation\_seeds.py & component ablations with three seeds \\
+    scripts/review\_tables.py & numbers of the checks added after the first draft \\
+    scripts/queue\_review\_a.sh, \_b.sh & the runs of those checks, in order \\
     configs/ & configurations and all split and holdout lists \\
     research/log.md & dated decision rules and results \\
     \bottomrule
@@ -60,6 +64,25 @@ python scripts/evaluate.py --run runs/vitg_s0 --split val --metrics all \
 Passing \verb|--run| three times (seeds 0, 1 and 2) to the last two commands
 evaluates the three-seed ensemble. The paired bootstrap against another
 evaluation file is computed with \verb|python scripts/compare.py A.json B.json|.
+
+The causal variant (\cref{sec:causal}) is trained and scored on every tenth
+frame with:
+
+\begin{small}
+\begin{verbatim}
+python scripts/train.py --config configs/main_b1.yaml --set \
+    run_dir=runs/causal_g_s0 train.seed=0 train.epochs=3 \
+    train.warmup_epochs=0.25 model.backbone=vjepa2_g \
+    "data.size=[256,256]" data.target=last eval.frame_step=10
+python scripts/evaluate.py --run runs/causal_g_s0 --split val \
+    --metrics all --sigma 8 --frame-step 10 \
+    --out runs/review/causal_g_val_s0.json
+\end{verbatim}
+\end{small}
+
+\noindent \verb|scripts/evaluate.py| and \verb|scripts/tune_sigma.py| run a model
+causally whenever its configuration names this target. For the comparison of \cref{sec:main-results}, SalFoM's saved maps
+are blurred by passing \verb|--sigma| together with \verb|--maps|.
 
 \section{Forward Pass of the Decoder}
 

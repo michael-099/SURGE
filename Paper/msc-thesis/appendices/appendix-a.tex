@@ -54,6 +54,128 @@ first model.
   \end{tabular}
 \end{table}
 
+\section{Checks Added After the First Draft}\label{app:checks}
+
+The checks of this section were specified in the research log (section 12)
+before they were run (\cref{tab:rules}, rules marked $^{\dagger}$).
+\Cref{tab:app-boot-best} repeats the comparison of \cref{tab:app-boot} against
+SalFoM with the blur that is best for SalFoM on the validation set
+($\sigma=16$), an upper bound for the baseline. \Cref{tab:val-ledger} lists every
+use of the DHF1K validation set, the test set of this thesis.
+\Cref{tab:app-causal} gives all six metrics for the causal models of
+\cref{sec:causal}. \Cref{tab:app-600} gives all six metrics for the models
+trained on 600 instead of 540 DHF1K videos, and \cref{tab:app-g2} the intervals
+of gate G2.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Paired bootstrap differences between SURGE-D and SalFoM with its best
+  blur ($\sigma=16$) on DHF1K validation, all six metrics (100 videos, 10,000
+  resamples)}\label{tab:app-boot-best}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Metric} & \textbf{\acrshort{ViT}-L single} & \textbf{\acrshort{ViT}-L ensemble} & \textbf{\acrshort{ViT}-g single} & \textbf{\acrshort{ViT}-g ensemble} \\
+    \midrule
+    \acrshort{CC} & \dci{+0.0095}{$-$0.0008, +0.0203} & \dci{+0.0169}{+0.0069, +0.0273} & \dci{+0.0262}{+0.0160, +0.0371} & \dci{+0.0287}{+0.0186, +0.0394} \\[5pt]
+    \acrshort{NSS} & \dci{+0.0842}{+0.0149, +0.1574} & \dci{+0.1528}{+0.0839, +0.2253} & \dci{+0.1921}{+0.1252, +0.2636} & \dci{+0.2214}{+0.1534, +0.2938} \\[5pt]
+    \acrshort{SIM} & \dci{+0.0483}{+0.0406, +0.0563} & \dci{+0.0477}{+0.0399, +0.0558} & \dci{+0.0522}{+0.0445, +0.0601} & \dci{+0.0565}{+0.0485, +0.0645} \\[5pt]
+    \acrshort{KLD} & \dci{$-$0.0577}{$-$0.0860, $-$0.0304} & \dci{$-$0.0932}{$-$0.1191, $-$0.0683} & \dci{$-$0.1100}{$-$0.1357, $-$0.0855} & \dci{$-$0.1199}{$-$0.1461, $-$0.0949} \\[5pt]
+    \acrshort{AUC-J} & \dci{+0.0006}{$-$0.0011, +0.0024} & \dci{+0.0025}{+0.0009, +0.0042} & \dci{+0.0031}{+0.0015, +0.0048} & \dci{+0.0037}{+0.0020, +0.0054} \\[5pt]
+    \acrshort{sAUC} & \dci{+0.0078}{+0.0015, +0.0147} & \dci{+0.0056}{$-$0.0008, +0.0125} & \dci{+0.0152}{+0.0087, +0.0223} & \dci{+0.0123}{+0.0058, +0.0196} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Every use of the DHF1K validation set, the test set of this thesis.
+  No reported model or setting was selected on it}\label{tab:val-ledger}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright}p{4.6cm}>{\raggedright}X>{\raggedright\arraybackslash}p{4.4cm}@{}}
+    \toprule
+    \textbf{Model} & \textbf{Purpose} & \textbf{Decision informed} \\
+    \midrule
+    SalFoM, released & evaluator validation (\cref{sec:metric-validation}); baseline & none \\
+    SalFoM, blur grid ($\sigma$ from 0 to 24) & upper bound for the baseline & none \\
+    SURGE-D \acrshort{ViT}-L, seed 0 and ensemble & RQ1 & which maps were first prepared for the official test set \\
+    SURGE-D \acrshort{ViT}-g, seed 0 and ensemble & RQ1; RQ3 (scale) & which maps were prepared for the official test set, replacing the \acrshort{ViT}-L maps \\
+    SURGE-D \acrshort{ViT}-g on 600 videos, seed 0 and ensemble & RQ3 (amount of data) & whether these models replace the 540-video models for the official test set (they did not) \\
+    SURGE-D, seeds 1 and 2 of both encoders & seed check & none \\
+    Frozen \acrshort{UMT}-L with the SURGE-D decoder & encoder check & none \\
+    Causal SURGE-D \acrshort{ViT}-g, three seeds and ensemble (every tenth frame) & RQ1 (causal control) & none \\
+    SalFoM, released and best blur, and offline SURGE-D \acrshort{ViT}-g, on the same frames & causal control & none \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Paired bootstrap differences between causal SURGE-D \acrshort{ViT}-g and SalFoM
+  with its best blur ($\sigma=16$) on DHF1K validation, every tenth frame, all six
+  metrics (100 videos, 10,000 resamples)}\label{tab:app-causal}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    \textbf{Metric} & \textbf{Seed 0} & \textbf{Seed 1} & \textbf{Seed 2} & \textbf{Ensemble} \\
+    \midrule
+    \acrshort{CC} & \dci{+0.0249}{+0.0142, +0.0362} & \dci{+0.0184}{+0.0080, +0.0294} & \dci{+0.0196}{+0.0082, +0.0314} & \dci{+0.0292}{+0.0188, +0.0400} \\[5pt]
+    \acrshort{NSS} & \dci{+0.1807}{+0.1101, +0.2540} & \dci{+0.1640}{+0.0966, +0.2352} & \dci{+0.1700}{+0.0984, +0.2462} & \dci{+0.2177}{+0.1506, +0.2894} \\[5pt]
+    \acrshort{SIM} & \dci{+0.0560}{+0.0478, +0.0642} & \dci{+0.0427}{+0.0349, +0.0505} & \dci{+0.0576}{+0.0489, +0.0664} & \dci{+0.0558}{+0.0479, +0.0638} \\[5pt]
+    \acrshort{KLD} & \dci{$-$0.1132}{$-$0.1397, $-$0.0867} & \dci{$-$0.0998}{$-$0.1253, $-$0.0750} & \dci{$-$0.0886}{$-$0.1190, $-$0.0580} & \dci{$-$0.1275}{$-$0.1532, $-$0.1023} \\[5pt]
+    \acrshort{AUC-J} & \dci{+0.0036}{+0.0019, +0.0055} & \dci{+0.0036}{+0.0019, +0.0053} & \dci{+0.0025}{+0.0006, +0.0046} & \dci{+0.0047}{+0.0031, +0.0065} \\[5pt]
+    \acrshort{sAUC} & \dci{+0.0096}{+0.0032, +0.0164} & \dci{+0.0108}{+0.0038, +0.0185} & \dci{+0.0032}{$-$0.0050, +0.0115} & \dci{+0.0116}{+0.0048, +0.0189} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Training on all 600 DHF1K training videos instead of 540 (\acrshort{ViT}-g): paired
+  bootstrap differences on DHF1K validation, all six metrics (100 videos, 10,000
+  resamples)}\label{tab:app-600}
+  \small
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    \textbf{Metric} & \textbf{Seed 0} & \textbf{Three-seed ensemble} \\
+    \midrule
+    \acrshort{CC} & \dci{$-$0.0001}{$-$0.0035, +0.0034} & \dci{+0.0015}{$-$0.0006, +0.0037} \\[5pt]
+    \acrshort{NSS} & \dci{+0.0386}{+0.0131, +0.0656} & \dci{+0.0140}{$-$0.0002, +0.0284} \\[5pt]
+    \acrshort{SIM} & \dci{+0.0063}{+0.0038, +0.0089} & \dci{$-$0.0017}{$-$0.0032, $-$0.0001} \\[5pt]
+    \acrshort{KLD} & \dci{+0.0031}{$-$0.0075, +0.0136} & \dci{$-$0.0039}{$-$0.0101, +0.0026} \\[5pt]
+    \acrshort{AUC-J} & \dci{$-$0.0001}{$-$0.0007, +0.0006} & \dci{+0.0001}{$-$0.0005, +0.0006} \\[5pt]
+    \acrshort{sAUC} & \dci{$-$0.0062}{$-$0.0089, $-$0.0034} & \dci{+0.0017}{$-$0.0000, +0.0033} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Gate G2 with 95\,\% bootstrap intervals over the 60 holdout videos,
+  computed from the stored per-video scores. The lower block gives paired
+  differences}\label{tab:app-g2}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    & \multicolumn{2}{c}{\textbf{\acrshort{NSS}}} & \multicolumn{2}{c}{\textbf{\acrshort{CC}}} \\
+    \cmidrule(lr){2-3}\cmidrule(l){4-5}
+    \textbf{Map} & 4\,fps & 15\,fps & 4\,fps & 15\,fps \\
+    \midrule
+    Raw surprise & \dci{$-$0.190}{$-$0.332, $-$0.045} & \dci{$-$0.502}{$-$0.620, $-$0.385} & \dci{$-$0.043}{$-$0.069, $-$0.015} & \dci{$-$0.099}{$-$0.122, $-$0.077} \\[5pt]
+    Contextual surprise & \dci{+0.116}{$-$0.043, +0.275} & \dci{$-$0.366}{$-$0.505, $-$0.225} & \dci{+0.018}{$-$0.011, +0.047} & \dci{$-$0.072}{$-$0.098, $-$0.046} \\[5pt]
+    Token atypicality & \dci{+0.454}{+0.315, +0.599} & \dci{+0.650}{+0.532, +0.770} & \dci{+0.081}{+0.054, +0.108} & \dci{+0.123}{+0.101, +0.145} \\[5pt]
+    Frame difference & \dci{+0.810}{+0.677, +0.954} & \dci{+0.803}{+0.678, +0.938} & \dci{+0.149}{+0.126, +0.174} & \dci{+0.148}{+0.126, +0.172} \\[5pt]
+    Empirical centre prior & \dci{+1.464}{+1.270, +1.664} & \dci{+1.479}{+1.289, +1.676} & \dci{+0.289}{+0.253, +0.325} & \dci{+0.292}{+0.257, +0.327} \\
+    \midrule
+    Raw surprise $-$ frame difference & \dci{$-$1.000}{$-$1.183, $-$0.817} & \dci{$-$1.305}{$-$1.478, $-$1.137} & \dci{$-$0.192}{$-$0.225, $-$0.158} & \dci{$-$0.248}{$-$0.279, $-$0.217} \\[5pt]
+    Raw surprise $-$ atypicality & \dci{$-$0.644}{$-$0.768, $-$0.523} & \dci{$-$1.152}{$-$1.278, $-$1.028} & \dci{$-$0.124}{$-$0.147, $-$0.100} & \dci{$-$0.222}{$-$0.246, $-$0.200} \\[5pt]
+    Contextual $-$ frame difference & \dci{$-$0.694}{$-$0.908, $-$0.486} & \dci{$-$1.169}{$-$1.382, $-$0.965} & \dci{$-$0.131}{$-$0.170, $-$0.093} & \dci{$-$0.220}{$-$0.259, $-$0.183} \\[5pt]
+    Contextual $-$ atypicality & \dci{$-$0.338}{$-$0.514, $-$0.166} & \dci{$-$1.015}{$-$1.193, $-$0.837} & \dci{$-$0.063}{$-$0.097, $-$0.030} & \dci{$-$0.195}{$-$0.228, $-$0.162} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \section{All Metrics on the Audio-Visual Datasets}
 
 \Cref{tab:app-av} reports all six metrics of the SURGE-D \acrshort{ViT}-g three-seed

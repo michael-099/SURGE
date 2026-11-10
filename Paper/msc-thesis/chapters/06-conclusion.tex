@@ -14,10 +14,10 @@ prediction error indicates where people look. To answer these questions, it
 developed SURGE-D, which combines a frozen \acrshort{V-JEPA}~2 encoder with a light decoder
 that reads four intermediate layers, rebuilds a multi-scale pyramid, decodes it
 with factorised spatio-temporal convolutions and predicts saliency maps for
-sixteen frames per forward pass. Every design decision was tested under a rule
-written before the corresponding experiment, all models were scored once on
-their test sets by a single evaluator validated against reference code, and
-differences were assessed with paired statistics. The answers to the research
+sixteen frames per forward pass. Each component that was tested was evaluated
+under a rule written in a dated log before the corresponding experiment, all
+models were scored once on their test sets by a single evaluator validated
+against reference code, and differences were assessed with paired statistics. The answers to the research
 questions are as follows.
 
 \paragraph{RQ1.} A frozen \acrshort{V-JEPA}~2 encoder with a light decoder predicted
@@ -31,14 +31,17 @@ computation per output frame. It is a validation-set result; the official
 test-set evaluation was pending when the thesis was written, and SURGE-D, unlike
 SalFoM, uses frames on both sides of the predicted frame.
 
-\paragraph{RQ2.} The prediction error of the pretrained \acrshort{V-JEPA}~2 predictor did
-not carry useful information about where people look. It was outperformed by
-frame difference and token atypicality and was anti-correlated with fixations at
-15 frames per second. The error map mainly reflects how atypical each region is
-and changes little when the true past is replaced by another video's, which is
-consistent with a predictor trained to fill in masked content rather than to
-forecast. This finding concerns one released predictor and one way of reading
-it; it does not refute surprise-based accounts of attention.
+\paragraph{RQ2.} Used on its own, the prediction error of the released \acrshort{V-JEPA}~2
+predictor was a weaker fixation cue than frame difference and token atypicality
+at both frame rates tested, and its raw form was anti-correlated with fixations;
+bootstrap intervals over the 60 holdout videos exclude zero for these
+comparisons. On a small set of clips without gaze data, the error map appeared to
+reflect mainly how atypical each region is and changed little when the true past
+was replaced by another video's, which is consistent with a predictor trained to
+fill in masked content rather than to forecast. Whether the error adds
+information when it is combined with the simple cues was not tested. The finding
+concerns one released predictor and one way of reading it; it does not refute
+surprise-based accounts of attention.
 
 \paragraph{RQ3.} With a frozen encoder, the encoder itself dominated. Its
 pre-training (\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L) and its scale (\acrshort{ViT}-g over \acrshort{ViT}-L)
@@ -49,11 +52,14 @@ difference that could be measured. The early overfitting of even a small decoder
 suggests that, with a strong encoder, the size of the saliency datasets rather
 than the capacity of the decoder limits further progress.
 
-\paragraph{RQ4.} The approach transferred well. After brief fine-tuning, it was
-competitive with the best published results on UCF Sports and reached a higher
-correlation than the best peer-reviewed results that could be verified on five
-of the six audio-visual datasets; these comparisons cross evaluation code and do
-not establish a state of the art. Its clear failure was on recordings of
+\paragraph{RQ4.} The approach transferred well after brief fine-tuning, within
+the limits of comparisons across evaluation code. It was competitive with the
+best published results on UCF Sports. On the audio-visual datasets, its ensemble
+reached a higher correlation than the best peer-reviewed results that could be
+verified on four of the six datasets, tied on a fifth and was lower on the
+sixth. These margins are of the same order as the disagreements between
+published evaluations of the same models, and the comparison is limited to
+peer-reviewed results, so it does not establish a state of the art. Its clear failure was on recordings of
 conversations, where gaze follows the speaker, which an image-only model cannot
 identify. Adding the soundtrack through a simple fusion module did not improve
 any dataset, in line with earlier findings that audio-visual saliency models
@@ -64,11 +70,13 @@ tend not to exploit the audio.
 
 The thesis makes four contributions. First, it presents SURGE-D, a video
 saliency model with a frozen self-supervised encoder and a 7-million-parameter
-multi-frame decoder, which outperformed a fine-tuned foundation-model approach
-on DHF1K under an identical protocol at a fraction of its computational cost.
-Second, it reports a pre-registered negative result: the predictor error of a
-self-supervised video model is not a fixation cue, together with an explanation
-of why. Third, it provides controlled evidence about which design choices matter
+multi-frame decoder, which was more accurate than a fine-tuned foundation-model
+approach on the DHF1K validation set, both offline, at a fraction of its encoder
+computation, and as a causal model under an identical evaluation protocol.
+Second, it reports a negative result, tested under a rule written in advance:
+used on its own, the error of the released \acrshort{V-JEPA}~2 predictor is a weaker
+fixation cue than simple motion and appearance cues, and the thesis offers a
+plausible explanation of why. Third, it provides controlled evidence about which design choices matter
 once the encoder is frozen, showing that several components commonly included
 in saliency models add nothing measurable on top of a strong encoder. Fourth, it
 contributes an evaluation methodology, with a validated evaluator, decision
@@ -107,15 +115,21 @@ calls for models that determine who is speaking, for example by explicit
 localisation of the active speaker, rather than modulating visual features with
 a global audio embedding.
 
-\paragraph{Causal prediction.} SURGE-D uses frames on both sides of the predicted
-frame. A causal variant that uses only past frames would be needed for
-streaming applications and would allow a stricter comparison with causal models.
+\paragraph{Efficient causal prediction.} A causal model needs one forward pass
+per output frame, so the saving that SURGE-D gains from predicting sixteen
+frames per pass does not carry over to streaming use: the causal \acrshort{ViT}-g model
+needs about three times SalFoM's encoder computation per output frame. Cheaper
+causal designs, for instance with a smaller encoder, shorter windows or windows
+that forecast several frames ahead, remain to be tested, as does causal
+prediction on datasets other than DHF1K.
 
 \paragraph{Revisiting surprise.} The negative result concerns a predictor trained
-to fill in masked content. Predictors trained explicitly to extrapolate into
-the future, or surprise measured relative to the scene's own history, may
-behave differently, and the evaluation protocol of this thesis could test them
-directly.
+to fill in masked content and used on its own. Two tests follow directly: whether
+its error adds information when it is combined with the simple cues, and whether
+it behaves differently when it is read out with masks like those of its
+pre-training. Predictors trained explicitly to extrapolate into the future, or
+surprise measured relative to the scene's own history, may behave differently
+again, and the evaluation protocol of this thesis could test them directly.
 
 \paragraph{Evaluation practice.} Scoring each metric with the map that is optimal
 for it under the model's prediction~\cite{kummerer2018saliency}, and reporting

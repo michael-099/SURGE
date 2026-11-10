@@ -96,8 +96,9 @@ information about where people look. Finally, because comparisons in the field
 are rarely made under a common evaluation protocol with uncertainty estimates,
 it is unclear which design choices, beyond the encoder, still matter once a
 strong encoder is used. This thesis addresses these questions with a frozen
-\acrshort{V-JEPA}~2 encoder~\cite{murlabadia2026vjepa21}, a purpose-built decoder, and a
-pre-registered evaluation on nine eye-tracking test sets.
+\acrshort{V-JEPA}~2 encoder~\cite{murlabadia2026vjepa21}, a purpose-built decoder, and an
+evaluation on nine eye-tracking test sets whose decision rules were fixed in
+advance in a dated log.
 
 %----------------------------------------------------------------------------
 \section{Research Questions}\label{sec:questions}
@@ -187,9 +188,9 @@ workstation with one NVIDIA RTX A5000 graphics card (\cref{sec:setup}).
 \subsection{Evaluation}
 Models were evaluated with six standard saliency metrics~\cite{bylinskii2019metrics},
 computed by an evaluator validated against reference code. Differences between
-models were tested with a paired bootstrap over videos, and every design
-decision was governed by a rule written before the corresponding experiment
-(\cref{sec:design}).
+models were tested with a paired bootstrap over videos, and every component
+that was tested was governed by a rule written before the corresponding
+experiment, with one stated exception (\cref{sec:design}).
 
 %----------------------------------------------------------------------------
 \section{Scope and Limitations}\label{sec:scope}
@@ -197,7 +198,8 @@ decision was governed by a rule written before the corresponding experiment
 \guide{State what the study covers, and what it does not cover and why.}
 
 \paragraph{Scope.} The study covers offline (non-causal) saliency prediction for
-video, in which the map of a frame may depend on the frames around it. The main
+video, in which the map of a frame may depend on the frames around it; a causal
+variant, which sees only past frames, is evaluated on DHF1K as a control. The main
 model is visual; the soundtrack is examined in one separate experiment. The
 encoders are frozen \acrshort{V-JEPA}~2 models in two sizes; \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L are
 included in the encoder comparison. Evaluation covers nine test sets: DHF1K,
@@ -209,7 +211,8 @@ were not available when the thesis was written, so DHF1K results are reported on
 the official validation set. The standard Hollywood-2 ground truth could not be
 obtained, so the Hollywood-2 results use other gaze data and are not comparable
 with published numbers. Full fine-tuning of the encoder, other foundation
-encoders and causal (streaming) prediction were outside the scope of the study,
+encoders and efficient causal (streaming) prediction were outside the scope of
+the study; the causal variant was evaluated only on DHF1K, on every tenth frame,
 and the component ablations used a single training seed because of the
 available computing resources.
 
@@ -227,21 +230,24 @@ The main contributions of this thesis are:
     7.4 million trained parameters, its three-seed \acrshort{ViT}-g ensemble reaches a
     correlation coefficient of 0.603 on the DHF1K validation set, against 0.564
     for SalFoM scored by the same evaluator, and is better on all six metrics
-    with paired bootstrap intervals that exclude zero. Counting the encoder
-    alone, SalFoM's per-frame design requires about six times more computation
-    per output frame.
-  \item \textbf{A negative result on predictive surprise}: the error of the
-    pretrained \acrshort{V-JEPA}~2 predictor does not indicate where people look; it is
-    beaten by frame difference and is even anti-correlated with fixations,
-    because it mainly reflects the atypicality of regions rather than violated
-    expectations.
+    with paired bootstrap intervals that exclude zero. It remains better when
+    SalFoM's maps receive the blur that suits them best and when SURGE-D is
+    restricted, like SalFoM, to past frames. In offline prediction, SalFoM's
+    per-frame design requires about six times more encoder computation per
+    output frame.
+  \item \textbf{A negative result on predictive surprise}: used on its own, the
+    error of the pretrained \acrshort{V-JEPA}~2 predictor is a weaker fixation cue than frame
+    difference and token atypicality, and its raw form is anti-correlated with
+    fixations; diagnostics suggest that it mainly reflects how atypical a region
+    is rather than violated expectations.
   \item \textbf{Controlled evidence on what matters} once the encoder is frozen:
     the encoder's pre-training and scale produce the only large gains, seed
     ensembles a small one, while low-rank adaptation, the learned centre prior,
     deep supervision, static-image co-training, longer clips, more training
     videos and a simple audio fusion produce none that could be measured.
   \item \textbf{A transparent evaluation} across nine test sets with a validated
-    evaluator, pre-registered decision rules, paired statistics and a new,
+    evaluator, decision rules written in advance in a dated log, paired
+    statistics and a new,
     openly reproducible Hollywood-2 ground truth from the gaze recordings of Vig
     et al., with the code, splits and decision log provided with the thesis.
 \end{itemize}

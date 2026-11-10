@@ -749,3 +749,22 @@ SURGE-D − SalFoM(σ 16), ΔCC:
 - Reading (rule above): the claim stands for every ViT-g model and for the ViT-L ensemble; it does **not** stand for
   ViT-L single models (two of three seeds, including the reported seed 0, include 0). ViT-g s0 and the ViT-g
   ensemble are better on all six metrics; ViT-g s2 and the ViT-L ensemble are not significant on sAUC.
+
+### 12D results, ViT-g (2026-11-11, queue B; `runs/causal_g_s{0,1,2}`, `runs/review/`)
+
+- Training: seeds 0, 1, 2 trained 21:13–00:07; holdout CC (causal, every 10th frame) by epoch: s0 0.5664 / **0.5797** /
+  0.5731, s1 0.5703 / **0.5856** / 0.5764, s2 0.5733 / **0.5820** / 0.5740; best epoch is the second for all three.
+  σ from the holdout: 8 for seed 0 and 8 for the ensemble.
+- Val, causal, every 10th frame (100 videos, 6,076 frames), six metrics CC / NSS / SIM / KLD / AUC-J / sAUC:
+  - causal s0 0.5978 / 3.425 / 0.4569 / 1.170 / 0.9303 / 0.7636; s1 0.5913; s2 0.5925 (single-seed mean 0.5939,
+    SD 0.0035); ensemble 0.6021 / 3.462 / 0.4567 / 1.156 / 0.9314 / 0.7657.
+  - SalFoM on the same frames: released 0.5622 / 3.302 / 0.4127 / 1.302 / 0.9230 / 0.7387; σ 16 (12C) 0.5729 / 3.244 /
+    0.4009 / 1.283 / 0.9267 / 0.7540.
+- **Primary test:** causal ViT-g ensemble − SalFoM(σ 16), ΔCC **+0.0292 [+0.0188, +0.0400]**, above 0. Reading (rule
+  above): RQ1 is answered "better under an identical protocol" (same videos, same frames, same evaluator, no frame
+  after the predicted one for either model, SalFoM's blur at its best value on val).
+- Secondary: every causal single seed is above SalFoM(σ 16) on CC (s0 +0.0249 [+0.0142, +0.0362], s1 +0.0184
+  [+0.0080, +0.0294], s2 +0.0196 [+0.0082, +0.0314]). The ensemble is better on all six metrics (sAUC +0.0116
+  [+0.0048, +0.0189]); s0 and s1 also on all six; s2 not significant on sAUC (+0.0032 [−0.0050, +0.0115]).
+  Against SalFoM as released: ensemble +0.0399 [+0.0291, +0.0511].
+- Causal against offline on the same frames: see below (offline rescoring ran after this entry was written).
