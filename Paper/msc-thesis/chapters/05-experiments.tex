@@ -404,12 +404,14 @@ datasets, while SIM is lower than DiffSal's on Coutrot1 and AVAD.
 These comparisons have three limits. They cross evaluation code. They are
 restricted to peer-reviewed results, so results that had not appeared in
 peer-reviewed venues when this thesis was written are not included. And they
-are restricted to results whose published tables could be accessed: further
-recent audio-visual models, among them TM2SP~\cite{li2025tm2sp},
+are restricted to results whose tables could be accessed: further recent
+audio-visual models, among them TM2SP~\cite{li2025tm2sp},
 FOSal~\cite{yu2026fosal} and the model of Mao et al.~\cite{mao2026audio}, could
-not be checked and are therefore not represented. The table should consequently
-not be read as establishing a state of the art on these datasets. Coutrot2 is
-discussed in \cref{sec:discussion}.
+not be checked and are therefore not represented. For AVRSP, as for SalFoM in
+\cref{tab:ucf}, the publisher's version could not be accessed, and the numbers
+were taken from the authors' openly available version of the cited paper. The
+table should consequently not be read as establishing a state of the art on
+these datasets. Coutrot2 is discussed in \cref{sec:discussion}.
 
 \paragraph{Hollywood-2 with the Vig gaze data.} \Cref{tab:hollywood} reports the
 884 test clips of Hollywood-2 with the gaze of Vig et al.~\cite{vig2012space}
@@ -711,13 +713,16 @@ larger training sets, was not.
 \section{Threats to Validity}\label{sec:threats}
 
 \paragraph{Internal validity.} All selection used holdout data, every test set
-was scored once, and every rule was written in advance, which protects against
-selection bias. Two residual weaknesses remain. The component ablations used
-one seed, and they were judged against a fixed threshold rather than a
-statistical test, so effects of a few thousandths of CC cannot be excluded.
-In addition, several thresholds (for example the margin of 0.005 in the gates)
-were chosen by judgement from the observed seed spread rather than derived
-formally.
+was scored once, and the decision rules were written in advance, with the one
+exception of the tie margin for published results (\cref{sec:design}); this
+protects against selection bias. Three residual weaknesses remain. The component
+ablations used one seed, and they were judged against a fixed threshold rather
+than a statistical test, so effects of a few thousandths of CC cannot be
+excluded. The thresholds themselves (for example the margin of 0.005 in the
+gates) were chosen by judgement, partly before any seed variation had been
+measured, rather than derived formally. And the tie margin of 0.01 for
+published results was fixed only after the first such comparison had been
+seen.
 
 \paragraph{Construct validity.} The six metrics capture different aspects of a
 saliency map~\cite{bylinskii2019metrics} and did not always agree; ensembles,

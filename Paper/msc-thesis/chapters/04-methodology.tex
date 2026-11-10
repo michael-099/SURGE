@@ -53,8 +53,8 @@ test set and was never used for selection.
 \begin{table}[htbp]
   \centering
   \caption{Decision rules, each written before the experiment that it
-  governs. Holdout CC is measured on the internal 60-video DHF1K holdout
-  unless stated otherwise; outcomes are reported in
+  governs, except the last (see text). Holdout CC is measured on the internal
+  60-video DHF1K holdout unless stated otherwise; outcomes are reported in
   \cref{ch:experiments}}\label{tab:rules}
   \small
   \begin{tabularx}{\textwidth}{@{}>{\raggedright}p{3.3cm}>{\raggedright\arraybackslash}X@{}}
@@ -84,18 +84,26 @@ test set and was never used for selection.
     Audio fusion & \enquote{Helps} on a dataset only if the fold-mean
       $\Delta$CC is at least $+0.010$ and matched audio beats rotated audio by
       at least $0.005$ \\
-    Published results & Comparisons with numbers from other evaluation code
+    Published results$^{\ast}$ & Comparisons with numbers from other evaluation code
       treat margins below $0.01$ CC as ties \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
+The rule for published results (marked $^{\ast}$) differs from the others in one
+respect. The rule written before the first audio-visual experiment required only
+a higher fold-mean CC than the published value, and noted that cross-paper
+numbers disagree by a few hundredths. The tie margin of $0.01$ was introduced
+when the first audio-visual results were interpreted and was then applied
+unchanged to every later comparison with published numbers.
+
 \paragraph{Unit of analysis.} Saliency metrics are computed per frame and
 averaged within each video; the video is the unit of analysis, and
 uncertainty is estimated by resampling videos (\cref{sec:statistics}).
-Ablations and gates with a single training seed are interpreted against
-the seed-to-seed spread observed for the main model, which motivates the
-$0.003$ and $0.005$ margins in \cref{tab:rules}.
+The margins of the early rules ($0.003$ for single-seed ablations and $0.005$
+for gate G1) were set by judgement before any seed variation had been measured.
+The seed-to-seed spread later observed for the main model, about $0.003$ CC,
+informed the margins of the later gates for ViT-g and for 32-frame clips.
 
 %----------------------------------------------------------------------------
 \section{Problem Formulation}\label{sec:formulation}
