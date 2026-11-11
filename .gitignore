@@ -21,3 +21,4 @@ Paper/**/*.out
 Paper/**/*.run.xml
 Paper/**/*.synctex.gz
 Paper/**/*.toc
+runs/g2/maps/

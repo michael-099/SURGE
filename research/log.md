@@ -965,3 +965,57 @@ running). One GPU job at a time under the safety monitor. Nothing here touches D
 - Reading (the review's criterion, written in the review before this run): the offline efficiency statement is
   refuted if SalFoM's measured time per output frame is within a factor of 2 of SURGE-D ViT-g offline. The thesis's
   cost statement then uses the measured ratios, whatever they are.
+
+### 13B/13C addendum: the predictor's mask token (written 2026-11-11 22:10, before any GPU run of `g2_maps.py` and before any gaze-based score of the new maps)
+
+**What was found.** A CPU smoke test of `scripts/g2_maps.py` (one holdout video, two windows; it computes prediction
+errors only and reads no gaze data) included a diagnostic over the predictor's mask tokens. The facts below were
+checked in the weights and in the code, not inferred:
+- The released predictor has 10 mask tokens (`predictor.embeddings.mask_tokens`, shape (10, 1, 1, 384)). In both
+  checkpoints used here (`facebook/vjepa2-vitl-fpc64-256`, `facebook/vjepa2-vitg-fpc64-256`) only token 0 is non-zero
+  (L2 norm 0.769 and 0.710); tokens 1–9 are exactly zero, i.e. still at their zero initialisation.
+- The Hugging Face port (transformers 5.22.1, `models/vjepa2/modeling_vjepa2.py`) reads `mask_index = 1` in
+  `VJEPA2PredictorEmbeddings.forward`, and `VJEPA2Predictor.forward` never passes another value. Every predictor call
+  through the port therefore uses a zero vector as the mask token.
+- Meta's training code (facebookresearch/vjepa2, commit 204698b) calls the predictor with `mask_index=i`
+  (`src/utils/wrappers.py`, `PredictorMultiSeqWrapper`), where i enumerates the groups of clips that have the same
+  number of frames. The collator keys these groups by frame count (`src/masks/multiseq_multiblock3d.py`), and the
+  released configurations give every dataset the same frame count (`dataset_fpcs: [16, 16, 16]`; cooldown
+  `[64, 64, 64]`), so i = 0 throughout pre-training. This agrees with the weights: only token 0 was ever trained.
+- Smoke test (video 0028, two windows): mean masked-tube error 0.565 with token 0 and 0.595 with each of tokens 1–9
+  (identical to each other, as they must be).
+
+**Consequence for what is already reported.** Gate G2 (section 3; result of 2026-11-05) and its intervals (12F) used
+the port's default, i.e. an untrained mask token. The numbers stand as a record of that readout. They are not a test
+of the predictor as it was trained, and the NO-GO decision was taken on that readout. SURGE-D itself is not
+affected: it uses the encoder only (`skip_predictor=True`); no trained model, score or comparison changes.
+
+**Decisions (fixed now; no gaze score with token 0 exists yet).**
+1. `g2_maps.py` stores every prediction-error map with both tokens: `surprise_raw`, `surprise_ctx`, `masked_tube`
+   with token 1 (the readout of G2) and `surprise_raw_t0`, `surprise_ctx_t0`, `masked_tube_t0` with token 0 (the
+   trained token). Encodings, targets, windows and the wrong-context rule are shared; only the predictor call
+   differs. The 5 % rule of the smoke-test diagnostic is dropped; the diagnostic only records the mean masked-tube
+   error of all 10 tokens on the first stride-8 window of every 6th video.
+2. The reproduction check of 13B stays on the token-1 maps: they must reproduce G2 within 0.01 NSS.
+3. **Token 0 is the primary readout of 13B and 13C**, because RQ2 asks about the predictor's error and the predictor
+   as trained uses token 0. Primary comparisons: U of `surprise_raw_t0` at stride 8 (13B) and U of `masked_tube_t0`
+   at stride 8 (13C), with the readings of 13B. Token 1 is reported beside each, descriptive.
+4. **Gate G2 is re-scored with token 0 by its own rule** (section 3, as coded in `g2_surprise.py`): a variant passes
+   if its mean NSS is above that of both token atypicality and frame difference and its information gain (the 50/50
+   mixture with the centre prior, over the prior) is positive; GO if any of the four variants (raw, contextual; both
+   rates) passes. 12F's intervals and readings are repeated for the token-0 maps. The masked-tube error is not part
+   of the gate (it did not exist when the gate was defined); it is reported under 13C.
+   - NO-GO again: the thesis reports the token-0 readout as the result of the gate, keeps the token-1 numbers as the
+     original run, and says that the decision does not depend on the mask token.
+   - GO: the thesis says that the NO-GO decision was taken on a faulty readout and that the surprise branch was
+     therefore never tested; RQ2's answer is rewritten to what the token-0 data show. No surprise branch is built in
+     this round (a new model with new comparisons on val); it is listed as future work.
+5. Descriptive only, no reading attached: the gain of each single cue over the fitted prior, IG(P + cue) − IG(P); the
+   mean value of each stored error map; the mean per-frame correlation between the token-0 and token-1 map of each
+   readout.
+6. Whatever the outcome, the thesis states in its method and results that the original gate used the port's default
+   token, and Appendix B lists the finding as a deviation.
+
+**13D addendum (same time, before the run).** The criterion is applied at each batch size (1 and 8): the offline
+efficiency statement counts as refuted if the ratio SalFoM time per output frame / SURGE-D ViT-g offline time per
+output frame is below 2 at either batch size.
