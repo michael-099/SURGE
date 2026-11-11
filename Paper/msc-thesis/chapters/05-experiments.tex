@@ -877,21 +877,23 @@ attention~\cite{itti2009bayesian}; a predictor trained to extrapolate in time
 could behave differently.
 
 \paragraph{RQ3: Which design factors matter when the encoder is frozen?} The
-results separate the factors cleanly. The encoder dominates: its pre-training
-(\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L) and its scale (\acrshort{ViT}-g over \acrshort{ViT}-L) produced
-the only gains that were large relative to seed noise on DHF1K. Seed ensembles
-added a smaller but reliable gain. With three seeds, removing the learned
+encoder dominates: its pre-training (\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L) and its
+scale (\acrshort{ViT}-g over \acrshort{ViT}-L) produced the only gains that were large relative to
+seed noise on DHF1K, although the comparison of pre-training rests on one seed
+per encoder, and the narrow lead over \acrshort{V-JEPA}~2.1 on an input below its training
+resolution. Seed ensembles added a smaller but reliable gain. With three seeds, removing the learned
 centre prior or deep supervision was equivalent to keeping them, within
 $\pm0.003$ \acrshort{CC}, and \acrshort{LoRA} lost to the frozen encoder in every seed. Static-image
 co-training, 32-frame clips and 11\,\% more training videos produced no gain
 that could be established; for static images and longer clips, the evidence is
 inconclusive rather than negative. A sparser temporal stride, at half the cost
 per output frame, improved holdout \acrshort{CC} with all three seeds without reaching
-the margin. A consistent
-explanation is that, with a strong frozen encoder, the limiting factor is the
-small number of training videos: the decoder overfits within three epochs
-(\cref{fig:g1}), and the additions that would increase its effective capacity
-do not help, whereas better features do.
+the margin. One explanation, which these experiments did not test, is that,
+with a strong frozen encoder, the small number of training videos limits
+further progress: the decoder overfits within three epochs (\cref{fig:g1}), and
+the additions that would increase its effective capacity do not help, whereas
+better features do. A learning curve over the number of training videos would
+test it; the increase of 11\,\% that was tried is too small to do so.
 
 \paragraph{RQ4: How well does the approach transfer, and does audio help?} The
 model transferred well after brief fine-tuning, within the limits of comparisons

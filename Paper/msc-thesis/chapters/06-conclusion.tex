@@ -58,8 +58,9 @@ in every seed. Static-image co-training, 32-frame clips and 11\,\% more training
 videos produced no gain that could be established, and a sparser temporal
 stride, which halves the cost per output frame, improved with every seed
 without reaching the margin. The early overfitting of even a small decoder
-suggests that, with a strong encoder, the size of the saliency datasets rather
-than the capacity of the decoder limits further progress.
+suggests, as a hypothesis that was not tested, that with a strong encoder the
+size of the saliency datasets rather than the capacity of the decoder limits
+further progress.
 
 \paragraph{RQ4.} The approach transferred well after brief fine-tuning, within
 the limits of comparisons across evaluation code. It was competitive with the
@@ -115,7 +116,8 @@ reaching the margin, and is the most useful one to settle, with more seeds or on
 a larger evaluation set; static-image co-training is the other. The encoder
 comparison and the clip-length test used one seed each, and the 32-frame model
 was still improving at the end of its schedule, so it merits a longer training
-run under a new rule written in advance.
+run under a new rule written in advance. A learning curve over the number of
+training videos would test whether the amount of data limits progress.
 
 \paragraph{Adapting the stronger encoder.} Low-rank adaptation was tested only
 with \acrshort{ViT}-L, and full fine-tuning not at all. Whether adaptation helps the larger
