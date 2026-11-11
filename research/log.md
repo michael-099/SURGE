@@ -868,3 +868,100 @@ with `scripts/compare.py` on the stored per-video val scores (no new scoring, no
   - ViT-L blocks in `tab:causal`; a ViT-L block in `tab:app-causal`; ViT-L columns in `tab:app-causal-offline`;
   - a ViT-L paragraph in §5.5.2; RQ1 in §5.7 and §6.1;
   - contribution 1 in §1.8; the abstract; future work ("Efficient causal prediction"); the val ledger; Appendix B.
+
+## 13. Paper update: learning curve, incremental information of the prediction error, a masked readout, measured timing (rules written 2026-11-11 20:58, before any run)
+
+The user asked to "update the paper and improve it". Besides the text revision, four items that the review left open
+(its Section 11.2: F8, F1b, F9, F6) are run, because each one decides a sentence that the thesis currently hedges.
+Order: 13A (GPU, new models), then 13B and 13C (one zero-shot GPU job, then CPU), then 13D (GPU, nothing else
+running). One GPU job at a time under the safety monitor. Nothing here touches DHF1K val or any test set.
+
+**13A. Learning curve over the number of training videos (review F8; tests the data-limitation hypothesis).**
+- Hypothesis H (thesis §5.7, §6.1): with the frozen encoder, accuracy at 540 training videos is limited by the amount
+  of training data; this was offered as the reason why no decoder component matters.
+- Arms: 135, 270 and 540 training videos, V-JEPA 2 ViT-L (the encoder of the component ablations), seeds 0, 1, 2.
+  The 540-video arm is the existing `runs/main_b1_s{0,1,2}`.
+- Subsets: for seed s the 540 training ids are shuffled with `random.Random(13000 + s)`; the first 270 are
+  `configs/splits/dhf1k_train270_s{s}.txt` and the first 135 are `dhf1k_train135_s{s}.txt` (nested within a seed, a
+  new draw per seed, so that the seed-level variation includes the choice of videos). Script
+  `scripts/make_lc_splits.py`.
+- Recipe: B1 unchanged (256², 3 epochs, warm-up 0.25 epoch, batch 8, lr 3e-4, prior lr 1e-3, decoder from scratch,
+  `train.seed=s`), except `data.train_split` and the number of clips per video: 16 for 270 videos and 32 for 135, so
+  that every arm draws 4,320 clips per epoch and takes the same 1,620 optimiser steps. Only the number of distinct
+  videos changes. Runs `runs/lc{270,135}_s{0,1,2}`.
+- Scoring: best epoch by holdout CC, as in B1. The holdout per-video scores are recomputed with
+  `scripts/evaluate.py` (60 videos, every 5th frame, σ 0) into `runs/review/holdout/lc*.json`, as in 12E.
+- Analysis (`scripts/learning_curve.py`): holdout CC per arm (mean and SD over seeds); the paired differences
+  Δ(270 − 540), Δ(135 − 270) and Δ(135 − 540) per video and seed, with the two-level bootstrap of 12E (seeds, then
+  videos; 10,000 resamples) and the same margin δ = 0.003. Outcomes as in 12E: **effect** if the 95 % interval
+  excludes 0 and |Δ| ≥ δ; **equivalent** if the 90 % interval lies within ±δ; otherwise **inconclusive**.
+- Reading, on the primary comparison Δ(270 − 540):
+  - *H refuted in this range* if it is **equivalent**: halving the training set changes holdout CC by less than
+    0.003, so the amount of data is not what limits the model. The thesis then drops the explanation.
+  - *H supported in this range* if it is an **effect** with a negative sign: the curve is still rising at 540 videos.
+    The thesis then states it as supported for ViT-L between 135 and 540 videos, not as proven beyond 540.
+  - Otherwise *inconclusive*; the thesis keeps H as a hypothesis and reports the interval.
+  - Δ(135 − 270) and the gain per doubling of the data are reported for the shape of the curve only.
+- Caveats, written now: three seeds; one encoder; equal steps, so each video of a smaller arm is sampled more often;
+  the holdout is also the set on which each run's epoch is chosen (the same for every arm).
+
+**13B. Incremental information of the prediction error (review F1b; RQ2's "beyond simple cues").**
+- Maps: `scripts/g2_maps.py` recomputes the maps of gate G2 (section 3: V-JEPA 2 ViT-L and its predictor, 8 context
+  + 8 target frames, strides 8 and 2, first frame of each target tubelet, the 60 holdout videos) and stores, per
+  scored frame, the 16×16 token maps of raw surprise, contextual surprise, token atypicality and frame difference.
+  Check: the NSS of the stored maps (σ 16) must reproduce the means of `runs/g2/g2_results.json` to within 0.01 for
+  raw surprise, atypicality and frame difference.
+- Model family: on a grid of 45×80 cells (8×8 px), p(cell) = softmax(w_c · log prior + Σ_k w_k · z_k), where prior is
+  the empirical centre prior of the 540 training videos (`runs/g2/center_prior.npy`), summed per cell, and z_k is cue
+  k upsampled and blurred as in G2 (σ 16 px), averaged per cell and standardised over the cells of the frame.
+- Score: information gain over the centre prior in bits per fixation, i.e. the mean over a frame's fixations of
+  log2 p(cell) − log2 prior(cell); per video the mean over its scored frames; overall the mean over videos.
+- Fit: the weights maximise the mean per-video information gain of the fitting half (concave; L-BFGS from w_c = 1 and
+  all other weights 0). Cross-fitting: holdout videos sorted by id and assigned alternately to halves A and B; the
+  weights fitted on one half are scored on the other, so every video has an out-of-fold score for every model.
+- Quantities: baseline B = {centre prior, frame difference, atypicality}; full F = B + surprise; incremental gain
+  U = IG(F) − IG(B) per video, mean over the 60 videos with a 95 % and a 90 % video-bootstrap interval (10,000
+  resamples, fitted weights held fixed). For scale, the same leave-one-out gain is reported for frame difference
+  (F minus the model without it) and for atypicality, and IG(B) itself.
+- Primary comparison: raw surprise at stride 8 (about 4 fps, the rate closest to the predictor's pre-training).
+  Secondary, descriptive: raw surprise at stride 2 and contextual surprise at both rates (no multiplicity
+  correction; the RQ2 answer uses the primary only).
+- Reading:
+  - **incremental information** if the 95 % interval of U lies above 0. The sign of the fitted surprise weight is
+    reported with it: a negative weight means that fixations avoid high-error regions, which is information but not
+    the "surprise attracts gaze" hypothesis.
+  - **negligible** if the 90 % interval lies within ±0.01 bits per fixation. The margin is fixed now; a cue z adds
+    about NSS²/(2 ln 2) bits at its best weight, so 0.01 bits corresponds to a conditional NSS of about 0.12.
+  - otherwise **inconclusive**, reported with the interval.
+
+**13C. A readout closer to the predictor's pre-training (review F9; same GPU job as 13B).**
+- Why: the predictor was trained to fill in masked spatial blocks that extend over the whole clip in time, from the
+  visible remainder. G2 asked it to predict the second half of a clip from the first half, which is outside that
+  training task (thesis §5.4 gives this as a possible reason for the negative result).
+- Readout "masked-tube error": the 16×16 token grid is cut into sixteen 4×4 blocks. In each of four passes, the four
+  blocks with the same (row parity, column parity) are masked in all 8 tubelets (25 % of the tokens; every masked
+  block has visible neighbours). The encoder is run on the visible tokens only (its layers with the position ids of
+  the visible tokens), the predictor predicts the masked tokens, and the error is the mean absolute difference to the
+  layer-normalised features of the full clip, as in G2. Four passes give one error per token; the map of a frame is
+  the error at its tubelet.
+- Checks before use, in float32 on one clip: (i) with all tokens visible the masked encoder reproduces the model's
+  own encoder output; (ii) with the first 1,024 tokens visible it reproduces the encoding of the first 8 frames
+  alone. Tolerance 1e-3 (maximum absolute difference). If a check fails, 13C is not run and that is reported.
+- Windows and scored frames: exactly those of G2 (so the other maps and the fixations are shared).
+- Scores and readings: standalone NSS and CC with video-bootstrap intervals and the paired differences to frame
+  difference and atypicality (as 12F), and the incremental gain U of 13B with this error in place of the surprise,
+  primary at stride 8. Same readings as 12F and 13B, stated per readout.
+- Caveat, written now: 25 % masking leaves more context than pre-training did (where most tokens were masked), so
+  this readout is closer to pre-training in the geometry of the mask, not identical to it.
+
+**13D. Measured inference time (review F6; GPU, last, with no other job running).**
+- `scripts/time_inference.py`: SalFoM (the released `Model.py` and DHF1K weights; 16 frames at 224², one map per
+  pass) and SURGE-D ViT-L and ViT-g (trained seed-0 models; 16 frames at 256²; one pass gives 16 maps offline and one
+  map causally). Batch 1 and batch 8, bfloat16 autocast (as in the evaluation of all three), random input already on
+  the GPU, so frame decoding, resizing and the final blur are excluded for every model. 10 warm-up passes, then 50
+  timed passes with `torch.cuda.synchronize()`; median and inter-quartile range; peak GPU memory.
+- Reported: milliseconds per pass and per output frame (SalFoM: per pass; SURGE-D offline: per pass / 16; SURGE-D
+  causal: per pass), next to the FLOP estimates.
+- Reading (the review's criterion, written in the review before this run): the offline efficiency statement is
+  refuted if SalFoM's measured time per output frame is within a factor of 2 of SURGE-D ViT-g offline. The thesis's
+  cost statement then uses the measured ratios, whatever they are.
