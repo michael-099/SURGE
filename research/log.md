@@ -800,3 +800,11 @@ SURGE-D − SalFoM(σ 16), ΔCC:
 - Thesis updated: `tab:ablation` (components block, three seeds), §5.6 Components, RQ3 discussion, Ch6 RQ3,
   contribution 3 and future work, Ch1 limitations and contribution bullet 3, abstract; §4 statistics describes the
   two-level bootstrap.
+
+### 12D addendum, ViT-L (written 2026-11-11 08:33, before any causal ViT-L result was seen)
+
+As for ViT-g, the offline ViT-L models are rescored on the same every-10th validation frames once queue B has
+finished (one GPU job at a time): `runs/main_b1_s0` with σ 12 and the three-seed ensemble `runs/main_b1_s{0,1,2}`
+with σ 8 (the σ of section 5, no new tuning), six metrics. Paired bootstraps: causal − offline (s0 and ensemble) and
+offline − SalFoM (released and σ 16) on these frames. Secondary and descriptive, no threshold, as for ViT-g. The
+primary reading of causal ViT-L is the one of 12D (ensemble − SalFoM σ 16, ΔCC interval above 0).
