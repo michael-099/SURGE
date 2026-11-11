@@ -767,4 +767,14 @@ SURGE-D − SalFoM(σ 16), ΔCC:
   [+0.0080, +0.0294], s2 +0.0196 [+0.0082, +0.0314]). The ensemble is better on all six metrics (sAUC +0.0116
   [+0.0048, +0.0189]); s0 and s1 also on all six; s2 not significant on sAUC (+0.0032 [−0.0050, +0.0115]).
   Against SalFoM as released: ensemble +0.0399 [+0.0291, +0.0511].
-- Causal against offline on the same frames: see below (offline rescoring ran after this entry was written).
+- Causal against offline on the same frames (offline ViT-g `runs/vitg_s{0,1,2}`, σ 8, rescored on the same 6,076
+  frames, finished 03:15): offline s0 CC 0.5976, ensemble 0.6005 (all frames: 0.6003 and 0.6029). Causal − offline:
+  - s0: CC +0.0003 [−0.0044, +0.0049], NSS −0.0022 [−0.0318, +0.0272], SIM +0.0043 [+0.0011, +0.0076], KLD −0.0074
+    [−0.0192, +0.0051], AUC-J +0.0006 [−0.0003, +0.0015], sAUC −0.0049 [−0.0084, −0.0014].
+  - ensemble: CC +0.0016 [−0.0015, +0.0046], NSS +0.0042 [−0.0155, +0.0226], SIM −0.0002 [−0.0025, +0.0020], KLD
+    −0.0099 [−0.0179, −0.0017], AUC-J +0.0010 [+0.0004, +0.0016], sAUC +0.0000 [−0.0023, +0.0023].
+  - Reading (no threshold was set for this secondary comparison): removing the frames after the predicted one cost
+    no measurable CC; the other metrics moved by small amounts in both directions. The offline ensemble − SalFoM(σ 16)
+    on these frames is +0.0276 [+0.0174, +0.0384], so the advantage over SalFoM does not come from future context.
+    Extra CPU comparisons (not in the queue): offline s0 and ensemble against SalFoM released and σ 16 on these
+    frames, `runs/review/cmp_offline_g_*_step10_vs_salfom*.json`.

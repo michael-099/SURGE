@@ -20,16 +20,22 @@ models were scored once on their test sets by a single evaluator validated
 against reference code, and differences were assessed with paired statistics. The answers to the research
 questions are as follows.
 
-\paragraph{RQ1.} A frozen \acrshort{V-JEPA}~2 encoder with a light decoder predicted
-fixations more accurately than SalFoM, the closest foundation-model approach,
-under an identical protocol. On the DHF1K validation set, the \acrshort{ViT}-g model
-reached a correlation coefficient of 0.600 as a single model and 0.603 as a
-three-seed ensemble, against 0.564 for SalFoM, and was better on all six metrics
-with paired bootstrap intervals that exclude zero. This result was obtained
-without adapting the encoder and at about one sixth of SalFoM's encoder
-computation per output frame. It is a validation-set result; the official
-test-set evaluation was pending when the thesis was written, and SURGE-D, unlike
-SalFoM, uses frames on both sides of the predicted frame.
+\paragraph{RQ1.} With the larger encoder, yes. On the DHF1K validation set, the
+frozen \acrshort{V-JEPA}~2 \acrshort{ViT}-g model reached a correlation coefficient of 0.600 as a
+single model and 0.603 as a three-seed ensemble, against 0.564 for SalFoM, the
+closest foundation-model approach, scored by the same evaluator, and was better
+on all six metrics with paired bootstrap intervals that exclude zero. Every seed
+stayed ahead when SalFoM's maps were given the blur that suits them best. Under
+an identical protocol, with both models restricted to past frames and scored on
+the same frames, the causal \acrshort{ViT}-g ensemble was more accurate than SalFoM by
+0.029 and as accurate as the offline model, so the advantage does not come from
+future context. With the \acrshort{ViT}-L encoder, the size of SalFoM's, only the
+ensemble was reliably better. The gain comes from the \acrshort{V-JEPA}~2 encoder rather
+than from freezing as such, because a frozen \acrshort{UMT}-L encoder with the same
+decoder scored below SalFoM. In offline use, SURGE-D needs about one sixth of
+SalFoM's encoder computation per output frame, whereas the causal variant needs
+about three times as much. These are validation-set results; the official
+test-set evaluation was pending when the thesis was written.
 
 \paragraph{RQ2.} Used on its own, the prediction error of the released \acrshort{V-JEPA}~2
 predictor was a weaker fixation cue than frame difference and token atypicality

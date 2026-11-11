@@ -310,8 +310,9 @@ released; the checks below test them against a stronger version of the baseline.
 
 Two qualifications apply. First, SURGE-D uses frames on both sides of the
 predicted frame (\cref{sec:formulation}), whereas SalFoM predicts the last frame
-of its input clip; part of the difference may therefore come from access to
-future context, which SalFoM does not use. Second, the comparison involves one
+of its input clip; part of the difference could therefore come from access to
+future context, which SalFoM does not use. The causal control of
+\cref{sec:causal} shows that it does not. Second, the comparison involves one
 re-scored baseline. The published validation scores in the lower block of
 \cref{tab:dhf1k} were computed with other code, which agrees with the present
 evaluator to within 0.0003 \acrshort{CC} on the reference maps
@@ -411,14 +412,25 @@ causal single model was also more accurate than SalFoM with its best blur, by
 0.018 to 0.025 \acrshort{CC}, and the ensemble was better on all six metrics
 (\cref{tab:app-causal}).
 
+The offline models were rescored on the same frames to measure what the later
+frames contribute, and they added no measurable accuracy. The causal ensemble's
+\acrshort{CC} differed from the offline ensemble's by $+0.0016$ [$-0.0015$, $+0.0046$], and
+that of the causal seed-0 model from its offline counterpart by $+0.0003$
+[$-0.0044$, $+0.0049$], although each causal training clip supervised one frame
+instead of eight. The other metrics moved by small amounts in both
+directions (\cref{tab:app-causal-offline}). The advantage of SURGE-D over SalFoM
+therefore does not come from access to future frames. What the causal model gives
+up is efficiency, because it needs one forward pass per output frame
+(\cref{sec:cost}).
+
 \begin{table}[htbp]
   \centering
   \caption{Causal prediction on DHF1K validation, scored on every tenth frame
   (100 videos, 6,076 frames). The causal models and SalFoM use only the
-  predicted frame and earlier frames. Paired bootstrap differences in \acrshort{CC} with
-  95\,\% intervals (10,000 resamples); differences whose interval excludes zero
-  are in bold. All six metrics are compared in
-  \cref{tab:app-causal}}\label{tab:causal}
+  predicted frame and earlier frames; the offline models, for reference, also
+  use later frames. Paired bootstrap differences in \acrshort{CC} with 95\,\% intervals
+  (10,000 resamples); differences whose interval excludes zero are in bold. All
+  six metrics are compared in \cref{tab:app-causal,tab:app-causal-offline}}\label{tab:causal}
   \footnotesize
   \setlength{\tabcolsep}{4pt}
   \begin{tabularx}{\textwidth}{@{}>{\raggedright}Xcccc@{}}
@@ -434,6 +446,10 @@ causal single model was also more accurate than SalFoM with its best blur, by
     Seed 1              & 0.5913 & 3.408 & $\mathbf{+0.029}$ [+0.018, +0.040] & $\mathbf{+0.018}$ [+0.008, +0.029] \\
     Seed 2              & 0.5925 & 3.414 & $\mathbf{+0.030}$ [+0.019, +0.042] & $\mathbf{+0.020}$ [+0.008, +0.031] \\
     Three-seed ensemble & 0.6021 & 3.462 & $\mathbf{+0.040}$ [+0.029, +0.051] & $\mathbf{+0.029}$ [+0.019, +0.040] \\
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{Offline SURGE-D \acrshort{ViT}-g on the same frames ($\sigma=8$)}} \\
+    Seed 0              & 0.5976 & 3.427 & $\mathbf{+0.035}$ [+0.025, +0.047] & $\mathbf{+0.025}$ [+0.014, +0.036] \\
+    Three-seed ensemble & 0.6005 & 3.457 & $\mathbf{+0.038}$ [+0.028, +0.049] & $\mathbf{+0.028}$ [+0.017, +0.038] \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -805,7 +821,8 @@ This section interprets the results in terms of the research questions of
 
 \paragraph{RQ1: Can a frozen self-supervised video encoder with a light decoder
 predict fixations better than the strongest foundation-model approach?} On
-DHF1K, yes for the larger encoder, with qualifications. With \acrshort{ViT}-g, every seed and
+DHF1K, yes for the larger encoder, also under an identical protocol, with
+qualifications. With \acrshort{ViT}-g, every seed and
 the three-seed ensemble were more accurate than SalFoM, whose 300-million-parameter
 encoder is fully fine-tuned, under the same evaluator, and they stayed more
 accurate when SalFoM's maps received the blur that is best for it on the test
@@ -818,10 +835,14 @@ and frozen protocol, the \acrshort{UMT}-L encoder of SalFoM's family scored belo
 0.039 below \acrshort{V-JEPA}~2 \acrshort{ViT}-L, so a frozen encoder suffices only when its features
 suit the task. The frozen \acrshort{V-JEPA}~2 encoder also outperformed its \acrshort{LoRA}-adapted
 version in the one adaptation setting that was tried; full fine-tuning was not
-tested. Second, SURGE-D uses frames after the predicted one, which SalFoM does
-not; the causal control of \cref{sec:causal} measures how much this contributes.
-Third, the evidence is a validation-set comparison with one re-scored baseline;
-the official test-set evaluation is still outstanding.
+tested. Second, the gain does not depend on frames after the predicted one.
+Restricted to past frames, as SalFoM is, the \acrshort{ViT}-g ensemble was still more
+accurate than SalFoM with its best blur on the same frames ($+0.029$ \acrshort{CC}), and
+it was as accurate as the offline ensemble (\cref{sec:causal}); this causal
+comparison is the one made under an identical protocol. It gives up the
+efficiency of the offline model, however, since a causal model needs one forward
+pass per output frame. Third, the evidence is a validation-set comparison with
+one re-scored baseline; the official test-set evaluation is still outstanding.
 
 \paragraph{RQ2: Does predictive surprise carry information about where people
 look?} Not as a stand-alone cue, for the predictor tested. The error of the
@@ -919,10 +940,11 @@ handling of frames without fixations or the exact fold composition. Published
 evaluations of the same model disagree by a few hundredths of \acrshort{CC}, and the
 comparisons are restricted to peer-reviewed results, which on the audio-visual
 datasets leaves out some higher results. Only one baseline, SalFoM, was re-scored
-under the protocol of this thesis. SURGE-D's predictions use about 0.27\,s or
-more of future context, which causal models do not have; the causal control of
-\cref{sec:causal} measures what this context contributes. The DHF1K test-set result and the standard Hollywood-2 ground truth
-were not available. Finally, the pre-training data of \acrshort{V-JEPA}~2 include large
+under the protocol of this thesis. SURGE-D's offline predictions use about
+0.27\,s or more of future context, which causal models do not have. On DHF1K, the
+causal control (\cref{sec:causal}) showed that this context adds no measurable
+accuracy, but the control was not repeated on the other datasets. The DHF1K
+test-set result and the standard Hollywood-2 ground truth were not available. Finally, the pre-training data of \acrshort{V-JEPA}~2 include large
 collections of internet video, and DHF1K is drawn from YouTube; an overlap
 between pre-training and test videos cannot be ruled out. The same is true for
 every method that relies on a large pretrained video encoder, including SalFoM.

@@ -62,8 +62,9 @@ before they were run (\cref{tab:rules}, rules marked $^{\dagger}$).
 SalFoM with the blur that is best for SalFoM on the validation set
 ($\sigma=16$), an upper bound for the baseline. \Cref{tab:val-ledger} lists every
 use of the DHF1K validation set, the test set of this thesis.
-\Cref{tab:app-causal} gives all six metrics for the causal models of
-\cref{sec:causal}. \Cref{tab:app-600} gives all six metrics for the models
+\Cref{tab:app-causal,tab:app-causal-offline} give all six metrics for the
+causal models of \cref{sec:causal}, against SalFoM and against the offline
+models. \Cref{tab:app-600} gives all six metrics for the models
 trained on 600 instead of 540 DHF1K videos, and \cref{tab:app-g2} the intervals
 of gate G2.
 
@@ -125,6 +126,26 @@ of gate G2.
     \acrshort{KLD} & \dci{$-$0.1132}{$-$0.1397, $-$0.0867} & \dci{$-$0.0998}{$-$0.1253, $-$0.0750} & \dci{$-$0.0886}{$-$0.1190, $-$0.0580} & \dci{$-$0.1275}{$-$0.1532, $-$0.1023} \\[5pt]
     \acrshort{AUC-J} & \dci{+0.0036}{+0.0019, +0.0055} & \dci{+0.0036}{+0.0019, +0.0053} & \dci{+0.0025}{+0.0006, +0.0046} & \dci{+0.0047}{+0.0031, +0.0065} \\[5pt]
     \acrshort{sAUC} & \dci{+0.0096}{+0.0032, +0.0164} & \dci{+0.0108}{+0.0038, +0.0185} & \dci{+0.0032}{$-$0.0050, +0.0115} & \dci{+0.0116}{+0.0048, +0.0189} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Paired bootstrap differences between causal and offline SURGE-D
+  \acrshort{ViT}-g on the same DHF1K validation frames (every tenth frame), all six metrics
+  (100 videos, 10,000 resamples)}\label{tab:app-causal-offline}
+  \small
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    \textbf{Metric} & \textbf{Seed 0} & \textbf{Three-seed ensemble} \\
+    \midrule
+    \acrshort{CC} & \dci{+0.0003}{$-$0.0044, +0.0049} & \dci{+0.0016}{$-$0.0015, +0.0046} \\[5pt]
+    \acrshort{NSS} & \dci{$-$0.0022}{$-$0.0318, +0.0272} & \dci{+0.0042}{$-$0.0155, +0.0226} \\[5pt]
+    \acrshort{SIM} & \dci{+0.0043}{+0.0011, +0.0076} & \dci{$-$0.0002}{$-$0.0025, +0.0020} \\[5pt]
+    \acrshort{KLD} & \dci{$-$0.0074}{$-$0.0192, +0.0051} & \dci{$-$0.0099}{$-$0.0179, $-$0.0017} \\[5pt]
+    \acrshort{AUC-J} & \dci{+0.0006}{$-$0.0003, +0.0015} & \dci{+0.0010}{+0.0004, +0.0016} \\[5pt]
+    \acrshort{sAUC} & \dci{$-$0.0049}{$-$0.0084, $-$0.0014} & \dci{+0.0000}{$-$0.0023, +0.0023} \\
     \bottomrule
   \end{tabular}
 \end{table}
