@@ -778,3 +778,25 @@ SURGE-D − SalFoM(σ 16), ΔCC:
     on these frames is +0.0276 [+0.0174, +0.0384], so the advantage over SalFoM does not come from future context.
     Extra CPU comparisons (not in the queue): offline s0 and ensemble against SalFoM released and σ 16 on these
     frames, `runs/review/cmp_offline_g_*_step10_vs_salfom*.json`.
+
+### 12E results (2026-11-11, queue B; `runs/abl_{noprior,noaux,salicon,stride4}_s{1,2}`, `runs/review/holdout/`)
+
+- Training: the eight runs trained 03:15–07:30 (configs identical to the seed-0 ablations except `train.seed` and
+  `run_dir`); the holdout rescoring of the 15 models (every 5th frame, σ 0) ran 07:30–08:20. The recomputed holdout
+  CC equals the value recorded during training for all 15 models (largest absolute difference 0.0, at float precision).
+- Holdout CC per seed (s0 / s1 / s2): reference B1 0.5772 / 0.5801 / 0.5776; no prior 0.5772 / 0.5792 / 0.5754; no
+  aux 0.5757 / 0.5790 / 0.5773; SALICON 0.5801 / 0.5801 / 0.5775; stride 4 0.5803 / 0.5838 / 0.5795.
+- `scripts/ablation_seeds.py --out runs/review/ablation_seeds.json` (two-level bootstrap, 10,000 resamples, δ 0.003),
+  mean ΔCC to B1 of the same seed, 95 % and 90 % intervals, per-seed ΔCC → outcome:
+  - no centre prior: −0.0010 [−0.0026, +0.0005], 90 % [−0.0024, +0.0003]; −0.0000, −0.0009, −0.0022 → **equivalent**
+  - no auxiliary heads: −0.0010 [−0.0023, +0.0003], 90 % [−0.0020, +0.0001]; −0.0015, −0.0011, −0.0003 → **equivalent**
+  - SALICON co-training: +0.0009 [−0.0039, +0.0058], 90 % [−0.0031, +0.0049]; +0.0028, −0.0000, −0.0001 →
+    **inconclusive**
+  - stride 4: +0.0029 [−0.0009, +0.0068], 90 % [−0.0003, +0.0062]; +0.0031, +0.0037, +0.0020 → **inconclusive**
+- Reading (rule above): the centre prior and the auxiliary heads are equivalent to their absence within ±0.003 CC.
+  SALICON's seed-0 gain did not recur. Stride 4 improved with all three seeds but its mean is below δ and its 95 %
+  interval includes 0, so the seed-0 "difference at the threshold" does not hold up as an effect. Outside the three
+  outcomes of the rule (no non-inferiority outcome was defined), its 90 % lower bound −0.0003 excludes a loss of δ.
+- Thesis updated: `tab:ablation` (components block, three seeds), §5.6 Components, RQ3 discussion, Ch6 RQ3,
+  contribution 3 and future work, Ch1 limitations and contribution bullet 3, abstract; §4 statistics describes the
+  two-level bootstrap.

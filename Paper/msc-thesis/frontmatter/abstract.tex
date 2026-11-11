@@ -6,51 +6,46 @@ and how, what the main results were (with numbers), and what the work
 contributes. Write it last, and do not cite references in it.}
 
 Predicting where people look in videos supports applications from compression
-to content design and tests our understanding of human attention. Recent video
-saliency models draw their accuracy from large pretrained encoders, which they
-fine-tune on small eye-tracking datasets and run once for every output frame.
-This thesis asks whether a self-supervised video encoder trained by feature
-prediction, \acrshort{V-JEPA}~2, is sufficient for the task without adapting it, and
-whether the error of the encoder's own pretrained predictor, a learned measure
-of surprise, indicates where people look.
+to content design. Recent video saliency models draw their accuracy from large
+pretrained encoders, which they fine-tune on small eye-tracking datasets and run
+once for every output frame. This thesis asks whether a self-supervised video
+encoder trained by feature prediction, \acrshort{V-JEPA}~2, suffices without adaptation,
+and whether the error of its pretrained predictor, a learned measure of
+surprise, indicates where people look.
 
 The proposed model, SURGE-D, combines the frozen encoder with a decoder of 7.4
 million parameters that builds a multi-scale pyramid from four intermediate
 layers, decodes it with factorised spatio-temporal convolutions and predicts
-saliency maps for sixteen frames per forward pass. Each tested design
-choice was decided by a rule written in a dated log before the experiment, all
-models were scored once per test set by an evaluator validated against
-reference code, and differences were assessed with a paired bootstrap over
+saliency maps for sixteen frames per forward pass. Design choices were decided
+by rules written in advance, each model was scored once per test set by a
+validated evaluator, and differences were assessed with a paired bootstrap over
 videos. The evaluation covers DHF1K, UCF Sports, Hollywood-2 with openly
 licensed gaze recordings, and six audio-visual datasets.
 
 On the DHF1K validation set, a three-seed ensemble with the \acrshort{ViT}-g encoder reached
-a correlation coefficient of 0.603 and a normalised scanpath saliency of 3.49,
-against 0.564 and 3.33 for SalFoM, the closest foundation-model approach, scored
-by the same evaluator. It was better on all six metrics, with bootstrap intervals
-that exclude zero, and remained better when SalFoM's maps were given the blur
-that suits them best. A causal variant that, like SalFoM, sees no future frames
-was as accurate as the offline model and beat SalFoM on the same frames by 0.029
-in correlation.
-With an encoder of SalFoM's size, only the ensemble was reliably better.
-Offline, the model needs about one sixth of SalFoM's encoder computation per
-output frame, the causal variant about three times as much. After brief
-fine-tuning, the model was competitive with the best published results on UCF
-Sports and exceeded the best peer-reviewed results that could be verified on
-four of the six audio-visual datasets, by margins within the spread of published
-evaluations; it failed on conversations, where gaze follows the speaker. Used on
-its own, the predictor's error was a weaker fixation cue than simple frame
-differencing and, in its raw form, anti-correlated with fixations. Encoder
-pre-training and scale produced the only large gains,
-whereas low-rank adaptation, a learned centre prior, deep supervision,
-static-image co-training, longer clips, more training videos and audio fusion
-produced none that could be measured.
+a correlation coefficient of 0.603, against 0.564 for SalFoM, the closest
+foundation-model approach, scored by the same evaluator. It was better on all
+six metrics, with bootstrap intervals excluding zero, and remained better
+when SalFoM's maps were given their best blur. A causal variant
+that, like SalFoM, sees no future frames was as accurate as the offline model
+and beat SalFoM on the same frames by 0.029 in correlation. With an encoder of
+SalFoM's size, only the ensemble was reliably better. Offline, the model needs
+about one sixth of SalFoM's encoder computation per output frame, the causal
+variant about three times as much. After brief fine-tuning, it was competitive
+with the best published results on UCF Sports and exceeded the best
+peer-reviewed results that could be verified on four of six audio-visual
+datasets, by margins within the spread of published evaluations, but failed on
+conversations, where gaze follows the speaker. Used on its own, the predictor's
+error was a weaker fixation cue than simple frame differencing and, in its raw
+form, anti-correlated with fixations. Encoder pre-training and scale produced
+the only large gains; over three seeds, a learned centre prior and deep
+supervision were equivalent to their absence within 0.003 in correlation, and
+no other addition tested, from encoder adaptation to audio, brought a gain that
+could be established. The thesis contributes a frozen-encoder saliency model, a
+negative result on predictive surprise, controlled evidence on design choices
+and a transparent evaluation protocol.
 
-The thesis contributes a frozen-encoder saliency model, a documented negative
-result on predictive surprise, controlled evidence on design choices and a
-transparent evaluation protocol.
-
-\vspace{\baselineskip}
+\medskip
 \noindent\textbf{Keywords:} video saliency prediction, eye fixations,
 self-supervised learning, joint-embedding predictive architecture, frozen
 encoder, predictive surprise

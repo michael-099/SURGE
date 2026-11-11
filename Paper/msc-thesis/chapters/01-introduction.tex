@@ -213,8 +213,8 @@ obtained, so the Hollywood-2 results use other gaze data and are not comparable
 with published numbers. Full fine-tuning of the encoder, other foundation
 encoders and efficient causal (streaming) prediction were outside the scope of
 the study; the causal variant was evaluated only on DHF1K, on every tenth frame,
-and the component ablations used a single training seed because of the
-available computing resources.
+and the encoder comparison, the clip-length test and the audio experiment used
+a single training seed because of the available computing resources.
 
 %----------------------------------------------------------------------------
 \section{Contributions}\label{sec:contributions}
@@ -242,9 +242,10 @@ The main contributions of this thesis are:
     is rather than violated expectations.
   \item \textbf{Controlled evidence on what matters} once the encoder is frozen:
     the encoder's pre-training and scale produce the only large gains, seed
-    ensembles a small one, while low-rank adaptation, the learned centre prior,
-    deep supervision, static-image co-training, longer clips, more training
-    videos and a simple audio fusion produce none that could be measured.
+    ensembles a small one. Over three seeds, the learned centre prior and deep
+    supervision are equivalent to their absence within 0.003 \acrshort{CC}, while
+    low-rank adaptation, static-image co-training, longer clips, more training
+    videos and a simple audio fusion produce no gain that could be established.
   \item \textbf{A transparent evaluation} across nine test sets with a validated
     evaluator, decision rules written in advance in a dated log, paired
     statistics and a new,

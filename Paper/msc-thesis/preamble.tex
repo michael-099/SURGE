@@ -168,6 +168,9 @@
 \newcommand{\guide}[1]{%
   \ifshowguides\begin{aait@guidebox}\textbf{Guide:}~#1\end{aait@guidebox}\fi}
 
+% A table cell with a difference and its 95 % interval on a second line.
+\newcommand{\dci}[2]{\begin{tabular}[c]{@{}c@{}}#1\\[-2pt]{\scriptsize[#2]}\end{tabular}}
+
 %----------------------------------------------------------------------------
 % Title page: first page, no page number.
 %----------------------------------------------------------------------------

@@ -684,26 +684,33 @@ pass per output frame, so its cost per output frame is the cost per clip in
 \section{Ablation Study}\label{sec:ablation}
 
 \Cref{tab:ablation} collects the ablations. Each was evaluated on the holdout
-under the rules of \cref{tab:rules}; for single-seed runs, the reference is the
-frozen \acrshort{ViT}-L model of seed 0 trained with the same three-epoch schedule.
+under the rules of \cref{tab:rules}. The four component ablations were first
+run with seed 0 and, in the follow-up to the first draft, repeated with seeds 1
+and 2; each run is compared with the frozen \acrshort{ViT}-L model of the same seed
+trained with the same three-epoch schedule. For the comparison, the holdout
+scores of all fifteen models were recomputed with the evaluator of the thesis
+and reproduced the values recorded during training.
 
 \begin{table}[htbp]
   \centering
   \caption{Ablations on the DHF1K holdout (60 videos) unless marked
-  \enquote{val}. $\Delta$\acrshort{CC} is relative to the reference in each block}\label{tab:ablation}
+  \enquote{val}. $\Delta$\acrshort{CC} is relative to the reference in each block;
+  for the components, it is the mean over three seeds of the difference to the
+  reference of the same seed, with its 95\,\% interval from a bootstrap over
+  seeds and videos}\label{tab:ablation}
   \footnotesize
-  \begin{tabularx}{\textwidth}{@{}>{\raggedright}X>{\centering}p{2.4cm}>{\centering}p{2.6cm}>{\raggedright\arraybackslash}p{3.0cm}@{}}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright}X>{\centering}p{3.5cm}>{\centering}p{2.6cm}>{\raggedright\arraybackslash}p{2.7cm}@{}}
     \toprule
     \textbf{Variant} & \textbf{\acrshort{CC}} & $\Delta$\textbf{\acrshort{CC}} & \textbf{Outcome under the rule} \\
     \midrule
-    \multicolumn{4}{@{}l}{\emph{Components (\acrshort{ViT}-L, seed 0; reference \acrshort{CC} 0.5772, \acrshort{NSS} 3.329)}} \\
-    Without centre prior                 & 0.5772 & $-0.0000$ & no difference \\
-    Without auxiliary heads              & 0.5757 & $-0.0015$ & no difference \\
-    With SALICON co-training             & 0.5801 & $+0.0028$ & no difference \\
-    Stride 4 ($\approx$7.5\,fps, 2\,s window) & 0.5803 & $+0.0031$ & difference (at the threshold) \\
+    \multicolumn{4}{@{}l}{\emph{Components (\acrshort{ViT}-L, seeds 0 / 1 / 2; reference \acrshort{CC} 0.5772 / 0.5801 / 0.5776)}} \\
+    Without centre prior                 & 0.5772\,/\,0.5792\,/\,0.5754 & \dci{$-0.0010$}{$-$0.0026, +0.0005} & equivalent \\[4pt]
+    Without auxiliary heads              & 0.5757\,/\,0.5790\,/\,0.5773 & \dci{$-0.0010$}{$-$0.0023, +0.0003} & equivalent \\[4pt]
+    With SALICON co-training             & 0.5801\,/\,0.5801\,/\,0.5775 & \dci{$+0.0009$}{$-$0.0039, +0.0058} & inconclusive \\[4pt]
+    Stride 4 ($\approx$7.5\,fps, 2\,s window) & 0.5803\,/\,0.5838\,/\,0.5795 & \dci{$+0.0029$}{$-$0.0009, +0.0068} & inconclusive \\
     \midrule
     \multicolumn{4}{@{}l}{\emph{Encoder adaptation (\acrshort{ViT}-L, three seeds)}} \\
-    \acrshort{LoRA}, seed 0 / 1 / 2 & 0.5743 / 0.5791 / 0.5739 & $-0.0029$ / $-0.0010$ / $-0.0037$ & rejected (lost~3~of~3) \\
+    \acrshort{LoRA}, seed 0 / 1 / 2 & 0.5743\,/\,0.5791\,/\,0.5739 & $-0.0029$ / $-0.0010$ / $-0.0037$ & rejected (lost~3~of~3) \\
     \midrule
     \multicolumn{4}{@{}l}{\emph{Encoder scale (seed 0; gate 0.5833)}} \\
     \acrshort{ViT}-g instead of \acrshort{ViT}-L                 & 0.5866 & $+0.0083$ vs \acrshort{ViT}-L mean & adopted \\
@@ -712,7 +719,7 @@ frozen \acrshort{ViT}-L model of seed 0 trained with the same three-epoch schedu
     32 frames instead of 16                & 0.5902 & $+0.0036$ vs seed~0 & not pursued (gate missed by 0.0002) \\
     \midrule
     \multicolumn{4}{@{}l}{\emph{Training data (\acrshort{ViT}-g, val, three-seed ensembles)}} \\
-    600 instead of 540 training videos (val) & 0.6044 & $+0.0015$ [$-$0.0006, +0.0037] & not adopted \\
+    600 instead of 540 training videos (val) & 0.6044 & \dci{$+0.0015$}{$-$0.0006, +0.0037} & not adopted \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -733,18 +740,28 @@ distribution shift, whereas the holdout here comes from the training
 distribution; the explanation therefore remains a hypothesis. Full fine-tuning,
 as done by SalFoM, was not tested.
 
-\paragraph{Components.} Removing the learned centre prior or the auxiliary
-heads, and adding 10,000 static SALICON images per epoch, changed holdout \acrshort{CC} by
-less than the threshold of 0.003. The centre prior's lack of effect suggests
-that the encoder features and the convolutional decoder can already represent
-the centre bias, for instance through the image borders, which the squashed
-input keeps at fixed positions; the explicit prior then adds nothing that can
-be measured. The static images,
-which helped \acrshort{CNN}-era models~\cite{wang2018revisiting}, appear redundant once
-the encoder has been pretrained on large amounts of video. A stride of four,
-which halves the cost per output frame, reached $+0.0031$, exactly at the
-threshold; with one seed, this is a candidate for future work rather than a
-finding.
+\paragraph{Components.} With one seed, a difference of the size of the
+threshold cannot be told apart from seed variation, so the four component
+ablations were repeated with two further seeds and assessed with the
+three-seed rule of \cref{tab:rules}. Removing the learned centre prior or the
+auxiliary heads proved equivalent to keeping them: the seed-averaged change in
+holdout \acrshort{CC} was $-0.0010$ in both cases, and its 90\,\% interval lies within
+$\pm0.003$. The centre prior's lack of effect suggests that the encoder
+features and the convolutional decoder can already represent the centre bias,
+for instance through the image borders, which the squashed input keeps at
+fixed positions; the explicit prior then adds nothing that can be measured.
+Co-training on 10,000 static SALICON images per epoch was inconclusive: its gain
+of $+0.0028$ with seed 0 did not recur with seeds 1 and 2, and the interval,
+from $-0.0039$ to $+0.0058$, neither excludes zero nor lies within the margin.
+The static images, which helped \acrshort{CNN}-era models~\cite{wang2018revisiting},
+thus brought no measurable benefit here, although a small effect in either
+direction cannot be ruled out. A stride of four, which halves the cost per
+output frame, had reached exactly the single-seed threshold ($+0.0031$). It
+raised holdout \acrshort{CC} with all three seeds ($+0.0031$, $+0.0037$ and $+0.0020$),
+but the mean of $+0.0029$ lies below the margin and its interval includes zero,
+so this outcome is inconclusive as well. Outside the three outcomes of the
+rule, its 90\,\% interval ($-0.0003$ to $+0.0062$) excludes a loss as large as
+the margin: the cheaper stride was at least not measurably worse.
 
 \paragraph{Encoder scale.} Replacing \acrshort{ViT}-L by \acrshort{ViT}-g, with every other setting
 unchanged, raised holdout \acrshort{CC} for all three seeds (0.5866, 0.5867 and 0.5829
@@ -863,13 +880,18 @@ could behave differently.
 results separate the factors cleanly. The encoder dominates: its pre-training
 (\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L) and its scale (\acrshort{ViT}-g over \acrshort{ViT}-L) produced
 the only gains that were large relative to seed noise on DHF1K. Seed ensembles
-added a smaller but reliable gain. Nearly everything else, including \acrshort{LoRA}, the
-learned centre prior, deep supervision, static-image co-training, 32-frame
-clips and 11\,\% more training videos, made no measurable difference. A
-consistent explanation is that, with a strong frozen encoder, the limiting
-factor is the small number of training videos: the decoder overfits within
-three epochs (\cref{fig:g1}), and the additions that would increase its
-effective capacity do not help, whereas better features do.
+added a smaller but reliable gain. With three seeds, removing the learned
+centre prior or deep supervision was equivalent to keeping them, within
+$\pm0.003$ \acrshort{CC}, and \acrshort{LoRA} lost to the frozen encoder in every seed. Static-image
+co-training, 32-frame clips and 11\,\% more training videos produced no gain
+that could be established; for static images and longer clips, the evidence is
+inconclusive rather than negative. A sparser temporal stride, at half the cost
+per output frame, improved holdout \acrshort{CC} with all three seeds without reaching
+the margin. A consistent
+explanation is that, with a strong frozen encoder, the limiting factor is the
+small number of training videos: the decoder overfits within three epochs
+(\cref{fig:g1}), and the additions that would increase its effective capacity
+do not help, whereas better features do.
 
 \paragraph{RQ4: How well does the approach transfer, and does audio help?} The
 model transferred well after brief fine-tuning, within the limits of comparisons

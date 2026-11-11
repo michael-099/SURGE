@@ -770,7 +770,12 @@ be better on a metric only if the interval excludes zero. The bootstrap
 treats videos as the independent units and therefore accounts for the strong
 correlation between frames of the same video. On the audio-visual datasets,
 the test videos of all folds are pooled for this purpose, which is possible
-because each video is tested exactly once.
+because each video is tested exactly once. In the component ablations with
+three seeds (\cref{tab:rules}), each variant is compared on the holdout with the
+reference model of the same seed. The per-video differences are averaged over
+videos and seeds, and the intervals come from a two-level bootstrap that first
+resamples the three seeds and then the videos, drawing the same videos for
+every seed because the comparison is paired.
 
 Published results of other methods were computed with other evaluation code
 and, sometimes, other protocol details. They cannot enter a paired test. They
