@@ -808,3 +808,16 @@ finished (one GPU job at a time): `runs/main_b1_s0` with σ 12 and the three-see
 with σ 8 (the σ of section 5, no new tuning), six metrics. Paired bootstraps: causal − offline (s0 and ensemble) and
 offline − SalFoM (released and σ 16) on these frames. Secondary and descriptive, no threshold, as for ViT-g. The
 primary reading of causal ViT-L is the one of 12D (ensemble − SalFoM σ 16, ΔCC interval above 0).
+
+### 12G. Ensemble − single on DHF1K val (added 2026-11-11 08:50; CPU, descriptive, from existing score files)
+
+Not in the plan of section 12; it checks the thesis wording "seed ensembles added a reliable gain" (review item T12)
+with `scripts/compare.py` on the stored per-video val scores (no new scoring, no decision depends on it).
+- ViT-L ensemble (`runs/final/val_ens3.json`, σ 8) − seed 0 (`val_single_s0.json`, σ 12): CC +0.0074 [+0.0050,
+  +0.0099], NSS +0.0686 [+0.0514, +0.0871], KLD −0.0354 [−0.0440, −0.0273], AUC-J +0.0019 [+0.0014, +0.0025], SIM
+  −0.0006 [−0.0024, +0.0013], sAUC −0.0022 [−0.0040, −0.0005].
+- ViT-g ensemble (`runs/vitg/val_ens3.json`, σ 8) − seed 0 (σ 8): CC +0.0025 [+0.0002, +0.0049], NSS +0.0293
+  [+0.0141, +0.0454], SIM +0.0043 [+0.0025, +0.0063], KLD −0.0099 [−0.0164, −0.0035], AUC-J +0.0006 [+0.0002,
+  +0.0010], sAUC −0.0029 [−0.0046, −0.0012].
+- Reading: the ensemble gain in CC is above 0 for both encoders (barely for ViT-g); sAUC falls slightly for both.
+  `runs/review/cmp_ens3_vs_single_{l,g}_val.{json,txt}`.

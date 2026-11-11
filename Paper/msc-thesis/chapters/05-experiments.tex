@@ -744,15 +744,16 @@ as done by SalFoM, was not tested.
 threshold cannot be told apart from seed variation, so the four component
 ablations were repeated with two further seeds and assessed with the
 three-seed rule of \cref{tab:rules}. Removing the learned centre prior or the
-auxiliary heads proved equivalent to keeping them: the seed-averaged change in
+auxiliary heads was equivalent to keeping them: the seed-averaged change in
 holdout \acrshort{CC} was $-0.0010$ in both cases, and its 90\,\% interval lies within
 $\pm0.003$. The centre prior's lack of effect suggests that the encoder
 features and the convolutional decoder can already represent the centre bias,
 for instance through the image borders, which the squashed input keeps at
 fixed positions; the explicit prior then adds nothing that can be measured.
 Co-training on 10,000 static SALICON images per epoch was inconclusive: its gain
-of $+0.0028$ with seed 0 did not recur with seeds 1 and 2, and the interval,
-from $-0.0039$ to $+0.0058$, neither excludes zero nor lies within the margin.
+of $+0.0028$ with seed 0 did not recur with seeds 1 and 2, and its 95\,\%
+interval includes zero ($-0.0039$ to $+0.0058$) while its 90\,\% interval
+extends beyond the margin ($-0.0031$ to $+0.0049$).
 The static images, which helped \acrshort{CNN}-era models~\cite{wang2018revisiting},
 thus brought no measurable benefit here, although a small effect in either
 direction cannot be ruled out. A stride of four, which halves the cost per
@@ -783,7 +784,11 @@ measurably, but the clip-length test was not conclusive.
 
 \paragraph{Ensembles and output blur.} Averaging three seeds raised validation
 \acrshort{CC} by 0.007 for \acrshort{ViT}-L and by 0.003 for \acrshort{ViT}-g (\cref{tab:dhf1k}); the stronger
-encoder leaves less variance for the ensemble to remove. \Cref{fig:sigma} shows
+encoder leaves less variance for the ensemble to remove. In paired comparisons
+with the seed-0 model, both gains have intervals above zero ($+0.0074$
+[$+0.0050$, $+0.0099$] and $+0.0025$ [$+0.0002$, $+0.0049$]), and \acrshort{NSS}, \acrshort{KLD} and
+\acrshort{AUC-J} improved as well, but \acrshort{sAUC} fell slightly for both encoders ($-0.0022$
+and $-0.0029$, intervals below zero; \cref{tab:app-ens}). \Cref{fig:sigma} shows
 that the optimal blur is broad: holdout \acrshort{CC} varied by at most 0.003 between
 $\sigma=0$ and $\sigma=12$ for every configuration. The \acrshort{ViT}-L ensemble preferred
 less blur than its single model (8 against 12 pixels), consistent with the
@@ -880,8 +885,9 @@ could behave differently.
 encoder dominates: its pre-training (\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L) and its
 scale (\acrshort{ViT}-g over \acrshort{ViT}-L) produced the only gains that were large relative to
 seed noise on DHF1K, although the comparison of pre-training rests on one seed
-per encoder, and the narrow lead over \acrshort{V-JEPA}~2.1 on an input below its training
-resolution. Seed ensembles added a smaller but reliable gain. With three seeds, removing the learned
+per encoder, and \acrshort{V-JEPA}~2.1, which trailed narrowly, was used below its training
+resolution. Seed ensembles added a smaller gain in \acrshort{CC}, with intervals above zero
+for both encoders, at a slight cost in \acrshort{sAUC}. With three seeds, removing the learned
 centre prior or deep supervision was equivalent to keeping them, within
 $\pm0.003$ \acrshort{CC}, and \acrshort{LoRA} lost to the frozen encoder in every seed. Static-image
 co-training, 32-frame clips and 11\,\% more training videos produced no gain
