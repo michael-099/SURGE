@@ -1175,3 +1175,62 @@ documentation or CPU analysis. Every new rule (margins, grids, maximum epochs, t
 | §6.2 | "the predictor error of a self-supervised video model is not a fixation cue" | "the error of the released V-JEPA 2 predictor, read out as tested, was a weaker cue than simple ones; `[RESULT]` beyond them" | A4 (C8) |
 | §6.3 | "Causal prediction … would allow a stricter comparison" | Moved into RQ1 (F5); future work keeps only streaming deployment | A1 |
 | Appendix B | — | Adds the SalFoM inference wrapper and settings, plus a table of test-set uses | A9 |
+
+---
+
+## Section 11: Follow-up results (added 2026-11-11)
+
+After this review, the user asked for the appropriate follow-up overnight. Input B was still not supplied, so the
+thesis keeps RQ1–RQ4. The decision rules were written in `research/log.md` §12 (2026-11-10 18:30), before any run.
+Two later entries were also written before their results were seen: the 12C amendment (18:40) and the ViT-L addendum
+to 12D (2026-11-11 08:33). Entry 12G was added afterwards as a descriptive check that no decision depends on. The thesis was
+then revised; the new rules are marked † in T4.1, and Appendix A.2 collects the new tables. In this section,
+section and table numbers refer to the revised thesis (`main.pdf` after this follow-up), not to `bb197a7`.
+
+### 11.1 Experiments of Section 3 that were run
+
+| Item | Log | Result | Effect on the claims | Thesis |
+|---|---|---|---|---|
+| **F1a** = T3 | 12F | Raw-surprise NSS is below 0 at both rates: −0.190 [−0.332, −0.045] at ~4 fps and −0.502 [−0.620, −0.385] at ~15 fps. Every paired NSS and CC difference (surprise − frame difference, surprise − atypicality) is below 0 at both rates | C6 **holds**, now with intervals. C9 is answered only for standalone use; F1b was not run | TA.9, §5.4, RQ2 |
+| **F2** = T2 | 12C | SalFoM's best σ on val is 16 (CC 0.5639 → 0.5741). Every ViT-g model and the ViT-L ensemble stay above it (ViT-g ensemble +0.0287 [+0.0186, +0.0394]; ViT-L ensemble +0.0169 [+0.0069, +0.0273]). The ViT-L single seeds 0 and 1 do not (seed 0: +0.0095 [−0.0008, +0.0203]) | C1 **holds** for ViT-g. For ViT-L it is **narrowed** to the ensemble | T5.6, TA.3, §5.5.1 |
+| **F3** = T4 | 12A | Every seed of both encoders is above SalFoM as released. The seed SD on val is 0.0034 (ViT-L) and 0.0030 (ViT-g). The reported ViT-g seed 0 is the best of its three seeds (0.6003 against a mean of 0.5969) | C1 is **not** an artefact of one seed | T5.6, §5.5.1 |
+| **F4** = T5 | 12B | Frozen UMT-L with the SURGE-D decoder: val CC 0.5450. That is −0.0189 [−0.0286, −0.0095] against SalFoM and 0.0386 below SURGE-D ViT-L (one seed, 10 epochs, 224²) | C4: the gain comes from the V-JEPA 2 encoder, not from freezing as such. The thesis now says so | T5.6, §5.5.1, RQ1 |
+| **F5** = T6 | 12D and its addendum | Scored on every 10th frame (6,076 frames) instead of the proposed every 5th. **ViT-g:** causal ensemble − SalFoM(σ 16) +0.0292 [+0.0188, +0.0400], every causal seed above 0, causal ≈ offline on the same frames (ensemble +0.0016 [−0.0015, +0.0046]). **ViT-L:** causal ensemble − SalFoM(σ 16) +0.0171 [+0.0071, +0.0275], seed 0 above 0, seeds 1 and 2 include 0; causal ≈ offline on the same frames (ensemble +0.0012 [−0.0022, +0.0047]) | C2 **now holds** for both ensembles, under the pre-written rule. Single ViT-L models are not reliably better, offline or causal. Causal inference gives up the offline efficiency: 1.82 TFLOPs per output frame for ViT-L, about SalFoM's encoder, and 5.26 for ViT-g | §5.5.2, T5.7, TA.5, TA.6, RQ1, abstract |
+| **F7** = T7 | 12E | Three seeds per component, two-level bootstrap, δ = 0.003. No centre prior −0.0010 [−0.0026, +0.0005], **equivalent**. No auxiliary heads −0.0010 [−0.0023, +0.0003], **equivalent**. SALICON +0.0009 [−0.0039, +0.0058], **inconclusive**. Stride 4 +0.0029 [−0.0009, +0.0068], **inconclusive**; it is positive in all seeds, and its 90 % lower bound of −0.0003 excludes a loss of δ | C11 is **replaced** by per-factor outcomes. The data-limitation reading (C12) is now stated as an untested hypothesis | T5.12, §5.6, RQ3, §6.1, §6.3 |
+| T12, partly | 12G | Ensemble − seed 0 on val, CC: ViT-L +0.0074 [+0.0050, +0.0099], ViT-g +0.0025 [+0.0002, +0.0049]. sAUC falls for both: −0.0022 [−0.0040, −0.0005] and −0.0029 [−0.0046, −0.0012] | C13 is **narrowed** to "a smaller gain in CC, at a slight cost in sAUC" | TA.8, §5.6, RQ3 |
+
+### 11.2 Items not run, or only partly addressed
+
+- **T1 (SalFoM provenance): partly.** §5.2 states three things: SalFoM's maps were produced by a wrapper outside
+  the thesis code; the wrapper ran in bfloat16; and on 16 clips its maps matched single precision. The thesis does
+  not record the clip length, sampling or input size. The wrapper is in a separate project (`GRAFT-A`,
+  `scripts/baselines/salfom_dhf1k.py`, commit 9a50089). It was not copied here, so the repository stays independent
+  of GRAFT. Nobody checked whether the released weights saw DHF1K val.
+- **F1b / F9 = T8 (incremental information of surprise; in-distribution readout): not run.** RQ2 is answered for
+  standalone use only, and §6.3 lists both tests as future work.
+- **F6 = T10 (measured timing of SalFoM): not run.** The cost statements remain FLOP estimates, scoped to offline
+  use. The causal cost is stated next to them.
+- **F8 = T9 (learning curve): not run.** The data-limitation statement is kept only as a hypothesis, with the
+  learning curve named as its test.
+- **F10 = T15 (LoRA grid, full fine-tuning), F11 = T16 (32 frames with a converged schedule), F12 = T17 (G1 with
+  three seeds and native resolutions): not run.** The thesis scopes the corresponding statements: one LoRA setting,
+  one seed per encoder in G1, and one seed with an unconverged schedule for 32 frames.
+- **F13 = T13 (reliability of the Vig ground truth), F14 = T19 (re-scored AV baselines), T18 (audio with more seeds
+  and ViT-g): not run.**
+- **T11 (calibrating the tie margin):** not calibrated. §4.1 and §5.8 disclose that the margin was fixed after the
+  first comparison.
+- **T14:** §4.3 explains the SumMe and DIEM counts. §5.2 identifies the second evaluator only as written for the
+  same earlier project. sAUC was not checked against reference code.
+- **T20 (DHF1K official test scores) and the IMAR request for the standard Hollywood-2 ground truth** are the
+  user's actions. They were not taken.
+
+### 11.3 Status of the main claims after the follow-up
+
+- **RQ1:** on DHF1K val, the ViT-g models beat SalFoM, also against SalFoM's best blur and under the identical,
+  causal protocol. With the ViT-L encoder, the size of SalFoM's, the ensemble beats SalFoM offline and causally,
+  but single models are not reliably better. The official test-set score is still outstanding.
+- **RQ2:** the standalone answer stands with intervals. The incremental question is untested.
+- **RQ3:** encoder pre-training and scale are the only large factors. The pre-training comparison still rests on
+  one seed per encoder. The centre prior and deep supervision are equivalent to their absence, LoRA lost in every
+  seed, and SALICON and stride 4 are inconclusive.
+- **RQ4:** unchanged by the follow-up.

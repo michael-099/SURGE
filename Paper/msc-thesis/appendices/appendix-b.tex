@@ -81,7 +81,9 @@ python scripts/evaluate.py --run runs/causal_g_s0 --split val \
 \end{small}
 
 \noindent \verb|scripts/evaluate.py| and \verb|scripts/tune_sigma.py| run a model
-causally whenever its configuration names this target. For the comparison of \cref{sec:main-results}, SalFoM's saved maps
+causally whenever its configuration names this target. The \acrshort{ViT}-L variant is
+trained with the same command, in which \verb|vjepa2_l| replaces \verb|vjepa2_g|.
+For the comparison of \cref{sec:main-results}, SalFoM's saved maps
 are blurred by passing \verb|--sigma| together with \verb|--maps|.
 
 \section{Forward Pass of the Decoder}

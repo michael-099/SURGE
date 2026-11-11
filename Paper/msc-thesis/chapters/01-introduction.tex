@@ -232,7 +232,9 @@ The main contributions of this thesis are:
     for SalFoM scored by the same evaluator, and is better on all six metrics
     with paired bootstrap intervals that exclude zero. It remains better when
     SalFoM's maps receive the blur that suits them best and when SURGE-D is
-    restricted, like SalFoM, to past frames. In offline prediction, SalFoM's
+    restricted, like SalFoM, to past frames. With the \acrshort{ViT}-L encoder, the size of
+    SalFoM's, the ensemble remains better under both conditions, but single
+    models are not reliably better. In offline prediction, SalFoM's
     per-frame design requires about six times more encoder computation per
     output frame.
   \item \textbf{A negative result on predictive surprise}: used on its own, the

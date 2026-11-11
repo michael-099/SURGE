@@ -395,30 +395,45 @@ The comparison above leaves one difference between the two models: SURGE-D
 sees frames after the predicted one and SalFoM does not. The causal variant of
 \cref{sec:formulation} removes this difference. It was trained with the
 \acrshort{ViT}-g recipe for three seeds and tested under the causal-control rule of
-\cref{tab:rules}, which was written before it was run. For all three seeds the
-best holdout epoch was the second of three, and the holdout selected a blur of
-$\sigma=8$ for the single model and for the ensemble, as for the offline model.
+\cref{tab:rules}, which was written before it was run. After the component
+ablations, the same procedure was repeated with the \acrshort{ViT}-L encoder, the size of
+SalFoM's. For all six models the best holdout epoch was the second of three, and
+for both encoders the holdout selected a blur of $\sigma=8$ for the seed-0 model,
+which seeds 1 and 2 also use, and for the ensemble.
 Because a causal model needs one forward pass per output frame, the validation
 set was scored once on every tenth frame of each video (6,076 frames), and
 SalFoM was scored on the same frames.
 
-\Cref{tab:causal} gives the results. The causal ensemble reached a \acrshort{CC} of
+\Cref{tab:causal} gives the results. The causal \acrshort{ViT}-g ensemble reached a \acrshort{CC} of
 0.602, and its difference from SalFoM with its best blur was $+0.029$
 [$+0.019$, $+0.040$]. Under the rule, SURGE-D is therefore more accurate than
 SalFoM under an identical evaluation protocol: the same videos and frames, the
 same evaluator, no frame after the predicted one for either model, and the
 baseline's blur set to the value that is best for it on the test set. Each
-causal single model was also more accurate than SalFoM with its best blur, by
+causal \acrshort{ViT}-g single model was also more accurate than SalFoM with its best blur, by
 0.018 to 0.025 \acrshort{CC}, and the ensemble was better on all six metrics
 (\cref{tab:app-causal}).
 
+With the \acrshort{ViT}-L encoder, the causal ensemble reached a \acrshort{CC} of 0.590, and its
+difference from SalFoM with its best blur was $+0.017$ [$+0.007$, $+0.028$], so
+the conclusion of the rule also holds at the encoder size of SalFoM. This
+ensemble was better on all six metrics, on \acrshort{sAUC} only narrowly. As in the
+offline comparison (\cref{tab:dhf1k-checks}), the single \acrshort{ViT}-L models were not
+reliably better: against SalFoM with its best blur, the interval of seed 0 lies
+above zero ($+0.011$ [$+0.001$, $+0.022$]), but those of seeds 1 and 2 include
+it. A single causal \acrshort{ViT}-L model needs about as much computation per output
+frame as SalFoM's encoder (\cref{sec:cost}). At that cost, therefore, an
+advantage over SalFoM is not established; the ensemble, which shows one, needs
+three times as much.
+
 The offline models were rescored on the same frames to measure what the later
-frames contribute, and they added no measurable accuracy. The causal ensemble's
-\acrshort{CC} differed from the offline ensemble's by $+0.0016$ [$-0.0015$, $+0.0046$], and
-that of the causal seed-0 model from its offline counterpart by $+0.0003$
-[$-0.0044$, $+0.0049$], although each causal training clip supervised one frame
-instead of eight. The other metrics moved by small amounts in both
-directions (\cref{tab:app-causal-offline}). The advantage of SURGE-D over SalFoM
+frames contribute, and with neither encoder did they add measurable accuracy.
+The causal ensemble's \acrshort{CC} differed from the offline ensemble's by $+0.0016$
+[$-0.0015$, $+0.0046$] with \acrshort{ViT}-g and by $+0.0012$ [$-0.0022$, $+0.0047$] with
+\acrshort{ViT}-L, and that of the causal seed-0 model from its offline counterpart by
+$+0.0003$ [$-0.0044$, $+0.0049$] and $+0.0030$ [$-0.0014$, $+0.0077$], although each
+causal training clip supervised one frame instead of eight. The other metrics
+moved by small amounts in both directions (\cref{tab:app-causal-offline}). The advantage of SURGE-D over SalFoM
 therefore does not come from access to future frames. What the causal model gives
 up is efficiency, because it needs one forward pass per output frame
 (\cref{sec:cost}).
@@ -450,6 +465,16 @@ up is efficiency, because it needs one forward pass per output frame
     \multicolumn{5}{@{}l}{\emph{Offline SURGE-D \acrshort{ViT}-g on the same frames ($\sigma=8$)}} \\
     Seed 0              & 0.5976 & 3.427 & $\mathbf{+0.035}$ [+0.025, +0.047] & $\mathbf{+0.025}$ [+0.014, +0.036] \\
     Three-seed ensemble & 0.6005 & 3.457 & $\mathbf{+0.038}$ [+0.028, +0.049] & $\mathbf{+0.028}$ [+0.017, +0.038] \\
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{Causal SURGE-D \acrshort{ViT}-L ($\sigma=8$)}} \\
+    Seed 0              & 0.5842 & 3.346 & $\mathbf{+0.022}$ [+0.011, +0.033] & $\mathbf{+0.011}$ [+0.001, +0.022] \\
+    Seed 1              & 0.5767 & 3.312 & $\mathbf{+0.014}$ [+0.004, +0.025] & $+0.004$ [$-$0.006, +0.014] \\
+    Seed 2              & 0.5792 & 3.346 & $\mathbf{+0.017}$ [+0.006, +0.029] & $+0.006$ [$-$0.005, +0.018] \\
+    Three-seed ensemble & 0.5900 & 3.390 & $\mathbf{+0.028}$ [+0.018, +0.038] & $\mathbf{+0.017}$ [+0.007, +0.028] \\
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{Offline SURGE-D \acrshort{ViT}-L on the same frames ($\sigma=12$ for seed 0, $\sigma=8$ for the ensemble)}} \\
+    Seed 0              & 0.5812 & 3.321 & $\mathbf{+0.019}$ [+0.009, +0.030] & $+0.008$ [$-$0.002, +0.019] \\
+    Three-seed ensemble & 0.5888 & 3.390 & $\mathbf{+0.027}$ [+0.016, +0.037] & $\mathbf{+0.016}$ [+0.006, +0.026] \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -849,8 +874,9 @@ the three-seed ensemble were more accurate than SalFoM, whose 300-million-parame
 encoder is fully fine-tuned, under the same evaluator, and they stayed more
 accurate when SalFoM's maps received the blur that is best for it on the test
 set; the single model and the ensemble were then better on all six metrics.
-With \acrshort{ViT}-L, whose encoder is the size of SalFoM's, the ensemble was better, but
-single models were not reliably so once SalFoM's blur was tuned.
+With \acrshort{ViT}-L, whose encoder is the size of SalFoM's, the ensemble was better, offline
+and causally, but single models were not reliably so once SalFoM's blur was
+tuned.
 Three features of the result matter for its interpretation. First, the gain
 comes from the encoder rather than from freezing as such. With the same decoder
 and frozen protocol, the \acrshort{UMT}-L encoder of SalFoM's family scored below SalFoM and
@@ -858,10 +884,11 @@ and frozen protocol, the \acrshort{UMT}-L encoder of SalFoM's family scored belo
 suit the task. The frozen \acrshort{V-JEPA}~2 encoder also outperformed its \acrshort{LoRA}-adapted
 version in the one adaptation setting that was tried; full fine-tuning was not
 tested. Second, the gain does not depend on frames after the predicted one.
-Restricted to past frames, as SalFoM is, the \acrshort{ViT}-g ensemble was still more
-accurate than SalFoM with its best blur on the same frames ($+0.029$ \acrshort{CC}), and
-it was as accurate as the offline ensemble (\cref{sec:causal}); this causal
-comparison is the one made under an identical protocol. It gives up the
+Restricted to past frames, as SalFoM is, the ensembles were still more accurate
+than SalFoM with its best blur on the same frames ($+0.029$ \acrshort{CC} with \acrshort{ViT}-g and
+$+0.017$ with \acrshort{ViT}-L), and they were as accurate as the offline ensembles
+(\cref{sec:causal}); this causal comparison is the one made under an identical
+protocol. It gives up the
 efficiency of the offline model, however, since a causal model needs one forward
 pass per output frame. Third, the evidence is a validation-set comparison with
 one re-scored baseline; the official test-set evaluation is still outstanding.

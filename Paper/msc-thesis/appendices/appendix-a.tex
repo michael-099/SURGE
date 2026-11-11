@@ -103,15 +103,15 @@ three-seed ensemble with its seed-0 member.
     SURGE-D \acrshort{ViT}-g on 600 videos, seed 0 and ensemble & RQ3 (amount of data) & whether these models replace the 540-video models for the official test set (they did not) \\
     SURGE-D, seeds 1 and 2 of both encoders & seed check & none \\
     Frozen \acrshort{UMT}-L with the SURGE-D decoder & encoder check & none \\
-    Causal SURGE-D \acrshort{ViT}-g, three seeds and ensemble (every tenth frame) & RQ1 (causal control) & none \\
-    SalFoM, released and best blur, and offline SURGE-D \acrshort{ViT}-g, on the same frames & causal control & none \\
+    Causal SURGE-D \acrshort{ViT}-g and \acrshort{ViT}-L, three seeds and ensemble each (every tenth frame) & RQ1 (causal control) & none \\
+    SalFoM, released and best blur, and offline SURGE-D \acrshort{ViT}-g and \acrshort{ViT}-L, on the same frames & causal control & none \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
 \begin{table}[htbp]
   \centering
-  \caption{Paired bootstrap differences between causal SURGE-D \acrshort{ViT}-g and SalFoM
+  \caption{Paired bootstrap differences between causal SURGE-D and SalFoM
   with its best blur ($\sigma=16$) on DHF1K validation, every tenth frame, all six
   metrics (100 videos, 10,000 resamples)}\label{tab:app-causal}
   \small
@@ -119,32 +119,44 @@ three-seed ensemble with its seed-0 member.
     \toprule
     \textbf{Metric} & \textbf{Seed 0} & \textbf{Seed 1} & \textbf{Seed 2} & \textbf{Ensemble} \\
     \midrule
+    \multicolumn{5}{@{}l}{\emph{Causal SURGE-D \acrshort{ViT}-g}} \\[2pt]
     \acrshort{CC} & \dci{+0.0249}{+0.0142, +0.0362} & \dci{+0.0184}{+0.0080, +0.0294} & \dci{+0.0196}{+0.0082, +0.0314} & \dci{+0.0292}{+0.0188, +0.0400} \\[5pt]
     \acrshort{NSS} & \dci{+0.1807}{+0.1101, +0.2540} & \dci{+0.1640}{+0.0966, +0.2352} & \dci{+0.1700}{+0.0984, +0.2462} & \dci{+0.2177}{+0.1506, +0.2894} \\[5pt]
     \acrshort{SIM} & \dci{+0.0560}{+0.0478, +0.0642} & \dci{+0.0427}{+0.0349, +0.0505} & \dci{+0.0576}{+0.0489, +0.0664} & \dci{+0.0558}{+0.0479, +0.0638} \\[5pt]
     \acrshort{KLD} & \dci{$-$0.1132}{$-$0.1397, $-$0.0867} & \dci{$-$0.0998}{$-$0.1253, $-$0.0750} & \dci{$-$0.0886}{$-$0.1190, $-$0.0580} & \dci{$-$0.1275}{$-$0.1532, $-$0.1023} \\[5pt]
     \acrshort{AUC-J} & \dci{+0.0036}{+0.0019, +0.0055} & \dci{+0.0036}{+0.0019, +0.0053} & \dci{+0.0025}{+0.0006, +0.0046} & \dci{+0.0047}{+0.0031, +0.0065} \\[5pt]
-    \acrshort{sAUC} & \dci{+0.0096}{+0.0032, +0.0164} & \dci{+0.0108}{+0.0038, +0.0185} & \dci{+0.0032}{$-$0.0050, +0.0115} & \dci{+0.0116}{+0.0048, +0.0189} \\
+    \acrshort{sAUC} & \dci{+0.0096}{+0.0032, +0.0164} & \dci{+0.0108}{+0.0038, +0.0185} & \dci{+0.0032}{$-$0.0050, +0.0115} & \dci{+0.0116}{+0.0048, +0.0189} \\[5pt]
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{Causal SURGE-D \acrshort{ViT}-L}} \\[2pt]
+    \acrshort{CC} & \dci{+0.0113}{+0.0009, +0.0221} & \dci{+0.0038}{$-$0.0062, +0.0142} & \dci{+0.0063}{$-$0.0049, +0.0180} & \dci{+0.0171}{+0.0071, +0.0275} \\[5pt]
+    \acrshort{NSS} & \dci{+0.1022}{+0.0313, +0.1751} & \dci{+0.0680}{+0.0022, +0.1374} & \dci{+0.1022}{+0.0300, +0.1776} & \dci{+0.1464}{+0.0793, +0.2172} \\[5pt]
+    \acrshort{SIM} & \dci{+0.0502}{+0.0420, +0.0586} & \dci{+0.0324}{+0.0249, +0.0402} & \dci{+0.0497}{+0.0401, +0.0594} & \dci{+0.0486}{+0.0406, +0.0568} \\[5pt]
+    \acrshort{KLD} & \dci{$-$0.0712}{$-$0.1000, $-$0.0424} & \dci{$-$0.0606}{$-$0.0861, $-$0.0357} & \dci{$-$0.0481}{$-$0.0808, $-$0.0156} & \dci{$-$0.0942}{$-$0.1204, $-$0.0685} \\[5pt]
+    \acrshort{AUC-J} & \dci{+0.0014}{$-$0.0005, +0.0034} & \dci{+0.0011}{$-$0.0005, +0.0028} & \dci{+0.0000}{$-$0.0019, +0.0021} & \dci{+0.0028}{+0.0011, +0.0045} \\[5pt]
+    \acrshort{sAUC} & \dci{+0.0059}{$-$0.0003, +0.0126} & \dci{+0.0021}{$-$0.0047, +0.0094} & \dci{$-$0.0014}{$-$0.0091, +0.0067} & \dci{+0.0066}{+0.0002, +0.0135} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \begin{table}[htbp]
   \centering
-  \caption{Paired bootstrap differences between causal and offline SURGE-D
-  \acrshort{ViT}-g on the same DHF1K validation frames (every tenth frame), all six metrics
-  (100 videos, 10,000 resamples)}\label{tab:app-causal-offline}
+  \caption{Paired bootstrap differences between causal and offline SURGE-D on the
+  same DHF1K validation frames (every tenth frame), all six metrics (100 videos,
+  10,000 resamples). For \acrshort{KLD}, negative differences favour the causal
+  model}\label{tab:app-causal-offline}
   \small
-  \begin{tabular}{@{}lcc@{}}
+  \begin{tabular}{@{}lcccc@{}}
     \toprule
-    \textbf{Metric} & \textbf{Seed 0} & \textbf{Three-seed ensemble} \\
+    & \multicolumn{2}{c}{\textbf{\acrshort{ViT}-g}} & \multicolumn{2}{c}{\textbf{\acrshort{ViT}-L}} \\
+    \cmidrule(lr){2-3}\cmidrule(l){4-5}
+    \textbf{Metric} & \textbf{Seed 0} & \textbf{Ensemble} & \textbf{Seed 0} & \textbf{Ensemble} \\
     \midrule
-    \acrshort{CC} & \dci{+0.0003}{$-$0.0044, +0.0049} & \dci{+0.0016}{$-$0.0015, +0.0046} \\[5pt]
-    \acrshort{NSS} & \dci{$-$0.0022}{$-$0.0318, +0.0272} & \dci{+0.0042}{$-$0.0155, +0.0226} \\[5pt]
-    \acrshort{SIM} & \dci{+0.0043}{+0.0011, +0.0076} & \dci{$-$0.0002}{$-$0.0025, +0.0020} \\[5pt]
-    \acrshort{KLD} & \dci{$-$0.0074}{$-$0.0192, +0.0051} & \dci{$-$0.0099}{$-$0.0179, $-$0.0017} \\[5pt]
-    \acrshort{AUC-J} & \dci{+0.0006}{$-$0.0003, +0.0015} & \dci{+0.0010}{+0.0004, +0.0016} \\[5pt]
-    \acrshort{sAUC} & \dci{$-$0.0049}{$-$0.0084, $-$0.0014} & \dci{+0.0000}{$-$0.0023, +0.0023} \\
+    \acrshort{CC} & \dci{+0.0003}{$-$0.0044, +0.0049} & \dci{+0.0016}{$-$0.0015, +0.0046} & \dci{+0.0030}{$-$0.0014, +0.0077} & \dci{+0.0012}{$-$0.0022, +0.0047} \\[5pt]
+    \acrshort{NSS} & \dci{$-$0.0022}{$-$0.0318, +0.0272} & \dci{+0.0042}{$-$0.0155, +0.0226} & \dci{+0.0249}{$-$0.0041, +0.0560} & \dci{+0.0007}{$-$0.0203, +0.0225} \\[5pt]
+    \acrshort{SIM} & \dci{+0.0043}{+0.0011, +0.0076} & \dci{$-$0.0002}{$-$0.0025, +0.0020} & \dci{+0.0025}{$-$0.0007, +0.0060} & \dci{+0.0014}{$-$0.0009, +0.0039} \\[5pt]
+    \acrshort{KLD} & \dci{$-$0.0074}{$-$0.0192, +0.0051} & \dci{$-$0.0099}{$-$0.0179, $-$0.0017} & \dci{$-$0.0172}{$-$0.0293, $-$0.0052} & \dci{$-$0.0025}{$-$0.0120, +0.0069} \\[5pt]
+    \acrshort{AUC-J} & \dci{+0.0006}{$-$0.0003, +0.0015} & \dci{+0.0010}{+0.0004, +0.0016} & \dci{+0.0007}{$-$0.0001, +0.0016} & \dci{+0.0001}{$-$0.0006, +0.0008} \\[5pt]
+    \acrshort{sAUC} & \dci{$-$0.0049}{$-$0.0084, $-$0.0014} & \dci{+0.0000}{$-$0.0023, +0.0023} & \dci{$-$0.0011}{$-$0.0041, +0.0019} & \dci{+0.0014}{$-$0.0009, +0.0040} \\
     \bottomrule
   \end{tabular}
 \end{table}

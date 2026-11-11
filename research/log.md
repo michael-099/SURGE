@@ -821,3 +821,50 @@ with `scripts/compare.py` on the stored per-video val scores (no new scoring, no
   +0.0010], sAUC −0.0029 [−0.0046, −0.0012].
 - Reading: the ensemble gain in CC is above 0 for both encoders (barely for ViT-g); sAUC falls slightly for both.
   `runs/review/cmp_ens3_vs_single_{l,g}_val.{json,txt}`.
+
+### 12D results, ViT-L (2026-11-11, queue B, then queue C for the addendum; `runs/causal_l_s{0,1,2}`, `runs/review/`)
+
+- Training: seeds 0, 1 and 2 trained 08:20–09:45. Holdout CC (causal, every 10th frame) by epoch, best in bold:
+  - s0: 0.5577 / **0.5721** / 0.5644
+  - s1: 0.5629 / **0.5737** / 0.5583
+  - s2: 0.5556 / **0.5698** / 0.5571
+  - The second epoch is best for all three.
+- σ from the holdout (09:45–10:05): 8 for seed 0 and 8 for the ensemble. For seed 0, σ 8 and σ 12 tie at four decimals
+  (0.57410 and 0.57411). `scripts/tune_sigma.py` breaks such ties toward the smaller σ.
+- Val, causal, every 10th frame (100 videos, 6,076 frames; scored 10:05–10:56). Metrics in the order CC / NSS / SIM /
+  KLD / AUC-J / sAUC:
+  - causal s0: 0.5842 / 3.346 / 0.4511 / 1.212 / 0.9281 / 0.7600
+  - causal s1 and s2: CC 0.5767 and 0.5792. Single-seed mean 0.5801, SD 0.0038.
+  - ensemble: 0.5900 / 3.390 / 0.4495 / 1.189 / 0.9294 / 0.7607
+- **Primary reading (the 12D rule, as for ViT-g):** causal ViT-L ensemble − SalFoM(σ 16), ΔCC **+0.0171
+  [+0.0071, +0.0275]**, above 0. So "better under an identical protocol" also holds with the ViT-L encoder, which is
+  the size of SalFoM's.
+- Secondary:
+  - Single seeds − SalFoM(σ 16): s0 +0.0113 [+0.0009, +0.0221]; s1 +0.0038 [−0.0062, +0.0142]; s2 +0.0063
+    [−0.0049, +0.0180]. As offline (12C), a single ViT-L model is not reliably better than SalFoM at its best blur.
+  - The ensemble is better on all six metrics: AUC-J +0.0028 [+0.0011, +0.0045], sAUC +0.0066 [+0.0002, +0.0135].
+  - Against SalFoM as released, CC is above 0 for every seed (s0 +0.0220, s1 +0.0145, s2 +0.0170) and for the
+    ensemble (+0.0278 [+0.0175, +0.0384]).
+  - Cost: a single causal ViT-L model needs 1.82 TFLOPs per output frame, close to SalFoM's encoder at 1.90
+    (section 5 of the thesis). The ensemble needs three times as much.
+- 12D addendum: the offline ViT-L models were rescored on the same 6,076 frames (`scripts/queue_review_c.sh`,
+  10:57–11:20): `runs/main_b1_s0` at σ 12 and the ensemble `runs/main_b1_s{0,1,2}` at σ 8, both with no new tuning.
+  - Offline s0: 0.5812 / 3.321 / 0.4486 / 1.229 / 0.9274 / 0.7611.
+  - Offline ensemble: 0.5888 / 3.390 / 0.4481 / 1.192 / 0.9293 / 0.7592.
+  - On all frames these models score CC 0.5836 and 0.5910.
+- Causal − offline on these frames:
+  - s0: CC +0.0030 [−0.0014, +0.0077], NSS +0.0249 [−0.0041, +0.0560], SIM +0.0025 [−0.0007, +0.0060], KLD
+    −0.0172 [−0.0293, −0.0052], AUC-J +0.0007 [−0.0001, +0.0016], sAUC −0.0011 [−0.0041, +0.0019].
+  - ensemble: CC +0.0012 [−0.0022, +0.0047], NSS +0.0007 [−0.0203, +0.0225], SIM +0.0014 [−0.0009, +0.0039], KLD
+    −0.0025 [−0.0120, +0.0069], AUC-J +0.0001 [−0.0006, +0.0008], sAUC +0.0014 [−0.0009, +0.0040].
+  - Reading (descriptive, no threshold, as for ViT-g): dropping the frames after the predicted one cost no measurable
+    accuracy with ViT-L either. The only interval that excludes 0 is seed 0's KLD, and it favours the causal model.
+- Offline − SalFoM on these frames:
+  - against SalFoM(σ 16): s0 CC +0.0083 [−0.0022, +0.0191], interval includes 0; ensemble +0.0159 [+0.0058, +0.0264].
+  - against SalFoM as released: s0 +0.0189 [+0.0086, +0.0297]; ensemble +0.0265 [+0.0164, +0.0371].
+  - Same picture as on all frames (12C). Files: `runs/review/offline_l_val_step10_{s0,ens3}.json`,
+    `cmp_causal_vs_offline_l_{s0,ens3}.*`, `cmp_offline_l_{s0,ens3}_step10_vs_salfom{,_best}.*`.
+- Thesis updated:
+  - ViT-L blocks in `tab:causal`; a ViT-L block in `tab:app-causal`; ViT-L columns in `tab:app-causal-offline`;
+  - a ViT-L paragraph in §5.5.2; RQ1 in §5.7 and §6.1;
+  - contribution 1 in §1.8; the abstract; future work ("Efficient causal prediction"); the val ledger; Appendix B.

@@ -30,7 +30,8 @@ an identical protocol, with both models restricted to past frames and scored on
 the same frames, the causal \acrshort{ViT}-g ensemble was more accurate than SalFoM by
 0.029 and as accurate as the offline model, so the advantage does not come from
 future context. With the \acrshort{ViT}-L encoder, the size of SalFoM's, only the
-ensemble was reliably better. The gain comes from the \acrshort{V-JEPA}~2 encoder rather
+ensemble was reliably better, offline and under the identical protocol, where
+its margin was 0.017. The gain comes from the \acrshort{V-JEPA}~2 encoder rather
 than from freezing as such, because a frozen \acrshort{UMT}-L encoder with the same
 decoder scored below SalFoM. In offline use, SURGE-D needs about one sixth of
 SalFoM's encoder computation per output frame, whereas the causal variant needs
@@ -133,10 +134,11 @@ a global audio embedding.
 \paragraph{Efficient causal prediction.} A causal model needs one forward pass
 per output frame, so the saving that SURGE-D gains from predicting sixteen
 frames per pass does not carry over to streaming use: the causal \acrshort{ViT}-g model
-needs about three times SalFoM's encoder computation per output frame. Cheaper
-causal designs, for instance with a smaller encoder, shorter windows or windows
-that forecast several frames ahead, remain to be tested, as does causal
-prediction on datasets other than DHF1K.
+needs about three times SalFoM's encoder computation per output frame, and the
+causal \acrshort{ViT}-L model, which needs about as much as SalFoM, was reliably more
+accurate only as a three-seed ensemble. Cheaper causal designs, for instance
+with shorter windows or windows that forecast several frames ahead, remain to be
+tested, as does causal prediction on datasets other than DHF1K.
 
 \paragraph{Revisiting surprise.} The negative result concerns a predictor trained
 to fill in masked content and used on its own. Two tests follow directly: whether
