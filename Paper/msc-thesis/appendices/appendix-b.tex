@@ -2,8 +2,9 @@
 \chapter{Reproducibility and Sample Code}\label{app:code}
 
 The implementation was written for this thesis and does not import code from
-other saliency projects. This appendix lists its main parts, the commands that
-produce the main results, and the forward pass of the decoder.
+other saliency projects. This appendix lists its main parts, the points at
+which the work departed from its own procedure, the commands that produce the
+main results, and the forward pass of the decoder.
 
 \section{Organisation of the Code}
 
@@ -37,12 +38,75 @@ result with the folder it was read from.
     scripts/g2\_intervals.py & bootstrap intervals of gate G2 \\
     scripts/ablation\_seeds.py & component ablations with three seeds \\
     scripts/review\_tables.py & numbers of the checks added after the first draft \\
-    scripts/queue\_review\_a.sh, \_b.sh & the runs of those checks, in order \\
+    scripts/g2\_maps.py & prediction-error maps with both mask tokens, the masked-tube readout and the checks of the visible-token encoder (\cref{sec:surprise}) \\
+    scripts/g2\_incremental.py & incremental information (\cref{eq:incremental}) and the re-scored gate G2 \\
+    scripts/make\_lc\_splits.py, scripts/learning\_curve.py & training subsets and analysis of the learning curve (\cref{sec:learning-curve}) \\
+    scripts/time\_inference.py & measured inference time of SalFoM and SURGE-D (\cref{sec:cost}) \\
+    scripts/count\_umt\_flops.py & operation count of SalFoM's encoder (\cref{sec:cost}) \\
+    scripts/queue\_review\_a.sh to \_e.sh & the runs of the checks added after the first draft, in order \\
     configs/ & configurations and all split and holdout lists \\
     research/log.md & dated decision rules and results \\
     \bottomrule
   \end{tabularx}
 \end{table}
+
+\section{Corrections and Deviations}\label{sec:deviations}
+
+The procedure of \cref{sec:design} requires every rule to be written before
+its experiment and to be applied unchanged. This section collects the points
+at which the work departed from that procedure, or at which an error in an
+earlier step was corrected, so that they need not be searched for in the log.
+
+\paragraph{The mask token of the predictor.} Gate G2 was first run with the
+mask token that the model-loading library selects by default, a zero vector
+that pre-training never updated (\cref{sec:surprise}). The error was found in
+the second follow-up, while the masked-tube readout was being prepared. Before
+any score of the corrected maps against gaze data existed, the log recorded
+that the trained token is the primary readout and what the thesis would report
+for either outcome of the re-scored gate. The re-scored gate failed as its
+first run had (\cref{sec:g2}), so the decision not to train the surprise
+module stands. The numbers of the first run are kept in
+\cref{tab:g2,tab:app-g2} as its record. The diagnostic on eleven clips without gaze data (\cref{sec:g2}) used
+the untrained token and was not repeated. SURGE-D uses only the encoder, so no
+model, score or comparison of SURGE-D is affected.
+
+\paragraph{A test of the analysis programs.} After those decisions had been
+recorded, the programs that compute the prediction-error maps and their
+incremental information were tested end to end on four of the 60 holdout
+videos. The test printed scores of these four videos against gaze data,
+including scores with the trained token, and they were seen before the analysis
+of all 60 videos had finished. No rule, margin, primary comparison or line of
+the analysis programs was changed afterwards, and the four videos are part of
+the full analysis.
+
+\paragraph{Rules and analyses added after results.} The tie margin of 0.01
+for comparisons with published numbers was fixed after the first such
+comparison had been seen (\cref{sec:design}). The bootstrap intervals of the
+first run of gate G2 were specified and computed after its outcome was known.
+The comparison of each ensemble with its seed-0 member (\cref{tab:app-ens}) was
+added after the scores that it uses. None of the three decided a model or a
+setting.
+
+\paragraph{The operation count of SalFoM's encoder.} The first draft gave 1.90
+\acrshort{TFLOPs} for SalFoM's encoder. That count omitted the products with the
+attention matrices, which the counts of SURGE-D include; with them, it is 2.87
+\acrshort{TFLOPs} (\cref{sec:cost}). The correction raises SalFoM's encoder
+computation per output frame from about 17 to about 25 times that of SURGE-D
+with \acrshort{ViT}-L and from about 6 to about 9 times that with
+\acrshort{ViT}-g, and it makes a causal \acrshort{ViT}-L model cheaper than
+SalFoM's encoder rather than comparable to it.
+
+\paragraph{The measured times.} The protocol of the timing required that
+nothing else be started on the machine while it ran. Short commands were
+started during the first run, and two brief file searches during the second;
+neither used the \acrshort{GPU}. The measurement was therefore made a third time
+under the same rule, which it met, and the third run is reported
+(\cref{tab:timing}). The criterion was applied to all three runs, and their
+medians differ by at most 5.1\,\%.
+
+\paragraph{Uses of the validation set.} The DHF1K validation set is the test
+set of this thesis. \Cref{tab:val-ledger} lists every use of it, including
+the two decisions about the test-set submission that it informed.
 
 \section{Commands for the Main Results}
 
@@ -85,6 +149,23 @@ causally whenever its configuration names this target. The \acrshort{ViT}-L vari
 trained with the same command, in which \verb|vjepa2_l| replaces \verb|vjepa2_g|.
 For the comparison of \cref{sec:main-results}, SalFoM's saved maps
 are blurred by passing \verb|--sigma| together with \verb|--maps|.
+
+The analyses of the second follow-up (the learning curve of
+\cref{sec:learning-curve}, the prediction-error maps and their incremental
+information in \cref{sec:g2}, and the measured times of \cref{sec:cost}) are
+run with:
+
+\begin{small}
+\begin{verbatim}
+bash scripts/queue_review_d.sh      # six training runs and their analysis
+python scripts/g2_maps.py --out runs/g2/maps
+python scripts/g2_incremental.py --out runs/review/g2_incremental.json
+python -I scripts/time_inference.py --out runs/review/timing_run3.json
+\end{verbatim}
+\end{small}
+
+\noindent The last command needs SalFoM's released code and weights, which are
+not part of the repository of the thesis.
 
 \section{Forward Pass of the Decoder}
 

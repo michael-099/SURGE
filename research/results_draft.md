@@ -1,8 +1,9 @@
 # SURGE-D: results section (draft)
 
-*Drafted 2026-11-09 from `research/log.md` (sections 1–11). Every number below is copied from a logged run; the log
-gives the run folder of each. Items marked **[pending]** wait on things outside this project (the DHF1K test server
-and the IMAR Hollywood-2 ground truth).*
+*Drafted 2026-11-09 from `research/log.md` (sections 1–11) and updated 2026-11-12 with the controls of sections 12
+and 13. Every number below is copied from a logged run; the log gives the run folder of each. Items marked
+**[pending]** wait on things outside this project (the DHF1K test server and the IMAR Hollywood-2 ground truth). The
+full account, with methods, intervals and limitations, is the thesis in `Paper/msc-thesis/` (`main.pdf`).*
 
 ## 5 Experiments
 
@@ -51,6 +52,16 @@ SURGE-D with ViT-g beats SalFoM by +0.036 CC [+0.026, +0.048] as a single model 
 ensemble, and is better on all six metrics. ViT-g improves on ViT-L by +0.017 CC [+0.012, +0.022] (single) and
 +0.012 [+0.008, +0.016] (ensemble), again on all six metrics. Seed ensembling adds +0.007 CC with ViT-L but only
 +0.003 with ViT-g. Published DHF1K val references from other evaluators: TMFI-Net 0.554 CC, ViNet-E 0.549.
+
+Two controls were added later, each under a rule written before it was run (log section 12). *Baseline blur:*
+SalFoM's maps score best with a blur of σ 16 px (CC 0.564 → 0.574). Against that upper bound, the ViT-g ensemble is
+still ahead by +0.029 [+0.019, +0.039], as is every ViT-g seed; with ViT-L only the ensemble is (+0.017 [+0.007,
++0.027]). *Identical protocol:* SalFoM predicts each frame from past frames only, while offline SURGE-D also sees
+later frames. Retrained to predict the last frame of its window and scored on every tenth frame, the causal ViT-g
+ensemble reaches 0.602 CC (+0.029 [+0.019, +0.040] over SalFoM at its best blur on the same frames) and the causal
+ViT-L ensemble 0.590 (+0.017 [+0.007, +0.028]); both match their offline versions, so the advantage does not come from
+future context. With the same decoder, a frozen UMT-L encoder (SalFoM's family) scores 0.545, below SalFoM: the gain
+comes from the V-JEPA 2 encoder, not from freezing as such.
 
 **DHF1K test.** Maps for videos 701–1000 from the ViT-g ensemble (σ fixed on the holdout) have been generated and
 checked (re-scoring val maps written by the same script reproduces the evaluator to |ΔCC| ≤ 8·10⁻⁵). **[pending:
@@ -129,18 +140,21 @@ All of these were decided by rules written before the runs; negative outcomes ar
 |---|---|
 | Backbone (frozen, 10 epochs, seed 0) | V-JEPA 2 ViT-L 0.578 CC > V-JEPA 2.1 ViT-L 0.569 > UMT-L 0.546. |
 | Larger backbone (ViT-g) | +0.008 holdout CC over the ViT-L 3-seed mean; +0.017 on DHF1K val (Table 1). Adopted. |
-| Predictive "surprise" as a cue (V-JEPA 2 predictor error) | No: anti-correlated with fixations (NSS −0.19 at 4 fps, −0.50 at 15 fps vs +0.81 for plain frame difference). The surprise module was dropped. |
+| Predictive "surprise" as a cue (V-JEPA 2 predictor error) | No: anti-correlated with fixations. Raw NSS −0.67 at 4 fps and −0.88 at 15 fps with the predictor's trained mask token (−0.19 and −0.50 with the untrained token that the HF port reads by default), against +0.81 for plain frame difference; a masked-tube readout that follows pre-training scores −0.96. Combined with the centre prior, frame difference and atypicality, the error adds +0.069 [+0.035, +0.107] (raw) and +0.062 [+0.032, +0.093] (masked tube) bits per fixation at 4 fps, but with a negative weight: fixations avoid high-error regions. The surprise module was dropped. |
+| Inference cost against SalFoM (same GPU, three timing runs) | Offline, SalFoM needs 22–26× the time per output frame of SURGE-D ViT-g (41–64× that of ViT-L) and about 9× its encoder TFLOPs (2.87 against 0.33). A causal SURGE-D needs one pass per output frame: ViT-g takes 0.61–0.73× SalFoM's time with 1.83× its encoder TFLOPs, ViT-L 0.25–0.39× with 0.64×. |
 | LoRA fine-tuning of the backbone | No: lower than the frozen backbone in 3/3 seeds (mean −0.0025 CC). |
-| Centre prior, auxiliary heads, SALICON co-training | No measurable effect (ΔCC within ±0.003, one seed). |
-| Frame stride 4 instead of 2 | +0.003 CC, at the threshold; not adopted. |
+| Centre prior, auxiliary heads (three seeds) | Removing either is equivalent to keeping it: −0.0010 CC each, 90 % interval within ±0.003. |
+| SALICON co-training (three seeds) | Inconclusive: +0.0009 CC [−0.0039, +0.0058]. |
+| Frame stride 4 instead of 2 (three seeds) | Inconclusive: +0.0029 CC [−0.0009, +0.0068], positive in every seed, at half the cost per output frame; not adopted. |
 | 32-frame clips instead of 16 (ViT-g) | 0.5902 holdout CC vs the pre-set bar of 0.5904: not adopted (still improving at the last epoch). |
 | All 600 training videos instead of 540 (ViT-g) | DHF1K val ensemble CC 0.604 vs 0.603, ΔCC +0.002 [−0.001, +0.004]: no gain. |
+| Learning curve: 135 / 270 / 540 training videos (ViT-L, three seeds) | Holdout CC 0.5645 / 0.5729 / 0.5783. 135 → 270 is an effect (+0.0084 [+0.0004, +0.0164]); 270 → 540 is inconclusive (+0.0054 [−0.0011, +0.0112]). Whether the amount of data limits the model at 540 videos stays open. |
 | Seed ensembles | +0.003 to +0.015 CC on most datasets (none on Coutrot2, SumMe with ViT-g); lowers NSS/SIM on Hollywood (Vig) with its ≤ 5 viewers per frame. |
 | Audio (frozen AST features, FiLM + audio-visual correlation fusion, STAViS) | No dataset improves (fold-mean ΔCC −0.002 to +0.001). On Coutrot2 the model does use the sound (another video's soundtrack costs −0.018 CC), but the matching soundtrack only matches the visual model. |
 
 Two readings follow. First, almost all of the gain comes from the frozen video representation: a better encoder
 (V-JEPA 2 over 2.1 and UMT, ViT-g over ViT-L) moves every benchmark, while decoder additions, backbone fine-tuning,
-more data and longer clips do not. Second, frozen self-supervised video features with a light decoder beat the
+11 % more training videos and longer clips do not. Second, frozen self-supervised video features with a light decoder beat the
 best published visual-only and audio-visual models on DIEM and SumMe and match them within 0.01 CC on Coutrot1, ETMD
 and AVAD; the one clear failure is speaker-driven attention, which our audio module did not solve.
 
@@ -151,4 +165,7 @@ and AVAD; the one clear failure is speaker-driven attention, which our audio mod
   cross-paper disagreement we observed (e.g. the same baseline reported 0.734 vs 0.652 on Coutrot2).
 - Several STAViS test sets are small (12–23 videos), so per-dataset intervals are wide.
 - Hollywood-2 is evaluated on a different, smaller-viewer ground truth than the literature.
-- Ablations are single-seed; the stride-4 and 32-frame results sit at their thresholds.
+- The component ablations use three seeds; the encoder comparison and the 32-frame test use one seed each, and the
+  32-frame result sits at its threshold.
+- Only one baseline, SalFoM, was re-scored with our evaluator; how its released weights were selected is not
+  documented.

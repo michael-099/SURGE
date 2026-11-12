@@ -8,6 +8,8 @@ Writes into Paper/msc-thesis/figures/:
                        runs/metric_check/salfom_val_all.json)
   sigma.pdf            holdout CC against the output blur sigma (runs/final/sigma_*.json, runs/vitg/sigma_*.json)
   qualitative.pdf      DHF1K-val examples (runs/thesis/qualitative.npz, from scripts/thesis_qualitative.py)
+  learning_curve.pdf   holdout CC against the number of training videos (runs/review/learning_curve.json, from
+                       scripts/learning_curve.py)
 """
 from __future__ import annotations
 
@@ -18,6 +20,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib import patheffects  # noqa: E402
 import numpy as np  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -180,10 +183,43 @@ def qualitative():
     plt.close(fig)
 
 
+def learning_curve(path=None):
+    p = Path(path) if path else ROOT / "runs/review/learning_curve.json"
+    if not p.exists():
+        print("learning_curve.json missing; skipped")
+        return
+    arms = json.load(open(p))["arms"]
+    ns = sorted(int(k) for k in arms)
+    seeds = np.array([arms[str(n)]["cc"]["per_seed"] for n in ns])  # arms x seeds
+    mean = seeds.mean(1)
+    col = C["vjepa2"]
+    fig, ax = plt.subplots(figsize=(TEXTW * 0.62, 2.4))
+    for s in range(seeds.shape[1]):  # the subsets are nested within a seed, so each seed is one curve
+        ax.plot(ns, seeds[:, s], "-o", lw=0.7, ms=3, color=col, alpha=0.45, mfc="white", zorder=2)
+    ax.plot(ns, mean, "-o", lw=1.8, ms=5.5, color=col, zorder=3)
+    halo = [patheffects.withStroke(linewidth=2.5, foreground="white")]  # keeps the labels clear of the seed curves
+    for n, m in zip(ns, mean):
+        ax.annotate(f"{m:.3f}", (n, m), textcoords="offset points", xytext=(-6, 6), ha="right", va="bottom",
+                    fontsize=8, color="black", path_effects=halo, zorder=4)
+    ax.set_xscale("log", base=2)
+    ax.set_xticks(ns)
+    ax.set_xticklabels([str(n) for n in ns])
+    ax.minorticks_off()
+    ax.set_xlim(ns[0] / 1.35, ns[-1] * 1.2)
+    lo, hi = seeds.min(), seeds.max()
+    ax.set_ylim(lo - 0.15 * (hi - lo), hi + 0.22 * (hi - lo))
+    ax.set_xlabel("Training videos (logarithmic scale)")
+    ax.set_ylabel("Holdout CC")
+    ax.grid(alpha=0.25, lw=0.5)
+    fig.savefig(OUT / (p.stem + ".pdf") if path is None else Path(path).with_suffix(".pdf"))
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     g1_curves()
     val_delta()
     sigma()
     qualitative()
+    learning_curve()
     print("figures written to", OUT)

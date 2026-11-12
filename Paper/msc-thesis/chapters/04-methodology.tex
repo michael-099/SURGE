@@ -61,8 +61,9 @@ listed with every other use of the set in \cref{tab:val-ledger}.
   \centering
   \caption{Decision rules, each written before the experiment that it
   governs, except the one marked $^{\ast}$ (see text). Rules marked $^{\dagger}$
-  were written in a follow-up after the first draft of this thesis, before the
-  runs they govern. Holdout \acrshort{CC} is measured on the internal 60-video DHF1K
+  were written in a follow-up after the first draft of this thesis and rules
+  marked $^{\ddagger}$ in a second follow-up, in each case before the runs they
+  govern. Holdout \acrshort{CC} is measured on the internal 60-video DHF1K
   holdout unless stated otherwise; outcomes are reported in
   \cref{ch:experiments}}\label{tab:rules}
   \small
@@ -105,6 +106,20 @@ listed with every other use of the set in \cref{tab:val-ledger}.
       seed-averaged $\Delta$\acrshort{CC} excludes zero and $|\Delta\mathrm{CC}|\geq0.003$;
       equivalence if the 90\,\% interval lies within $\pm0.003$; otherwise
       inconclusive \\
+    Training-set size$^{\ddagger}$ & With 135, 270 and 540 training videos and
+      three seeds, accuracy at 540 videos is limited by the amount of data if
+      halving it is an effect with a negative sign, and is not if halving it is
+      equivalent, both as defined for the three-seed ablations; otherwise
+      inconclusive \\
+    Incremental information$^{\ddagger}$ & A prediction-error map adds
+      information to the centre prior, frame difference and token atypicality if
+      the 95\,\% interval of its cross-fitted information gain lies above zero;
+      the gain is negligible if the 90\,\% interval lies within $\pm0.01$ bits
+      per fixation; otherwise inconclusive \\
+    Measured time$^{\ddagger}$ & The statement that offline SURGE-D costs less
+      per output frame than SalFoM is withdrawn if SalFoM's measured time per
+      output frame is less than twice that of SURGE-D with \acrshort{ViT}-g at a
+      batch size of one or of eight \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -209,11 +224,11 @@ code.
       action recognition & 741 / 82 / 884 \\
     DIEM~\cite{mital2011clustering} & 84 videos of many genres; audio
       present & one standard split, 64 training and 17 test videos \\
-    Coutrot1~\cite{coutrot2012influence,coutrot2014how} & 60 clips in four
+    Coutrot1~\cite{coutrot2014how} & 60 clips in four
       visual categories & \multirow{5}{=}{three folds each, every listed test
       video tested once~\cite{tsiami2020stavis} (SumMe: 23 of 25); holdout =
       10\,\% of each training fold (1--4 videos)} \\
-    Coutrot2~\cite{coutrot2012influence,coutrot2014how} & 15 clips of four
+    Coutrot2~\cite{coutrot2015efficient} & 15 clips of four
       people in a meeting & \\
     ETMD~\cite{koutras2015perceptually,tsiami2019behaviorally} & 12 clips
       from six Hollywood movies & \\
@@ -250,7 +265,7 @@ reported under the separate name \enquote{Hollywood-2 (Vig gaze)} and are not
 compared with published Hollywood-2 numbers.
 
 The six audio-visual datasets (DIEM~\cite{mital2011clustering},
-Coutrot1 and Coutrot2~\cite{coutrot2012influence,coutrot2014how},
+Coutrot1~\cite{coutrot2014how}, Coutrot2~\cite{coutrot2015efficient},
 ETMD~\cite{koutras2015perceptually}, AVAD~\cite{min2016fixation} and
 SumMe~\cite{gygli2014creating}) were used in the preprocessed form and with
 the fold lists released by Tsiami et al.~\cite{tsiami2020stavis}, whose
@@ -369,7 +384,8 @@ choice leaves the visible tokens without a direct training signal and that
 frozen \acrshort{V-JEPA}~2 features consequently carry little local structure, reaching
 only 22.2 \acrshort{mIoU} in linear-probe semantic segmentation on ADE20K. Whether such
 features suit a dense task such as saliency prediction was therefore an open
-question, which gate G1 addresses (\cref{sec:g1}). Two sizes were used. \acrshort{ViT}-L/16 has 24 transformer blocks of width
+question, which gate G1 addresses (\cref{sec:g1}). Two sizes were used.
+\acrshort{ViT}-L/16 has 24 transformer blocks of width
 $D=1024$ and 303.9 million encoder parameters; \acrshort{ViT}-g/16 has 40 blocks of
 width $D=1408$ and 1,012.2 million parameters (both counts measured on the
 loaded checkpoints, excluding the predictor). Both embed the video in
@@ -523,6 +539,80 @@ the 60 holdout videos, at about 4 and 15 frames per second. A decoder module
 that injects the surprise map through zero-initialised feature-wise
 modulation was implemented but, following the outcome of the gate, never
 trained.
+
+\paragraph{The mask token of the predictor.} The predictor marks every
+position that it has to predict with a learned \emph{mask token}, the
+$\Delta_y$ of \cref{eq:jepa}. The released checkpoints store ten mask tokens,
+of which only the first was trained; the other nine are zero
+vectors\footnote{Parameter \texttt{predictor.embeddings.mask\_tokens} of both
+checkpoints. The released pre-training code selects the token by the index of
+a group of clips with the same number of frames, and the released
+configurations define a single group, so only the first token was ever
+used.}. The predictor of the model-loading library used here reads the second
+token by default\footnote{\texttt{mask\_index = 1} in
+\texttt{VJEPA2PredictorEmbeddings.forward} of Transformers 5.22.}, so gate G2
+was originally run with an untrained mask token. This was found after the
+first draft of the thesis, while the readout described in the next paragraph
+was being prepared. Every prediction-error map was then computed with both
+tokens, and the gate was scored again with the trained token, by its own
+rule. \Cref{sec:g2} reports both readouts. SURGE-D uses only the encoder, so
+none of its results is affected.
+
+\paragraph{Masked-tube error.} Predicting the second half of a clip from the
+first half is not the task on which the predictor was trained: the masks of
+pre-training are spatial blocks that extend over the whole clip in time
+(\cref{sec:g2}). A second readout therefore follows the geometry of those
+masks. The $16\times16$ token grid is divided into sixteen blocks of
+$4\times4$ tokens. In each of four passes, the four blocks with the same row
+and column parity are masked in all eight tubelets, which hides 25\,\% of the
+tokens and leaves visible neighbours around every masked block. The encoder
+processes the visible tokens only, the predictor predicts the masked ones,
+and the error of \cref{eq:surprise} is computed against the encoding of the
+full clip. The four passes together give one error for every token. Before
+use, the encoder restricted to visible tokens was checked in single precision
+against the encoder of the library: it reproduced the encoding of the full
+clip when all tokens were visible, and the encoding of the first eight frames
+when only their tokens were visible (tolerance $10^{-3}$). This readout
+leaves more of the clip visible than pre-training did, so it matches
+pre-training in the shape of the mask and not in its extent.
+
+\paragraph{Incremental information.} The gate compares stand-alone maps. A
+map can be a poor predictor on its own and still add information to other
+cues, so this was tested separately with a log-linear model of the fixation
+distribution, scored by its information gain over the centre
+prior~\cite{kummerer2015information}. The frame is divided into $45\times80$
+cells of $8\times8$ pixels. For a set $\mathcal{K}$ of cue maps, the
+probability that a fixation falls into cell $c$ is modelled as
+\begin{equation}
+  p_{\mathcal{K}}(c) = \frac{\exp\big(w_0\log g(c)+\sum_{k\in\mathcal{K}}w_k\,\tilde z_k(c)\big)}
+  {\sum_{c'}\exp\big(w_0\log g(c')+\sum_{k\in\mathcal{K}}w_k\,\tilde z_k(c')\big)},
+  \label{eq:loglinear}
+\end{equation}
+where $g$ is the empirical centre prior of the 540 training videos and
+$\tilde z_k$ is cue $k$, upsampled and blurred as for the gate, averaged
+within each cell and standardised over the cells of the frame. The
+information gain is measured in bits per fixation,
+\begin{equation}
+  \mathrm{IG}(\mathcal{K}) = \frac{1}{N}\sum_{i=1}^{N}
+  \big[\log_2 p_{\mathcal{K}}(c_i)-\log_2 g(c_i)\big],
+  \label{eq:ig}
+\end{equation}
+where $c_1,\dots,c_N$ are the cells of the fixations of a frame; the gain is
+averaged over the scored frames of a video and then over videos. The weights
+are fitted by maximum likelihood, which is a concave problem, and they are
+cross-fitted: the 60 holdout videos are divided into two halves by
+alternating video number, and each half is scored with the weights fitted on
+the other. With the baseline set $\mathcal{B}$ of frame difference and token
+atypicality, the \emph{incremental information} of a prediction-error map $e$
+is
+\begin{equation}
+  U(e) = \mathrm{IG}(\mathcal{B}\cup\{e\})-\mathrm{IG}(\mathcal{B}),
+  \label{eq:incremental}
+\end{equation}
+computed per video and reported with bootstrap intervals over the videos, the
+fitted weights being held fixed. \Cref{tab:rules} gives the rule by which $U$
+is read. The primary comparisons, fixed in advance, are the raw surprise and
+the masked-tube error at about 4\,fps, both with the trained mask token.
 
 \subsection{Low-Rank Adaptation of the Encoder}\label{sec:lora}
 
@@ -775,7 +865,11 @@ three seeds (\cref{tab:rules}), each variant is compared on the holdout with the
 reference model of the same seed. The per-video differences are averaged over
 videos and seeds, and the intervals come from a two-level bootstrap that first
 resamples the three seeds and then the videos, drawing the same videos for
-every seed because the comparison is paired.
+every seed because the comparison is paired. The learning curve over the number
+of training videos (\cref{sec:learning-curve}) is analysed in the same way.
+There, the training subsets are drawn separately for each seed, so the
+resampling of seeds also covers the choice of subset. With three seeds, the
+seed level of this bootstrap is coarse, and its intervals are approximate.
 
 Published results of other methods were computed with other evaluation code
 and, sometimes, other protocol details. They cannot enter a paired test. They

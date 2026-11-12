@@ -360,7 +360,8 @@ A \acrshort{JEPA} model also contains its predictor $P_\phi$. Models that learn 
 how their environment evolves are often called \emph{world models}. Ha and
 Schmidhuber~\cite{ha2018recurrent}, for example, trained a generative recurrent
 model of reinforcement-learning environments and used its compressed
-spatio-temporal representation for control. A \acrshort{JEPA} video model resembles a world model in that its predictor
+spatio-temporal representation for control. A \acrshort{JEPA} video model
+resembles a world model in that its predictor
 anticipates unseen content, but it predicts representations rather than pixels,
 and the content it predicts need not lie in the future: masks may cover any part
 of a clip. After training, the predictor's error on a new video, the difference
@@ -420,8 +421,8 @@ thesis. They differ in size, content and, importantly, viewing task.
     UCF Sports~\cite{rodriguez2008action,mathe2015actions} & 150 & 19 & sports videos; same protocol as Hollywood-2 \\
     Hollywood-2, Vig et al.~\cite{vig2012space} & 1,707 & 4 + 1 pooled & independent recording during action recognition \\
     DIEM~\cite{mital2011clustering} & 84 & 42 & advertisements, trailers, documentaries; audio on \\
-    Coutrot1~\cite{coutrot2012influence,coutrot2014how} & 60 & 72 & four visual categories; with and without sound \\
-    Coutrot2~\cite{coutrot2014how} & 15 & 40 & four people in meetings \\
+    Coutrot1~\cite{coutrot2014how} & 60 & 72 & four visual categories: one or several moving objects, landscapes, faces \\
+    Coutrot2~\cite{coutrot2015efficient} & 15 & 40 & four people in a meeting \\
     ETMD~\cite{koutras2015perceptually,tsiami2019behaviorally} & 12 & 10 & clips from Hollywood movies \\
     AVAD~\cite{min2016fixation} & 45 & 16 & short audio-visual scenes \\
     SumMe~\cite{gygli2014creating,tsiami2019behaviorally} & 25 & 10 & user-made videos \\

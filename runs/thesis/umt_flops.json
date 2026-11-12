@@ -1,5 +1,9 @@
 {
- "umt_l_encoder_tflops_per_clip_16x224": 1.89901307904,
+ "umt_l_encoder_tflops_per_clip_16x224": 2.865783373824,
+ "attention_products_tflops": 0.966770294784,
+ "attention_products_tflops_closed_form": 0.966770294784,
+ "first_version_without_attention_products_tflops": 1.89901307904,
+ "max_abs_diff_explicit_vs_fused_attention": 0.0028076171875,
  "tokens": 3136,
  "encoder_params_M": 303.072256
 }

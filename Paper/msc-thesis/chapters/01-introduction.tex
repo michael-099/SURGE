@@ -235,13 +235,16 @@ The main contributions of this thesis are:
     restricted, like SalFoM, to past frames. With the \acrshort{ViT}-L encoder, the size of
     SalFoM's, the ensemble remains better under both conditions, but single
     models are not reliably better. In offline prediction, SalFoM's
-    per-frame design requires about six times more encoder computation per
-    output frame.
-  \item \textbf{A negative result on predictive surprise}: used on its own, the
-    error of the pretrained \acrshort{V-JEPA}~2 predictor is a weaker fixation cue than frame
-    difference and token atypicality, and its raw form is anti-correlated with
-    fixations; diagnostics suggest that it mainly reflects how atypical a region
-    is rather than violated expectations.
+    per-frame design needs about nine times the encoder computation per
+    output frame of SURGE-D with \acrshort{ViT}-g and, as released, more than
+    twenty times its measured time.
+  \item \textbf{A negative result on predictive surprise}: the error of the
+    pretrained \acrshort{V-JEPA}~2 predictor is anti-correlated with fixations, both
+    when it forecasts the second half of a clip and when it fills in masked
+    tubes as in pre-training. Combined with frame difference, token
+    atypicality and the centre bias, the error adds a modest amount of
+    information about fixations, but with a negative weight: observers tend to
+    look away from regions that the predictor finds hard to predict.
   \item \textbf{Controlled evidence on what matters} once the encoder is frozen:
     the encoder's pre-training and scale produce the only large gains, seed
     ensembles a small one. Over three seeds, the learned centre prior and deep

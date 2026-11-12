@@ -1234,3 +1234,43 @@ section and table numbers refer to the revised thesis (`main.pdf` after this fol
   one seed per encoder. The centre prior and deep supervision are equivalent to their absence, LoRA lost in every
   seed, and SALICON and stride 4 are inconclusive.
 - **RQ4:** unchanged by the follow-up.
+
+## Section 12: Second follow-up results (added 2026-11-12)
+
+The items of Section 11.2 that decide sentences the thesis had hedged were run on the same workstation, under rules
+written in `research/log.md` §13 and its addenda before the runs. Result files are named in the table. Section and
+table numbers refer to the revised thesis (`main.pdf` after this follow-up).
+
+### 12.1 Results
+
+| Item | Rule | Result (file) | Effect on the claims | Thesis |
+|---|---|---|---|---|
+| **F8** = T9, learning curve | 13A | Holdout CC with 135 / 270 / 540 training videos (ViT-L, three seeds): 0.5645 / 0.5729 / 0.5783. 135 → 270: +0.0084 [+0.0004, +0.0164], an effect; 270 → 540: +0.0054 [−0.0011, +0.0112], inconclusive (`runs/review/learning_curve.{json,txt}`) | C12 stays open: the amount of data matters between 135 and 270 videos; whether it still limits the model at 540 is neither established nor refuted | §5.6, RQ3, §6.1 |
+| Mask token (found while preparing F9) | 13B/13C addendum | The HF port's predictor reads mask token 1 by default, a zero vector; only token 0 was trained. Gate G2 re-scored with token 0: **NO-GO** again, and every error map scores lower (raw NSS at ~4 fps −0.665 [−0.763, −0.566], against −0.190 with token 1) (`runs/review/g2_incremental.{json,txt}`) | C6 holds with the trained token. No SURGE-D result is affected (it uses the encoder only) | §4.5.1, §5.4, T5.3, TA.9, TA.10, B.2 |
+| **F1b** = T8, incremental information | 13B | Primary (raw surprise, trained token, ~4 fps): U = +0.0693 [+0.0346, +0.1065] bits per fixation, fitted weights −0.34 / −0.40, so "incremental information" by the rule, with a **negative** sign. For scale, frame difference and atypicality together gain 0.3300 [0.2210, 0.4479] over the prior | C9 is answered: the error carries information beyond the simple cues, but fixations avoid high-error regions. §13B fixed this reading of a negative weight in advance: "information but not the 'surprise attracts gaze' hypothesis" | T5.4, §5.4, RQ2, §6.1 |
+| **F9**, in-distribution readout (masked tubes) | 13C | Masked-tube error, trained token: NSS −0.958 [−1.046, −0.873] at ~4 fps; U = +0.0619 [+0.0320, +0.0926], weights −0.34 / −0.41 | The first draft's "unfamiliar query" explanation is withdrawn: the readout that matches pre-training in mask shape is at least as anti-correlated | §4.5.1, §5.4, §5.8, §6.3 |
+| **F6** = T10, measured time | 13D | Released SalFoM and SURGE-D on the same RTX A5000, bf16, three runs; the third is reported (short commands ran during runs 1 and 2). SalFoM / offline ViT-g per output frame: 21.9–22.2× at batch 1, 26.2–26.4× at batch 8; SalFoM / offline ViT-L: 41–64×. Causal ViT-L takes 0.25–0.39× and causal ViT-g 0.61–0.73× SalFoM's time. Medians within 5.1 % across runs (`runs/review/timing{,_run2,_run3}.{json,txt}`) | C5's criterion (ratio ≥ 2 at both batch sizes, in every run) is met by a wide margin. The ratios reflect the released implementations (explicit attention over 3,136 tokens against fused attention over 2,048) | T5.13, §5.5.5, B.2 |
+| FLOP count of SalFoM's encoder | — | Recounted with the attention products, which the SURGE-D counts include: 2.866 TFLOPs per clip; the first count, 1.899, omitted them (`runs/thesis/umt_flops.json`, `scripts/count_umt_flops.py`) | Offline, SalFoM needs about 25× (ViT-L) and 9× (ViT-g) the encoder computation per output frame, not 17× and 6×. Causal ViT-L needs 0.64× and causal ViT-g 1.83× | §5.5.5, abstract, §1.8, §6.1, B.2 |
+
+### 12.2 Disclosures in the thesis
+
+Appendix B.2 collects the untrained mask token of the first gate run, the four-video end-to-end test whose gaze
+scores were seen before the full analysis had finished (nothing was changed afterwards), the rules and analyses added
+after results, the FLOP-count correction, and the protocol deviation of the first two timing runs.
+
+### 12.3 Status of the main claims after the second follow-up
+
+- **RQ1:** unchanged in accuracy. The offline efficiency statement now rests on measured time as well as on
+  operations. A causal model takes less time than SalFoM, and the causal ViT-L model also needs fewer operations,
+  but only the ensembles are reliably more accurate.
+- **RQ2:** answered as posed. The predictor's error adds information beyond the centre prior, frame difference and
+  atypicality, with a negative weight. The surprise hypothesis is not supported for this predictor and these two
+  readouts.
+- **RQ3:** the data-limitation question remains open at 540 videos.
+- **RQ4:** unchanged.
+
+### 12.4 Still outstanding
+
+- T1 (SalFoM's provenance), F10–F14, T11, T13, T18 and T19 of Section 11.2 were not run.
+- T20 (DHF1K official test scores) and the IMAR request for the standard Hollywood-2 ground truth are the user's
+  actions.

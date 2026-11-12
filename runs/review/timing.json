@@ -1,0 +1,197 @@
+{
+ "device": "NVIDIA RTX A5000",
+ "torch": "2.14.1+cu130",
+ "autocast": "bfloat16",
+ "warm_up": 10,
+ "timed": 50,
+ "models": {
+  "salfom": {
+   "parameters": 402945443,
+   "missing_keys": 0,
+   "unexpected_keys": 0,
+   "input": [
+    3,
+    16,
+    224,
+    224
+   ],
+   "maps_per_pass": 1,
+   "batch": {
+    "1": {
+     "median_ms": 227.15235000941902,
+     "q1_ms": 226.30707500502467,
+     "q3_ms": 227.87717494065873,
+     "peak_mem_gb": 3.5791120529174805,
+     "passes": 50,
+     "output_shape": [
+      1,
+      224,
+      224
+     ],
+     "ms_per_output_frame": 227.15235000941902,
+     "encoder": {
+      "median_ms": 207.28275005239993,
+      "q1_ms": 206.79290007683448,
+      "q3_ms": 207.77184999315068,
+      "peak_mem_gb": 3.5791120529174805,
+      "passes": 50
+     }
+    },
+    "8": {
+     "median_ms": 1624.5574500062503,
+     "q1_ms": 1608.0325250513852,
+     "q3_ms": 1634.2348249745555,
+     "peak_mem_gb": 14.196587562561035,
+     "passes": 50,
+     "output_shape": [
+      8,
+      224,
+      224
+     ],
+     "ms_per_output_frame": 203.0696812507813,
+     "encoder": {
+      "median_ms": 1605.572399974335,
+      "q1_ms": 1602.5028500298504,
+      "q3_ms": 1606.2896499643102,
+      "peak_mem_gb": 14.196587562561035,
+      "passes": 50
+     }
+    }
+   }
+  },
+  "surge_l": {
+   "run": "runs/main_b1_s0",
+   "backbone": "vjepa2_l",
+   "parameters": 332964012,
+   "decoder_parameters": 6992684,
+   "input": [
+    16,
+    3,
+    256,
+    256
+   ],
+   "maps_per_pass": 16,
+   "batch": {
+    "1": {
+     "median_ms": 86.57075004884973,
+     "q1_ms": 84.30039999075234,
+     "q3_ms": 133.58547500683926,
+     "peak_mem_gb": 2.0838589668273926,
+     "passes": 50,
+     "output_shape": [
+      1,
+      16,
+      64,
+      64
+     ],
+     "ms_per_output_frame": 5.410671878053108,
+     "ms_per_output_frame_causal": 86.57075004884973,
+     "encoder": {
+      "median_ms": 74.18925000820309,
+      "q1_ms": 72.97882498824038,
+      "q3_ms": 75.05519999540411,
+      "peak_mem_gb": 1.9653525352478027,
+      "passes": 50
+     }
+    },
+    "8": {
+     "median_ms": 409.4757999991998,
+     "q1_ms": 408.16689998609945,
+     "q3_ms": 410.05347500322387,
+     "peak_mem_gb": 3.8469347953796387,
+     "passes": 50,
+     "output_shape": [
+      8,
+      16,
+      64,
+      64
+     ],
+     "ms_per_output_frame": 3.1990296874937485,
+     "ms_per_output_frame_causal": 51.184474999899976,
+     "encoder": {
+      "median_ms": 356.8686000071466,
+      "q1_ms": 356.1441500496585,
+      "q3_ms": 357.60480002500117,
+      "peak_mem_gb": 3.029162883758545,
+      "passes": 50
+     }
+    }
+   }
+  },
+  "surge_g": {
+   "run": "runs/vitg_s0",
+   "backbone": "vjepa2_g",
+   "parameters": 1041941164,
+   "decoder_parameters": 7385900,
+   "input": [
+    16,
+    3,
+    256,
+    256
+   ],
+   "maps_per_pass": 16,
+   "batch": {
+    "1": {
+     "median_ms": 165.6062999390997,
+     "q1_ms": 163.72837501694448,
+     "q3_ms": 186.53967502177693,
+     "peak_mem_gb": 6.159973621368408,
+     "passes": 50,
+     "output_shape": [
+      1,
+      16,
+      64,
+      64
+     ],
+     "ms_per_output_frame": 10.350393746193731,
+     "ms_per_output_frame_causal": 165.6062999390997,
+     "encoder": {
+      "median_ms": 165.27629998745397,
+      "q1_ms": 153.9237500692252,
+      "q3_ms": 172.86215006606653,
+      "peak_mem_gb": 6.159973621368408,
+      "passes": 50
+     }
+    },
+    "8": {
+     "median_ms": 987.8867500228807,
+     "q1_ms": 985.8534499944653,
+     "q3_ms": 988.8646749604959,
+     "peak_mem_gb": 8.210294246673584,
+     "passes": 50,
+     "output_shape": [
+      8,
+      16,
+      64,
+      64
+     ],
+     "ms_per_output_frame": 7.717865234553756,
+     "ms_per_output_frame_causal": 123.48584375286009,
+     "encoder": {
+      "median_ms": 931.7949999822304,
+      "q1_ms": 929.896000016015,
+      "q3_ms": 932.6003499736544,
+      "peak_mem_gb": 8.210294246673584,
+      "passes": 50
+     }
+    }
+   }
+  }
+ },
+ "ratios": {
+  "1": {
+   "salfom/surge_l_offline": 41.982281522337296,
+   "surge_l_causal/salfom": 0.38111316059578526,
+   "salfom/surge_g_offline": 21.94625205373973,
+   "surge_g_causal/salfom": 0.7290538703748067
+  },
+  "8": {
+   "salfom/surge_l_offline": 63.47852351750897,
+   "surge_l_causal/salfom": 0.25205375162178745,
+   "salfom/surge_g_offline": 26.31163865645326,
+   "surge_g_causal/salfom": 0.6080959156101743
+  }
+ },
+ "offline_statement_refuted": false,
+ "offline_statement_batches_measured": 2
+}

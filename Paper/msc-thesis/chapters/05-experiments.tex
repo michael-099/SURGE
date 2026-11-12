@@ -52,11 +52,14 @@ three-epoch DHF1K model took about 15 minutes of training time with the
 \acrshort{ViT}-L encoder (4.7 minutes per epoch of 4,320 clips) and about 31 minutes with
 \acrshort{ViT}-g (9.9 minutes per epoch), plus the holdout evaluation after each epoch.
 \acrshort{ViT}-g fitted in 10\,GB of \acrshort{GPU} memory at a batch size of eight. In total, the
-experiments of this chapter comprise 13 DHF1K training runs for the gates, the
-main program and its ablations, 7 further DHF1K runs for the \acrshort{ViT}-g, 600-video
-and 32-frame experiments, and 125 fine-tuning runs on the other datasets
-(including the 16 runs with audio). Holdout lists, configuration files and
-the log of every decision are part of the code accompanying the thesis.
+experiments of this chapter comprise 40 DHF1K training runs and 125
+fine-tuning runs on the other datasets (including the 16 runs with audio).
+The DHF1K runs are 13 for the gates, the main program and its first
+ablations, 7 for the \acrshort{ViT}-g, 600-video and 32-frame experiments, 14
+for the first follow-up (eight further ablation seeds and six causal models)
+and 6 for the learning curve over the number of training videos. Holdout
+lists, configuration files and the log of every decision are part of the
+code accompanying the thesis.
 
 %----------------------------------------------------------------------------
 \section{Validation of the Evaluator}\label{sec:metric-validation}
@@ -69,8 +72,16 @@ released model code and weights, for which per-frame scores computed with the
 evaluation code released by the TMFI-Net authors~\cite{zhou2023transformer}
 were available. These maps had been produced for an earlier project on the
 same machine, by a wrapper program that is not part of the code of this thesis.
-It ran SalFoM in bfloat16; on 16 test clips, the bfloat16 and single-precision
-maps agreed with a \acrshort{CC} of at least 0.9999.
+The wrapper follows the test procedure of TMFI-Net, whose scripts the SalFoM
+authors state they used for training and testing\footnote{README of the
+official SalFoM repository.}. The map of frame $t$ is predicted from the
+frames $t-15$ to $t$, the first frame being repeated before the start of a
+video. Frames are resized to $224\times224$ pixels with bilinear interpolation
+and normalised with the ImageNet statistics; the output is resized to the
+frame size, smoothed with an $11\times11$ Gaussian kernel and stored as an
+8-bit image after min--max scaling. The wrapper ran SalFoM in bfloat16; on 16
+test clips, the bfloat16 and single-precision maps agreed with a \acrshort{CC}
+of at least 0.9999.
 
 The evaluator reproduced the reference scores: \acrshort{CC} 0.5639 against 0.5642
 ($\Delta=-0.0003$) and \acrshort{NSS} 3.3264 against 3.3268 ($\Delta=-0.0004$), well within
@@ -79,7 +90,8 @@ use other normalisations and could not be compared directly. Against a second
 evaluator that follows the MIT benchmark conventions, written independently for
 the same earlier project and used here only as a reference, \acrshort{CC}, \acrshort{NSS}, \acrshort{SIM} and
 \acrshort{KLD} agreed per video to within $5\times10^{-5}$ and \acrshort{AUC-J} agreed in the mean; \acrshort{sAUC}
-differed by 0.0023, because its negatives are drawn at random. Two deviations from the reference procedures were found and
+differed by 0.0023, because its negatives are drawn at random. Two deviations
+from the reference procedures were found and
 corrected during this check, before any model was scored: the first \acrshort{AUC-J}
 implementation lacked the tie-breaking jitter of the reference code (which
 lowered \acrshort{AUC-J} by 0.010 on quantised maps), and the first shuffled \acrshort{AUC} pooled all
@@ -89,7 +101,11 @@ SalFoM's validation maps score \acrshort{CC} 0.5639, \acrshort{NSS} 3.326, \acrs
 comparisons below. They are slightly lower than SalFoM's published scores
 because they are computed on the validation set rather than on the official
 test set, on which the authors report \acrshort{CC} 0.569 and \acrshort{NSS}
-3.353~\cite{moradi2024salfom}.
+3.353~\cite{moradi2024salfom}. How the released weights were selected is not
+documented. The training script of TMFI-Net keeps the checkpoint with the
+highest \acrshort{CC} on the DHF1K validation set; if SalFoM's weights were
+chosen in the same way, its validation scores are optimistic, which would
+favour SalFoM in the comparisons of this chapter.
 
 %----------------------------------------------------------------------------
 \section{Selection of the Video Encoder (Gate G1)}\label{sec:g1}
@@ -155,69 +171,178 @@ of the main program was shortened to three epochs (\cref{sec:training}).
 
 Gate G2 tested the hypothesis that motivated the original proposal: that the
 error of \acrshort{V-JEPA}~2's pretrained predictor indicates where people look
-(\cref{sec:surprise}). No training is involved; the surprise maps and the
-reference maps were scored directly against the fixations of the 60 holdout
-videos.
+(\cref{sec:surprise}). No training is involved; the prediction-error maps and
+the reference maps were scored directly against the fixations of the 60 holdout
+videos, on 1,720 frames at about 4 sampled frames per second and on 7,904
+frames at about 15. The gate was scored twice. Its first run, on which the
+decision about the surprise module was taken, used the untrained mask token
+that the model-loading library selects by default. After this error had been
+found, every map was recomputed with the trained token and the gate was scored
+again by its own rule (\cref{sec:surprise}). \Cref{tab:g2} gives both readouts,
+together with the masked-tube error, which was added in the second follow-up
+and is not part of the gate.
 
 \begin{table}[htbp]
   \centering
-  \caption{Gate G2: zero-shot fixation prediction by surprise and reference maps
-  on the DHF1K holdout (60 videos), at about 4 and 15 sampled frames per
-  second}\label{tab:g2}
+  \caption{Gate G2: zero-shot fixation prediction by prediction-error maps and
+  reference maps on the DHF1K holdout (60 videos), at about 4 and 15 sampled
+  frames per second. The masked-tube error is not part of the gate. Intervals
+  are given in \cref{tab:app-g2,tab:app-g2-t0}}\label{tab:g2}
   \begin{tabular}{@{}lcccc@{}}
     \toprule
     & \multicolumn{2}{c}{\textbf{\acrshort{NSS}}$\uparrow$} & \multicolumn{2}{c}{\textbf{\acrshort{CC}}$\uparrow$} \\
     \cmidrule(lr){2-3}\cmidrule(l){4-5}
     \textbf{Map} & 4\,fps & 15\,fps & 4\,fps & 15\,fps \\
     \midrule
-    Raw surprise, \cref{eq:surprise}        & $-0.190$ & $-0.502$ & $-0.043$ & $-0.099$ \\
-    Contextual surprise (true $-$ other past) & $0.116$ & $-0.366$ & $0.018$ & $-0.072$ \\
-    Token atypicality                        & $0.454$ & $0.650$ & $0.081$ & $0.123$ \\
-    Frame difference                         & $0.810$ & $0.803$ & $0.149$ & $0.148$ \\
-    Empirical centre prior                   & $1.464$ & $1.479$ & $0.289$ & $0.292$ \\
+    \multicolumn{5}{@{}l}{\emph{Prediction error, trained mask token}} \\
+    Raw surprise, \cref{eq:surprise}          & $-0.665$ & $-0.877$ & $-0.129$ & $-0.168$ \\
+    Contextual surprise (true $-$ other past) & $-0.239$ & $-0.660$ & $-0.045$ & $-0.127$ \\
+    Masked-tube error                         & $-0.958$ & $-0.942$ & $-0.186$ & $-0.182$ \\
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{Prediction error, untrained mask token (first run of the gate)}} \\
+    Raw surprise                              & $-0.190$ & $-0.502$ & $-0.043$ & $-0.099$ \\
+    Contextual surprise                       & $0.116$ & $-0.366$ & $0.018$ & $-0.072$ \\
+    Masked-tube error                         & $-0.858$ & $-0.819$ & $-0.170$ & $-0.161$ \\
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{Reference maps}} \\
+    Token atypicality                         & $0.454$ & $0.650$ & $0.081$ & $0.123$ \\
+    Frame difference                          & $0.810$ & $0.803$ & $0.149$ & $0.148$ \\
+    Empirical centre prior                    & $1.464$ & $1.479$ & $0.289$ & $0.292$ \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-The outcome was unambiguous (\cref{tab:g2}). Neither surprise variant beat token
-atypicality or frame difference at either frame rate, and the raw surprise was
-\emph{anti}-correlated with fixations: its \acrshort{NSS} is negative, so observers looked
-on average at regions that the predictor found \emph{easier} than average to
-predict. Information gain over the centre prior was negative for every map.
-Bootstrap intervals over the 60 videos, computed afterwards from the stored
-per-video scores (\cref{tab:app-g2}), confirm the comparison. Every paired
-difference between a surprise map and frame difference or token atypicality
-lies below zero at both rates. The \acrshort{NSS} of the raw error lies below zero at both
-rates ($-0.190$ [$-0.332$, $-0.045$] at 4\,fps and $-0.502$ [$-0.620$, $-0.385$]
-at 15\,fps). The contextual variant is negative at 15\,fps ($-0.366$ [$-0.505$,
-$-0.225$]) but cannot be distinguished from zero at 4\,fps ($+0.116$ [$-0.043$,
-$+0.275$]). The gate therefore failed, and the surprise module was never trained.
-These are comparisons of stand-alone maps. No combination of surprise with the
-reference cues was fitted, so the gate does not show whether surprise would add
-anything to them.
+The outcome does not depend on the mask token (\cref{tab:g2}). With the trained
+token, neither surprise variant beat token atypicality or frame difference at
+either frame rate, and both were \emph{anti}-correlated with fixations. The
+\acrshort{NSS} of the raw error is $-0.665$ [$-0.763$, $-0.566$] at 4\,fps and
+$-0.877$ [$-0.958$, $-0.796$] at 15\,fps, and that of the contextual variant is
+$-0.239$ [$-0.373$, $-0.107$] and $-0.660$ [$-0.770$, $-0.548$]. A negative
+\acrshort{NSS} means that observers looked on average at regions that the
+predictor found \emph{easier} than average to predict. The information gain of
+the gate, which compares an equal mixture of a map and the centre prior with
+the prior alone, was negative for every map. The gate therefore fails with the
+trained token as it had failed in its first run, and the decision not to train
+the surprise module stands. In the first run the raw error was also negative
+at both rates ($-0.190$ [$-0.332$, $-0.045$] and $-0.502$ [$-0.620$,
+$-0.385$]); the contextual variant was negative at 15\,fps ($-0.366$ [$-0.505$,
+$-0.225$]) and could not be distinguished from zero at 4\,fps ($+0.116$
+[$-0.043$, $+0.275$]). For both tokens, every paired difference between a
+prediction-error map and frame difference or token atypicality lies below zero
+at both rates (\cref{tab:app-g2,tab:app-g2-t0}).
+
+Correcting the mask token made the anti-correlation stronger, not weaker: every
+score of a prediction-error map in \cref{tab:g2} is lower with the trained
+token. The masked-tube error, which follows the mask geometry of pre-training
+(\cref{sec:surprise}), is the most negative map of the table, with an
+\acrshort{NSS} of $-0.958$ [$-1.046$, $-0.873$] at 4\,fps and $-0.942$
+[$-1.026$, $-0.858$] at 15\,fps for the trained token.
+
+These are comparisons of stand-alone maps, and a stand-alone score can be
+negative merely because a map is low at the centre of the frame, where
+fixations concentrate. The second analysis therefore asks whether a
+prediction-error map adds information when it is combined with the centre
+prior, frame difference and token atypicality (\cref{eq:incremental}).
+\Cref{tab:g2-incremental} reports it.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Incremental information $U$ of the prediction-error maps in bits
+  per fixation, with 95\,\% bootstrap intervals
+  over the 60 holdout videos, and the fitted weight of the error map in the
+  two halves of the cross-fitting. An interval above zero is read as
+  incremental information (\cref{tab:rules}); the two primary comparisons are
+  marked $^{\star}$. The last block gives, for scale, the loss when one simple
+  cue is removed from the model of the first row, and the gain of the two
+  simple cues together over the centre prior}\label{tab:g2-incremental}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    & \multicolumn{2}{c}{\textbf{4\,fps}} & \multicolumn{2}{c}{\textbf{15\,fps}} \\
+    \cmidrule(lr){2-3}\cmidrule(l){4-5}
+    \textbf{Error map} & $U$ & \textbf{Weight} & $U$ & \textbf{Weight} \\
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{Trained mask token}} \\[3pt]
+    Raw surprise$^{\star}$ & \dci{+0.0693}{+0.0346, +0.1065} & $-$0.34 / $-$0.40 & \dci{+0.0902}{+0.0559, +0.1263} & $-$0.36 / $-$0.45 \\[5pt]
+    Contextual surprise & \dci{+0.0125}{$-$0.0035, +0.0296} & $-$0.13 / $-$0.16 & \dci{+0.0421}{+0.0184, +0.0675} & $-$0.24 / $-$0.27 \\[5pt]
+    Masked-tube error$^{\star}$ & \dci{+0.0619}{+0.0320, +0.0926} & $-$0.34 / $-$0.41 & \dci{+0.0561}{+0.0280, +0.0844} & $-$0.31 / $-$0.35 \\[5pt]
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{Untrained mask token}} \\[3pt]
+    Raw surprise & \dci{+0.0072}{$-$0.0027, +0.0176} & $-$0.13 / $-$0.12 & \dci{+0.0470}{+0.0209, +0.0739} & $-$0.28 / $-$0.34 \\[5pt]
+    Contextual surprise & \dci{$-$0.0041}{$-$0.0103, +0.0016} & $-$0.02 / +0.08 & \dci{+0.0197}{$-$0.0003, +0.0402} & $-$0.15 / $-$0.17 \\[5pt]
+    Masked-tube error & \dci{+0.0524}{+0.0220, +0.0848} & $-$0.35 / $-$0.43 & \dci{+0.0447}{+0.0184, +0.0728} & $-$0.31 / $-$0.36 \\[5pt]
+    \midrule
+    \multicolumn{5}{@{}l}{\emph{For scale}} \\[3pt]
+    Without frame difference & \dci{+0.1190}{+0.0769, +0.1675} & & \dci{+0.0935}{+0.0575, +0.1335} & \\[5pt]
+    Without token atypicality & \dci{+0.1845}{+0.1013, +0.2730} & & \dci{+0.1552}{+0.0867, +0.2282} & \\[5pt]
+    Simple cues over the prior & \dci{+0.3300}{+0.2210, +0.4479} & & \dci{+0.3137}{+0.2149, +0.4211} & \\[5pt]
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Both primary comparisons are read as incremental information by the rule of
+\cref{tab:rules}. At 4\,fps and with the trained token, the raw surprise adds
+$+0.0693$ [$+0.0346$, $+0.1065$] bits per fixation to the three simple cues,
+and the masked-tube error adds $+0.0619$ [$+0.0320$, $+0.0926$]. In both, the
+fitted weight of the error map is negative in both halves of the
+cross-fitting: a cell whose error lies one standard deviation above the mean
+of its frame receives about 30\,\% less probability, other cues being equal.
+The prediction error therefore carries information about fixations beyond the
+centre bias, motion and atypicality, but of the opposite sign to the
+hypothesis: observers look less often where the error is high. The amount is
+modest. The two simple cues together gain $0.3300$ [$0.2210$, $0.4479$] bits
+over the centre prior, nearly five times as much, and removing frame
+difference or token atypicality from the model that contains the raw surprise
+costs $0.1190$ and $0.1845$ bits.
+
+The other comparisons of \cref{tab:g2-incremental} carry no decision and
+received no correction for multiplicity. They agree in sign: wherever the
+interval of $U$ lies above zero, the weight is negative in both halves. With
+the trained token, all three maps add information at 15\,fps, and the
+contextual variant is inconclusive at 4\,fps. With the untrained token, the
+masked-tube error adds information at both rates and the raw surprise at
+15\,fps; the raw surprise at 4\,fps and the contextual variant at 15\,fps are
+inconclusive, and the contextual variant at 4\,fps is negligible (its 90\,\%
+interval, $[-0.0093, +0.0007]$, lies within $\pm0.01$ bits).
+
+Two explanations of the first negative result can now be set aside. The first
+is the untrained mask token, since the trained token gives lower scores. The
+second was offered in the first draft of this thesis. The masks of
+\acrshort{V-JEPA}~2's pre-training span the whole clip in
+time\footnote{\texttt{temporal\_scale: [1.0, 1.0]} in the released
+pre-training configuration files of the official repository.}, so the predictor
+was trained to fill in masked scene content and never to extrapolate into the
+future. Predicting the second half of a clip from the first is a query that it
+never saw, and its error was therefore thought to mix surprise with the cost
+of an unfamiliar task. The masked-tube error poses a query of the kind seen in
+pre-training, and it is anti-correlated with fixations at least as strongly as
+the forecasting error. The form of the query thus does not explain the sign,
+with the reservation that this readout hides a smaller share of the clip than
+pre-training did.
 
 A preliminary diagnostic, run before the gate on eleven clips without gaze data
 (ten Kinetics validation clips~\cite{carreira2017quo} and one animated film
-trailer), helps to explain this result. When the true past of a clip was
-replaced by another clip's past, the mean prediction error rose in every clip
-(from 0.644 to 0.731 at about 4\,fps), so the predictor does use the context.
-Yet the spatial pattern of the error correlated at $r\approx0.60$ with token
-atypicality and at $r\approx0.62$ with the error map computed from the
-\emph{wrong} past, and it correlated negatively with a central Gaussian
-($r\approx-0.11$). On these clips, the error map therefore appears to reflect
-mainly how unusual each target region is, largely independently of the past,
-and it is lower at the centre of the frame, where observers tend to look. The
-diagnostic used only eleven clips without gaze data, so this account is a
-plausible explanation rather than a tested one. The released training
-configuration of \acrshort{V-JEPA}~2 offers a plausible reason: its masks span the whole
-clip in time\footnote{\texttt{temporal\_scale: [1.0, 1.0]} in the released
-pre-training configuration files of the official repository.}, so the predictor
-was trained to fill in masked scene content rather than to extrapolate into the
-future. Predicting the second half of a clip from the first is therefore a query
-that the predictor never saw during training, and its error mixes surprise with
-the cost of an unfamiliar task. It is consequently unlikely to be an
-expectation-violation signal in the sense of Bayesian
-surprise~\cite{itti2009bayesian}.
+trailer), gives a partial picture of what the error measures. It used the
+untrained mask token and was not repeated with the trained one. When the true
+past of a clip was replaced by another clip's past, the mean prediction error
+rose in every clip (from 0.644 to 0.731 at about 4\,fps), so the predictor does
+use the context. Yet the spatial pattern of the error correlated at
+$r\approx0.60$ with token atypicality and at $r\approx0.62$ with the error map
+computed from the \emph{wrong} past, and negatively with a central Gaussian
+($r\approx-0.11$). On these clips, much of the error thus reflected how unusual
+each target region is, whatever the past, and it was lower at the centre of
+the frame. The incremental analysis shows that this is not the whole account:
+with the centre prior and token atypicality in the model, the error still
+carries information about fixations, so it is more than a proxy for
+atypicality or for the centre bias as the model of \cref{eq:loglinear}
+represents them. What the error measures that draws gaze away was not
+established. Within these limits, the evidence of this section does not support
+reading the error of \acrshort{V-JEPA}~2's predictor as the expectation-violation
+signal that the Bayesian surprise account~\cite{itti2009bayesian} associates
+with attended regions. Whether a predictor trained to forecast, or a surprise
+measured as a change of belief rather than as an error in feature space, would
+behave differently was not tested.
 
 %----------------------------------------------------------------------------
 \section{Results}\label{sec:results}
@@ -421,10 +546,10 @@ ensemble was better on all six metrics, on \acrshort{sAUC} only narrowly. As in 
 offline comparison (\cref{tab:dhf1k-checks}), the single \acrshort{ViT}-L models were not
 reliably better: against SalFoM with its best blur, the interval of seed 0 lies
 above zero ($+0.011$ [$+0.001$, $+0.022$]), but those of seeds 1 and 2 include
-it. A single causal \acrshort{ViT}-L model needs about as much computation per output
-frame as SalFoM's encoder (\cref{sec:cost}). At that cost, therefore, an
-advantage over SalFoM is not established; the ensemble, which shows one, needs
-three times as much.
+it. A single causal \acrshort{ViT}-L model needs about two thirds of the computation
+per output frame of SalFoM's encoder (\cref{sec:cost}). At that cost,
+therefore, an advantage over SalFoM is not established; the ensemble, which
+shows one, needs about twice SalFoM's encoder computation per output frame.
 
 The offline models were rescored on the same frames to measure what the later
 frames contribute, and with neither encoder did they add measurable accuracy.
@@ -486,8 +611,8 @@ recorded during an action-recognition task~\cite{mathe2015actions}, and it is
 small (103 training videos). Without any UCF training, the DHF1K model reached
 a \acrshort{CC} of 0.608 (\cref{tab:ucf}), well below the fine-tuned models, which confirms
 that the task-driven gaze of this dataset differs from free viewing. After
-fine-tuning, the \acrshort{ViT}-g ensemble reached \acrshort{CC} 0.735 and the best \acrshort{NSS}, \acrshort{SIM} and \acrshort{AUC-J}
-of the SURGE-D models.
+fine-tuning, the \acrshort{ViT}-g ensemble reached \acrshort{CC} 0.735 and the
+best \acrshort{NSS}, \acrshort{SIM} and \acrshort{AUC-J} of the SURGE-D models.
 
 \begin{table}[htbp]
   \centering
@@ -521,9 +646,11 @@ ensemble was not significantly better than the \acrshort{ViT}-L ensemble
 ($\Delta$\acrshort{CC} $+0.0019$ $[-0.0071, +0.0125]$), whereas the three-seed \acrshort{ViT}-L
 ensemble was significantly better than its single member ($+0.0080$
 $[+0.0039, +0.0123]$). Against published results, SURGE-D clearly exceeds
-SalFoM (by about 0.10 \acrshort{CC}) and TMFI-Net, ties ViNet-A ($+0.001$) and remains
-below ViNet-E ($-0.009$, a tie under the rule of \cref{tab:rules}, but below
-ViNet-E on \acrshort{CC}, \acrshort{NSS} and \acrshort{SIM}, though above it on \acrshort{AUC-J}). SURGE-D is therefore competitive on UCF Sports but not ahead of the
+SalFoM (by about 0.10 \acrshort{CC}) and TMFI-Net, and it ties ViNet-A
+($+0.001$). Its \acrshort{CC} is 0.009 below that of ViNet-E, which is a tie
+under the rule of \cref{tab:rules}; its \acrshort{NSS} and \acrshort{SIM} are
+also below those of ViNet-E, and its \acrshort{AUC-J} is above. SURGE-D is
+therefore competitive on UCF Sports but not ahead of the
 best published model. Both ViNet variants use encoders pretrained for action
 recognition or action localisation~\cite{girmaji2025minimalistic}, which may
 suit the task-driven gaze of this dataset.
@@ -662,16 +789,15 @@ determine; the same limitation reappears on Coutrot2 below.
 
 \subsection{Computational Cost}\label{sec:cost}
 
-\Cref{tab:cost} reports the cost of SURGE-D, measured with the PyTorch FLOP
-counter on one $16\times256\times256$ clip and timed on one DHF1K validation
-video with frames preloaded into memory (bfloat16, network forward pass only).
-Because one forward pass yields maps for 16 original frames, the cost per output
-frame is one sixteenth of the cost per clip.
+\Cref{tab:cost} reports the parameters and operations of SURGE-D, counted with
+the PyTorch FLOP counter on one $16\times256\times256$ clip. Because one
+forward pass yields maps for 16 original frames, the cost per output frame is
+one sixteenth of the cost per clip.
 
 \begin{table}[htbp]
   \centering
-  \caption{Computational cost of SURGE-D on an RTX A5000 (forward pass only).
-  \acrshort{TFLOPs} count multiply--add pairs as two operations}\label{tab:cost}
+  \caption{Parameters and operations of SURGE-D. \acrshort{TFLOPs} count
+  multiply--add pairs as two operations}\label{tab:cost}
   \small
   \begin{tabular}{@{}lcc@{}}
     \toprule
@@ -682,28 +808,76 @@ frame is one sixteenth of the cost per clip.
     Encoder \acrshort{TFLOPs} per clip                    & 1.656 & 5.088 \\
     Decoder \acrshort{TFLOPs} per clip                    & 0.166 & 0.168 \\
     \acrshort{TFLOPs} per output frame                    & 0.114 & 0.328 \\
-    Throughput, batch 4 (output frames/s)      & 301 & 129 \\
-    Latency per clip, batch 1 (ms)             & 116 & 163 \\
-    Peak \acrshort{GPU} memory, batch 4 (GB)              & 2.8 & 7.1 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Both models run faster than real time on this \acrshort{GPU}. For comparison, the \acrshort{UMT}-L
-encoder that SalFoM fine-tunes requires 1.90 \acrshort{TFLOPs} for one $16\times224\times224$
-clip (3,136 tokens; counted on a re-implementation loaded from the released
-checkpoint), and SalFoM runs it once per output frame in a sliding
-window~\cite{moradi2024salfom}. Counting the encoder alone, SalFoM therefore needs
-about 17 times the computation per output frame of SURGE-D with \acrshort{ViT}-L, and
-about 6 times that of SURGE-D with \acrshort{ViT}-g. The multi-frame output thus allows
-an encoder of three times the size at a fraction of the cost of a per-frame
-design. Two qualifications apply. The comparison is an estimate that counts
-SalFoM's encoder only, on a re-implementation, and SalFoM was not timed on the
-same machine. And the saving exists only in offline prediction, where one pass
-serves sixteen frames. A causal model, which may not see later frames, needs one
-pass per output frame, so its cost per output frame is the cost per clip in
-\cref{tab:cost}: 1.82 \acrshort{TFLOPs} with \acrshort{ViT}-L, comparable to SalFoM's encoder, and 5.26
-\acrshort{TFLOPs} with \acrshort{ViT}-g, about three times as much.
+For comparison, the \acrshort{UMT}-L encoder that SalFoM fine-tunes requires
+2.87 \acrshort{TFLOPs} for one $16\times224\times224$ clip (3,136 tokens;
+counted on a re-implementation loaded from the released checkpoint and, like
+the counts of SURGE-D, including the products with the attention matrices),
+and SalFoM runs it once per output frame in a sliding
+window~\cite{moradi2024salfom}. Counting the encoder alone, SalFoM therefore
+needs about 25 times the computation per output frame of SURGE-D with
+\acrshort{ViT}-L, and about 9 times that of SURGE-D with \acrshort{ViT}-g.
+
+Operation counts leave out memory traffic and the efficiency of an
+implementation, so the released SalFoM model and SURGE-D were also timed on the
+same \acrshort{GPU}. Before the measurement, it was fixed that the statement of
+an efficiency advantage would be withdrawn if SalFoM needed less than twice the
+time per output frame of offline SURGE-D with \acrshort{ViT}-g at either batch
+size. Each model ran 10 warm-up and 50 timed forward passes in bfloat16 on
+random input of its own size, already on the \acrshort{GPU}, so that frame
+decoding, resizing and the final blur are excluded for every model. The
+measurement was made three times. During the first two runs, short commands
+were started on the same machine; during the third, none was, and
+\cref{tab:timing} reports it. The medians of the three runs differ by at most
+5.1\,\%.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Measured inference time on one RTX A5000, in milliseconds per
+  forward pass and per output frame (median of 50 passes; third of three
+  runs). The causal rows time the same forward pass as the offline rows but
+  keep one map per pass}\label{tab:timing}
+  \small
+  \begin{tabular}{@{}lcccc@{}}
+    \toprule
+    & \multicolumn{2}{c}{\textbf{Batch 1}} & \multicolumn{2}{c}{\textbf{Batch 8}} \\
+    \cmidrule(lr){2-3}\cmidrule(l){4-5}
+    \textbf{Model} & Pass & Frame & Pass & Frame \\
+    \midrule
+    SalFoM, released (one map per pass)          & 227.0 & 227.0 & 1619.4 & 202.4 \\
+    SURGE-D \acrshort{ViT}-L, offline (16 maps per pass) & 88.5 & 5.5 & 409.2 & 3.2 \\
+    SURGE-D \acrshort{ViT}-L, causal (one map per pass)  & 88.5 & 88.5 & 409.2 & 51.2 \\
+    SURGE-D \acrshort{ViT}-g, offline (16 maps per pass) & 165.5 & 10.3 & 988.3 & 7.7 \\
+    SURGE-D \acrshort{ViT}-g, causal (one map per pass)  & 165.5 & 165.5 & 988.3 & 123.5 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+In every run and at both batch sizes, SalFoM needed 22 to 26 times the time
+per output frame of offline SURGE-D with \acrshort{ViT}-g, and 41 to 64 times
+that of offline SURGE-D with \acrshort{ViT}-L, so the criterion is met by a
+wide margin. The ratios of time are larger than those of operations, and they
+reflect the released implementations: SalFoM's encoder forms its attention
+matrix explicitly over 3,136 tokens, whereas SURGE-D uses a fused attention
+kernel over 2,048 tokens. How much of the difference this explains was not
+measured. Peak memory at batch 8 was 14.2\,GB for SalFoM, against 3.9 and
+8.2\,GB for SURGE-D with \acrshort{ViT}-L and \acrshort{ViT}-g. Offline, both
+SURGE-D models run faster than real time on this \acrshort{GPU}.
+
+The saving exists only in offline prediction, where one pass serves sixteen
+frames. A causal model, which may not see later frames, needs one pass per
+output frame, so its cost per output frame is the cost per clip in
+\cref{tab:cost}: 1.82 \acrshort{TFLOPs} with \acrshort{ViT}-L, about two thirds
+of SalFoM's encoder, and 5.26 \acrshort{TFLOPs} with \acrshort{ViT}-g, nearly
+twice as much. Measured, a causal \acrshort{ViT}-L model took 0.25 to 0.39
+times SalFoM's time per output frame, and a causal \acrshort{ViT}-g model 0.61
+to 0.73 times. Run one after another, the three models of the causal
+\acrshort{ViT}-L ensemble need about 1.9 times SalFoM's encoder computation and
+0.75 to 1.17 times its time. These causal comparisons are descriptive; the
+criterion concerned the offline model only.
 
 %----------------------------------------------------------------------------
 \section{Ablation Study}\label{sec:ablation}
@@ -807,6 +981,105 @@ for the ensembles), but it moved other metrics in both directions
 rose and \acrshort{sAUC} fell. Neither more context nor 11\,\% more videos improved \acrshort{CC}
 measurably, but the clip-length test was not conclusive.
 
+\paragraph{Training-set size.}\label{sec:learning-curve} The decoder overfits
+within three epochs (\cref{fig:g1}), and no addition to it brought an
+established gain. Both observations would follow if the 540 training videos,
+rather than the model, limited accuracy. Adding the 60 holdout videos to the
+training set could not test this: the step is small, and it leaves no holdout
+on which to select the epoch. A learning curve was therefore measured in the
+second follow-up, under a rule written before the runs (\cref{tab:rules}). The
+frozen \acrshort{ViT}-L model was
+trained on random subsets of 270 and of 135 of the 540 training videos, with
+three seeds. For each seed the subsets were drawn anew, the smaller one from
+within the larger. The number of clips sampled per video in each epoch was
+raised from 8 to 16 and to 32, so that every model took the same 1,620
+optimisation steps, and all other settings were those of the main model. The
+models were scored on the 60-video holdout in the same way as the three-seed
+ablations, and each was compared with the 540-video model of the same seed.
+
+\Cref{fig:learning-curve,tab:learning-curve} give the result. Holdout
+\acrshort{CC} fell with every halving of the training set, in every seed: from
+0.5783 with 540 videos to 0.5729 with 270 and 0.5645 with 135 (means over
+seeds); \acrshort{NSS}, \acrshort{SIM} and \acrshort{KLD} moved in the same
+direction. Under the rule, the primary comparison is nevertheless inconclusive.
+Halving the training set from 540 to 270 videos cost 0.0054 \acrshort{CC} on
+average, which is more than the margin, but the 95\,\% interval of the
+difference includes zero ($-0.0112$ to $+0.0011$). The second halving, from 270
+to 135 videos, was an effect ($-0.0084$ [$-0.0164$, $-0.0004$]), as was the
+difference between the two ends of the curve ($-0.0138$). The hypothesis that
+the amount of training data limits accuracy at 540 videos is therefore neither
+established nor refuted. Equivalence, the outcome that would have refuted it,
+is not supported either, because the 90\,\% interval of the primary difference
+($-0.0101$ to $-0.0001$) extends well beyond the margin.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.62\textwidth]{learning_curve.pdf}
+  \caption{Holdout \acrshort{CC} of the frozen \acrshort{ViT}-L model against
+  the number of training videos. Thin lines are the three seeds, whose subsets
+  are nested, and the thick line with the printed values is their
+  mean}\label{fig:learning-curve}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Learning curve over the number of training videos (frozen
+  \acrshort{ViT}-L, DHF1K holdout, seeds 0 / 1 / 2). The last four columns of the
+  upper part are means over the seeds. The differences in the lower part are
+  paired by seed and video, their intervals come from the bootstrap over seeds
+  and videos, and the outcomes follow the three-seed rule of \cref{tab:rules}
+  with its margin of 0.003}\label{tab:learning-curve}
+  \footnotesize
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{@{}lccccc@{}}
+    \toprule
+    \textbf{Training videos} & \textbf{\acrshort{CC} per seed} & \textbf{\acrshort{CC}}
+      & \textbf{\acrshort{NSS}} & \textbf{\acrshort{SIM}} & \textbf{\acrshort{KLD}} \\
+    \midrule
+    540 & 0.5772\,/\,0.5801\,/\,0.5776 & 0.5783 & 3.323 & 0.445 & 1.227 \\
+    270 & 0.5686\,/\,0.5762\,/\,0.5739 & 0.5729 & 3.286 & 0.442 & 1.238 \\
+    135 & 0.5606\,/\,0.5639\,/\,0.5690 & 0.5645 & 3.227 & 0.425 & 1.263 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{8pt}
+  \begin{tabular}{@{}lcccl@{}}
+    \toprule
+    \textbf{Comparison} & $\Delta$\textbf{\acrshort{CC}}
+      & \textbf{95\,\% interval} & \textbf{90\,\% interval} & \textbf{Outcome} \\
+    \midrule
+    270 $-$ 540 (primary) & $-0.0054$
+      & [$-0.0112$, $+0.0011$] & [$-0.0101$, $-0.0001$] & inconclusive \\
+    135 $-$ 270 & $-0.0084$
+      & [$-0.0164$, $-0.0004$] & [$-0.0150$, $-0.0018$] & effect \\
+    135 $-$ 540 & $-0.0138$
+      & [$-0.0238$, $-0.0048$] & [$-0.0219$, $-0.0063$] & effect \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Two further observations are descriptive and carry no outcome under the rule.
+First, on the logarithmic axis of \cref{fig:learning-curve} the curve flattens
+only gradually. The step from 270 to 540 videos brought about two thirds of
+the gain of the step from 135 to 270, and its size, 0.005 \acrshort{CC}, is
+larger than the change produced by any decoder component (at most 0.003) and
+of the same order as the gain from replacing \acrshort{ViT}-L by
+\acrshort{ViT}-g on the same holdout ($+0.007$ on average over the three
+seeds). Second, the gap between training and holdout accuracy widened as the
+training set shrank: the
+\acrshort{CC} on the training clips during the last epoch rose from 0.683 with
+540 videos to 0.702 with 270 and 0.718 with 135, while the holdout
+\acrshort{CC} fell. Both observations are what a model limited by its training
+data would show, but neither establishes it.
+
+The limits of this test were written down with its rule. It used three seeds
+and one encoder. Every model took the same number of optimisation steps, so
+each video of a smaller subset was sampled more often. The holdout that scores
+the models also selected the epoch of each run, in the same way for every
+subset size. In addition, the curve ends at 540 videos because DHF1K offers no
+further annotated training videos apart from the 60 of the holdout, so whether
+more data than the present training set would help cannot be read from it.
+
 \paragraph{Ensembles and output blur.} Averaging three seeds raised validation
 \acrshort{CC} by 0.007 for \acrshort{ViT}-L and by 0.003 for \acrshort{ViT}-g (\cref{tab:dhf1k}); the stronger
 encoder leaves less variance for the ensemble to remove. In paired comparisons
@@ -894,19 +1167,24 @@ pass per output frame. Third, the evidence is a validation-set comparison with
 one re-scored baseline; the official test-set evaluation is still outstanding.
 
 \paragraph{RQ2: Does predictive surprise carry information about where people
-look?} Not as a stand-alone cue, for the predictor tested. The error of the
-released \acrshort{V-JEPA}~2 predictor scored below both simple reference cues at both frame
-rates, with intervals that exclude zero, and its raw form was anti-correlated
-with fixations. The diagnostics suggest a reason: the error appears to track the
-atypicality of each region rather than violated expectations, and the
-pre-training masks give the predictor no reason to forecast, so reading it out
-on future frames asks it an unfamiliar question. Whether the error adds
-information to the simple cues when combined with them was not tested, so the
-question as posed (\enquote{beyond} those cues) is answered only for the error used
-on its own. This is a statement about one released predictor and one way of
-reading it out, not a refutation of surprise-based accounts of
-attention~\cite{itti2009bayesian}; a predictor trained to extrapolate in time
-could behave differently.
+look?} It does, but in the opposite direction to the hypothesis. On its own,
+the error of the released \acrshort{V-JEPA}~2 predictor scored below both simple
+reference cues at both frame rates and was anti-correlated with fixations,
+with the trained mask token as with the untrained one, so the gate failed.
+Combined with the centre prior, frame difference and token atypicality, the
+error did add information about fixations: 0.069 and 0.062 bits per fixation
+at 4\,fps in the two primary comparisons, about a fifth of what the two simple
+cues together add over the centre prior. Its fitted weight, however, was
+negative: observers looked less often where the error was high. Filling in
+masked tubes, a query that matches pre-training in the shape of its masks, gave
+the same picture as forecasting the second half of a clip, so the form of the
+query does not explain the sign. The question as posed is therefore answered
+for this predictor: its error carries information beyond the simple cues, but
+not the information that surprise-driven attention predicts. This is a
+statement about one released predictor and two ways of reading it out, not a
+refutation of surprise-based accounts of attention~\cite{itti2009bayesian}.
+What the error measures that draws gaze away was not established, and a
+predictor trained to forecast could behave differently.
 
 \paragraph{RQ3: Which design factors matter when the encoder is frozen?} The
 encoder dominates: its pre-training (\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L) and its
@@ -921,12 +1199,16 @@ co-training, 32-frame clips and 11\,\% more training videos produced no gain
 that could be established; for static images and longer clips, the evidence is
 inconclusive rather than negative. A sparser temporal stride, at half the cost
 per output frame, improved holdout \acrshort{CC} with all three seeds without reaching
-the margin. One explanation, which these experiments did not test, is that,
-with a strong frozen encoder, the small number of training videos limits
-further progress: the decoder overfits within three epochs (\cref{fig:g1}), and
-the additions that would increase its effective capacity do not help, whereas
-better features do. A learning curve over the number of training videos would
-test it; the increase of 11\,\% that was tried is too small to do so.
+the margin. One explanation is that, with a strong frozen encoder, the small
+number of training videos limits further progress: the decoder overfits within
+three epochs (\cref{fig:g1}), and the additions that would increase its
+effective capacity do not help, whereas better features do. The learning curve
+of \cref{sec:learning-curve} tested this explanation and left it open. Holdout
+\acrshort{CC} rose with each doubling of the training set in every seed, by
+0.008 from 135 to 270 videos, which is an effect under the rule, and by 0.005
+from 270 to 540 videos, where the interval includes zero. The amount of data
+matters between 135 and 270 videos; whether it still limits the model at 540
+is neither established nor refuted.
 
 \paragraph{RQ4: How well does the approach transfer, and does audio help?} The
 model transferred well after brief fine-tuning, within the limits of comparisons
@@ -954,7 +1236,11 @@ speaker localisation rather than global feature modulation.
 proposed one in three respects, each decided by a test whose rule was written
 in advance: the
 encoder is \acrshort{V-JEPA}~2 rather than \acrshort{V-JEPA}~2.1, it is frozen rather than adapted with
-\acrshort{LoRA}, and the surprise branch that gave the project its name is absent. The
+\acrshort{LoRA}, and the surprise branch that gave the project its name is absent.
+The second follow-up did not overturn the last decision: the predictor's error
+carries information about fixations, but with the opposite sign to the one on
+which the branch was premised; whether a decoder could use it as a cue with a
+negative weight was not tested. The
 proposal's ranking of what drives performance, which placed the encoder first,
 was confirmed. Its expectation that \acrshort{LoRA} would help, based on results with much
 larger training sets, was not.
@@ -977,7 +1263,10 @@ fixed only after the first such comparison had been seen. Many design choices
 were fixed without a test (\cref{sec:design}). On the audio-visual datasets, the
 best epoch and the output blur were selected on one to six holdout videos per
 fold. Finally, the SalFoM baseline was run by a program that is not part of the
-code of this thesis (\cref{sec:metric-validation}).
+code of this thesis, and how its released weights were selected is not
+documented; if they were selected on the DHF1K validation set, the baseline's
+scores on that set are optimistic, which would make the reported differences
+conservative (\cref{sec:metric-validation}).
 
 \paragraph{Construct validity.} The six metrics capture different aspects of a
 saliency map~\cite{bylinskii2019metrics} and did not always agree; ensembles,
@@ -985,8 +1274,10 @@ for instance, improved \acrshort{CC} but lowered \acrshort{NSS} and \acrshort{SI
 (Vig gaze) data. The use of one map for all metrics, with the blur chosen by \acrshort{CC},
 favours \acrshort{CC} slightly over the other metrics, and the choice of blur matters for
 the baseline as well: SalFoM's \acrshort{CC} rose by 0.010 when its maps were blurred. The
-surprise readout asks the predictor to forecast, which it was not trained to do,
-so it measures the error of an unfamiliar query rather than surprise alone. The
+prediction error is a distance in the predictor's feature space rather than a
+change of belief, so it is one of several possible measures of surprise, and
+the masked-tube readout matches pre-training in the shape of its masks but
+hides a smaller share of the clip. The
 Hollywood-2 (Vig gaze) maps rest on at most five observers per frame, and their
 reliability was not measured. The shuffled \acrshort{AUC} depends on how its negatives are
 drawn and is comparable only within this thesis.
@@ -1001,7 +1292,8 @@ under the protocol of this thesis. SURGE-D's offline predictions use about
 0.27\,s or more of future context, which causal models do not have. On DHF1K, the
 causal control (\cref{sec:causal}) showed that this context adds no measurable
 accuracy, but the control was not repeated on the other datasets. The DHF1K
-test-set result and the standard Hollywood-2 ground truth were not available. Finally, the pre-training data of \acrshort{V-JEPA}~2 include large
+test-set result and the standard Hollywood-2 ground truth were not available.
+Finally, the pre-training data of \acrshort{V-JEPA}~2 include large
 collections of internet video, and DHF1K is drawn from YouTube; an overlap
 between pre-training and test videos cannot be ruled out. The same is true for
 every method that relies on a large pretrained video encoder, including SalFoM.
