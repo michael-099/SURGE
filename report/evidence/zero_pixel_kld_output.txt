@@ -1,0 +1,18 @@
+videos 100, frames 6076, sigma 0.0
+  zero_frac        0.0000
+  gt_mass_on_zero  0.0000
+  kld              1.3016
+  kld_from_zero    0.0000
+  kld_floor        1.3583
+  sim              0.4127
+  sim_floor        0.3862
+  check            1.3016
+videos 100, frames 6076, sigma 16.0
+  zero_frac        0.0000
+  gt_mass_on_zero  0.0000
+  kld              1.2832
+  kld_from_zero    0.0000
+  kld_floor        1.3490
+  sim              0.4009
+  sim_floor        0.3733
+  check            1.2832
