@@ -1028,3 +1028,70 @@ run printed gaze-based scores of these four videos, including scores of the toke
 margins, primary comparisons and decisions of 13B, 13C and the addendum are those of commit 7fe4ff1. The only code
 change since is a `.detach()` where `g2_maps.py` records the mask-token norms (no effect on any map). The four
 videos are among the 60 of the full analysis, which recomputes their maps.
+
+*Correction to the sentence "Nothing was read from it" (added 2026-11-12 08:33, while the full run was in progress
+and before any of its scores existed).* At about 08:28, six minutes after the full run had been launched, the JSON
+of this four-video smoke test was printed in full to learn its structure for the table generator
+(`scripts/review_tables.py g2`), so its numbers were displayed, including the token-0 scores of the four videos. No
+rule, margin, primary comparison, decision or line of analysis code was changed after that: `g2_maps.py` and
+`g2_incremental.py` are as launched, and the rules are those of commit 7fe4ff1. The generator was then tested on that
+file with every digit masked. At about 08:37, still before any score of the full run existed, the generator's output
+for the same four-video file was displayed once more without the mask (the same numbers as at 08:28). Again nothing
+was changed after it.
+
+### 13A result: learning curve (queue D finished 2026-11-11 23:47; `runs/review/learning_curve.{json,txt}`)
+
+Runs `runs/lc{270,135}_s{0,1,2}` (1,620 steps each), holdout rescored into `runs/review/holdout/lc*.json`.
+
+| training videos | holdout CC, seeds 0 / 1 / 2 | mean ± SD | NSS | SIM | KLD | train CC, last epoch (mean) |
+|---|---|---|---|---|---|---|
+| 135 | 0.5606 / 0.5639 / 0.5690 | 0.5645 ± 0.0042 | 3.227 | 0.4253 | 1.263 | 0.718 |
+| 270 | 0.5686 / 0.5762 / 0.5739 | 0.5729 ± 0.0039 | 3.286 | 0.4419 | 1.238 | 0.702 |
+| 540 | 0.5772 / 0.5801 / 0.5776 | 0.5783 ± 0.0016 | 3.323 | 0.4448 | 1.227 | 0.683 |
+
+| difference (paired by seed and video) | per seed | mean | 95 % | 90 % | outcome |
+|---|---|---|---|---|---|
+| CC(270) − CC(540), primary | −0.0087, −0.0038, −0.0036 | −0.0054 | [−0.0112, +0.0011] | [−0.0101, −0.0001] | **inconclusive** |
+| CC(135) − CC(270) | −0.0079, −0.0123, −0.0049 | −0.0084 | [−0.0164, −0.0004] | [−0.0150, −0.0018] | effect |
+| CC(135) − CC(540) | −0.0166, −0.0162, −0.0086 | −0.0138 | [−0.0238, −0.0048] | [−0.0219, −0.0063] | effect |
+
+**Reading by the rule of 13A: inconclusive.** The primary difference is negative in every seed and larger than the
+margin, but its 95 % interval includes 0, so H is not "supported in this range"; its 90 % interval reaches far beyond
+±0.003, so H is not "refuted in this range" either. The thesis keeps H as a hypothesis and reports the interval.
+Shape only (no outcome attached): the second doubling (270 → 540) brought 0.64 of the gain of the first (135 → 270);
+the best epoch was the 2nd in all three 540-video runs, the 2nd, 2nd and 1st with 270 videos and the 2nd, 1st and 2nd
+with 135; the training CC of the last epoch rises as the set shrinks (0.683, 0.702, 0.718) while holdout CC falls.
+Caveats as written in the rule (three seeds; ViT-L only; equal steps; the holdout also selects the epoch). DHF1K has
+no further annotated training videos beyond the 60 of the holdout, so the curve cannot be extended on this dataset.
+
+### 13D first run, and the rule for a repeat (written 2026-11-12 09:22, before the repeat is started)
+
+**First run** (queue E, 09:04:00 to 09:11:38; `runs/review/timing.{json,txt}`; NVIDIA RTX A5000, torch 2.14.1+cu130,
+bfloat16 autocast, 10 warm-up and 50 timed passes; median [inter-quartile range]):
+
+| model | batch | ms per pass | encoder alone, ms | ms per output frame | peak GPU memory |
+|---|---|---|---|---|---|
+| SalFoM (released code and weights; 402,945,443 parameters; 0 missing / 0 unexpected keys) | 1 | 227.2 [226.3, 227.9] | 207.3 | 227.15 | 3.58 GB |
+| | 8 | 1624.6 [1608.0, 1634.2] | 1605.6 | 203.07 | 14.20 GB |
+| SURGE-D ViT-L (`runs/main_b1_s0`) | 1 | 86.6 [84.3, 133.6] | 74.2 | 5.41 offline, 86.6 causal | 2.08 GB |
+| | 8 | 409.5 [408.2, 410.1] | 356.9 | 3.20 offline, 51.2 causal | 3.85 GB |
+| SURGE-D ViT-g (`runs/vitg_s0`) | 1 | 165.6 [163.7, 186.5] | 165.3 | 10.35 offline, 165.6 causal | 6.16 GB |
+| | 8 | 987.9 [985.9, 988.9] | 931.8 | 7.72 offline, 123.5 causal | 8.21 GB |
+
+Ratios, batch 1 / batch 8: SalFoM / ViT-g offline 21.95 / 26.31; SalFoM / ViT-L offline 41.98 / 63.48; ViT-g causal /
+SalFoM 0.73 / 0.61; ViT-L causal / SalFoM 0.38 / 0.25. By the criterion of 13D and its addendum the offline
+efficiency statement **holds** in this run (both ratios far above 2).
+
+**Deviation from the protocol.** 13D says "nothing else running". While this run was in progress, short shell
+commands were started from this session on the same machine (reading the queue log, the result files of 13B/13C and
+the clock). They do not use the GPU, but the wide inter-quartile range of ViT-L at batch 1 ([84.3, 133.6] ms around a
+median of 86.6) shows that some passes were disturbed. The decision is not in doubt (21.95 and 26.31 against a
+threshold of 2); the individual times may be.
+
+**Rule for the repeat (fixed now).** The same command with the unchanged script, written to
+`runs/review/timing_run2.{json,txt}`, with no process started from this session between its launch and its end (file
+reads and edits through the editor only). The thesis reports the repeat, as the run that meets the protocol; the first
+run stays in the repository and in the table above. The criterion is applied to both runs: the offline efficiency
+statement counts as refuted if the ratio SalFoM / SURGE-D ViT-g offline is below 2 at either batch size in either
+run. If any median time per output frame differs by more than 10 % between the two runs, the thesis says so and
+gives both values.
