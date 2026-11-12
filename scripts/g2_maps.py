@@ -173,7 +173,7 @@ def main():
     mt = model.predictor.embeddings.mask_tokens
     K = mt.shape[0]
     assert K > 1, "the token-1 readout of G2 needs at least two mask tokens"
-    checks["mask_token_l2_norm"] = [float(mt[j].float().norm()) for j in range(K)]
+    checks["mask_token_l2_norm"] = [float(mt[j].detach().float().norm()) for j in range(K)]
     print("MASK TOKEN NORMS", json.dumps(checks["mask_token_l2_norm"]), flush=True)
     if tube:
         diag_v = vids[::6]

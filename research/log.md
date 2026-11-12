@@ -966,7 +966,7 @@ running). One GPU job at a time under the safety monitor. Nothing here touches D
   refuted if SalFoM's measured time per output frame is within a factor of 2 of SURGE-D ViT-g offline. The thesis's
   cost statement then uses the measured ratios, whatever they are.
 
-### 13B/13C addendum: the predictor's mask token (written 2026-11-11 22:10, before any GPU run of `g2_maps.py` and before any gaze-based score of the new maps)
+### 13B/13C addendum: the predictor's mask token (written 2026-11-11 22:05 and committed as 7fe4ff1 at 22:07, before any GPU run of `g2_maps.py` and before any gaze-based score of the new maps)
 
 **What was found.** A CPU smoke test of `scripts/g2_maps.py` (one holdout video, two windows; it computes prediction
 errors only and reads no gaze data) included a diagnostic over the predictor's mask tokens. The facts below were
@@ -1019,3 +1019,12 @@ affected: it uses the encoder only (`skip_predictor=True`); no trained model, sc
 **13D addendum (same time, before the run).** The criterion is applied at each batch size (1 and 8): the offline
 efficiency statement counts as refuted if the ratio SalFoM time per output frame / SURGE-D ViT-g offline time per
 output frame is below 2 at either batch size.
+
+**Pipeline smoke test with gaze scores (run 2026-11-11 22:13, after commit 7fe4ff1; recorded here 2026-11-12 08:25,
+before the full run).** After the addendum above was committed, `g2_maps.py` and `g2_incremental.py` were run end to
+end on the CPU on four holdout videos (0028, 0031, 0043, 0048; 32 scored frames per rate) to test the pipeline. That
+run printed gaze-based scores of these four videos, including scores of the token-0 maps; its output is kept as
+`runs/review/g2_incremental_smoke4.txt`. Nothing was read from it and nothing was changed after it: the rules,
+margins, primary comparisons and decisions of 13B, 13C and the addendum are those of commit 7fe4ff1. The only code
+change since is a `.detach()` where `g2_maps.py` records the mask-token norms (no effect on any map). The four
+videos are among the 60 of the full analysis, which recomputes their maps.
