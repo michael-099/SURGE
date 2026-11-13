@@ -33,6 +33,7 @@ class Video:
     fixations: list[str] = field(default_factory=list)
     skip_empty: bool = False  # score only frames with at least one fixation (STAViS datasets; research/log.md section 7)
     audio: str | None = None  # per-frame audio features (n_frames, 768) .npy (STAViS; research/log.md section 11D)
+    ssl: str | None = None  # per-frame sound-source localisation maps (n_frames, 7, 7) .npy (STAViS; section 14F)
 
     def __len__(self) -> int:
         n = len(self.frames)
@@ -105,11 +106,43 @@ def stavis_videos(key: str, fold: int, part: str, root: str = "D:/Datasets") -> 
         fx = sorted(str(p) for p in a.glob("fixMap_*.mat"))
         n = min(listed, len(fr), len(mp), len(fx))
         au = Path(root) / folder / "surge_audio" / f"{v}.npy"
-        out.append(Video(v, fr[:n], mp[:n], fx[:n], skip_empty=True, audio=str(au) if au.exists() else None))
+        sl = Path(root) / folder / "surge_ssl" / f"{v}.npy"
+        out.append(Video(v, fr[:n], mp[:n], fx[:n], skip_empty=True, audio=str(au) if au.exists() else None,
+                         ssl=str(sl) if sl.exists() else None))
     return out
 
 
 AUDIO_DIM = 768
+
+
+def ssl_maps(v: "Video", n: int | None = None) -> np.ndarray | None:
+    """(n, 7, 7) float32 per-frame localisation maps of a video (section 14F); None if it has none (no audio).
+    The last row repeats past the end."""
+    if not v.ssl:
+        return None
+    n = len(v) if n is None else n
+    a = np.load(v.ssl).astype(np.float32)
+    if len(a) >= n:
+        return a[:n]
+    return np.concatenate([a, np.repeat(a[-1:], n - len(a), 0)])
+
+
+def ssl_condition(M: np.ndarray | None, idx, hw: tuple[int, int], flip: bool = False) -> np.ndarray:
+    """Condition input of section 14F, (2, len(idx) // 2, h, w): channel 0 = the frame's localisation map standardised
+    over its cells, resized to the token grid and averaged over the two frames of each tubelet; channel 1 = 1 (the
+    video has audio). Both channels zero for a video without audio."""
+    T = len(idx) // 2 * 2
+    out = np.zeros((2, T // 2, *hw), np.float32)
+    if M is None:
+        return out
+    m = M[list(idx)[:T]]
+    m = (m - m.mean((1, 2), keepdims=True)) / (m.std((1, 2), keepdims=True) + 1e-6)
+    up = np.stack([cv2.resize(x, (hw[1], hw[0]), interpolation=cv2.INTER_LINEAR) for x in m])
+    if flip:
+        up = up[:, :, ::-1]
+    out[0] = up.reshape(T // 2, 2, *hw).mean(1)
+    out[1] = 1.0
+    return out
 
 
 def audio_features(v: "Video", n: int | None = None) -> np.ndarray:
@@ -226,11 +259,12 @@ class ClipDataset(Dataset):
 
     def __init__(self, videos: list[Video], T: int = 16, stride: int = 2, size=(256, 256), out_size=(64, 64),
                  clips_per_video: int = 8, hflip: bool = True, seed: int = 0, audio: bool = False,
-                 target: str = "central"):
+                 target: str = "central", ssl: bool = False):
         if target not in ("central", "last"):
             raise ValueError(target)
         self.videos = [v for v in videos if len(v) >= 1]
         self.audio = audio
+        self.ssl = ssl  # section 14F: item["cond"] = the localisation-map condition (flipped with the frames)
         self.T, self.stride, self.size, self.out_size = T, stride, size, out_size
         self.cpv, self.hflip = clips_per_video, hflip
         self.seed = seed
@@ -274,6 +308,9 @@ class ClipDataset(Dataset):
         }
         if self.audio:
             item["audio"] = torch.from_numpy(audio_features(v, n)[idx])
+        if self.ssl:
+            hw = (self.size[0] // 16, self.size[1] // 16)  # the encoder's token grid (patch 16)
+            item["cond"] = torch.from_numpy(ssl_condition(ssl_maps(v, n), idx, hw, flip))
         return item
 
 

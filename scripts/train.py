@@ -102,16 +102,21 @@ def main():
             p.requires_grad_(False)
         expert = Expert(ebb, img=EXPERT_IMG[md["expert"]])
         log(f"expert {md['expert']}: {sum(p.numel() for p in ebb.parameters()) / 1e6:.1f}M frozen parameters")
+    use_ssl = md.get("ssl", False)
     model = SurgeD(bb, use_scm=md["scm"], prior=md["prior"], aux=md["aux"], c=md["channels"], audio=use_audio,
-                   expert=expert, pgate=md.get("pgate", False)).to(device)
+                   expert=expert, pgate=md.get("pgate", False), ssl=use_ssl).to(device)
     if md.get("pgate"):
         log("predictability gate: masked-tube predictor error (trained mask token) -> zero-init modulation")
+    if use_ssl:
+        log("sound-source localisation maps (section 14F) -> zero-init modulation")
     if tr.get("init_from"):
         ck0 = torch.load(ROOT / tr["init_from"], map_location="cpu", weights_only=False)
-        if use_audio and not any(k.startswith("av.") for k in ck0["decoder"]):  # visual checkpoint -> new audio modules
+        new = (("av.",) if use_audio else ()) + (("phi.", "scm.") if use_ssl else ())
+        if new and not any(k.startswith(new) for k in ck0["decoder"]):  # visual checkpoint -> new zero-init modules
             r = model.decoder.load_state_dict(ck0["decoder"], strict=False)
-            assert not r.unexpected_keys and all(k.startswith("av.") for k in r.missing_keys), r
-            log(f"audio modules new ({len(r.missing_keys)} tensors); the rest from {tr['init_from']}")
+            assert not r.unexpected_keys and all(k.startswith(new) for k in r.missing_keys), r
+            log(f"modules {sorted({k.split('.')[0] for k in r.missing_keys})} new ({len(r.missing_keys)} tensors); "
+                f"the rest from {tr['init_from']}")
         else:
             model.decoder.load_state_dict(ck0["decoder"])
         log(f"decoder initialized from {tr['init_from']}")
@@ -131,11 +136,13 @@ def main():
     sel = last_frame if causal else central
     if causal and d.get("salicon"):
         raise ValueError("static co-training is defined for central targets only")
+    if use_ssl and d.get("salicon"):
+        raise ValueError("static images have no localisation maps")
     if causal:
         log("causal variant: each clip is supervised on its last sampled frame; holdout scored causally")
     train_ds = ClipDataset(videos_for(cfg, "train"), T=d["T"], stride=d["stride"], size=size, out_size=g,
                            clips_per_video=tr["clips_per_video"], hflip=d["hflip"], seed=tr["seed"], audio=use_audio,
-                           target=tmode)
+                           target=tmode, ssl=use_ssl)
     ds = train_ds
     if d.get("salicon"):
         sal = SaliconDataset(d["salicon_root"], "train", T=d["T"], size=size, out_size=g, limit=d.get("salicon_limit"))
@@ -207,6 +214,7 @@ def main():
             set_lr(step)
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 out = model(x, backbone_grad=stage2,
+                            surprise=batch["cond"].to(device, non_blocking=True) if use_ssl else None,
                             audio=batch["audio"].to(device, non_blocking=True) if use_audio else None)
             loss, parts = saliency_loss(sel(out["logits"], T), y, fx, tr["w_cc"], tr["w_nss"])
             if model.decoder.aux:

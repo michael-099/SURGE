@@ -76,7 +76,7 @@ def load_model(run: Path, ckpt: str, device):
         expert = Expert(build_backbone(cfg["model"]["expert"]), img=EXPERT_IMG[cfg["model"]["expert"]])
     m = SurgeD(bb, use_scm=cfg["model"]["scm"], prior=cfg["model"]["prior"], aux=cfg["model"]["aux"],
                c=cfg["model"]["channels"], audio=cfg["model"].get("audio", False), expert=expert,
-               pgate=cfg["model"].get("pgate", False))
+               pgate=cfg["model"].get("pgate", False), ssl=cfg["model"].get("ssl", False))
     m.decoder.load_state_dict(st["decoder"])
     return m.to(device).eval(), cfg
 
@@ -100,6 +100,9 @@ def main():
     ap.add_argument("--save-maps", default=None, help="folder to write 8-bit PNG maps at native resolution")
     ap.add_argument("--pgate-control", default=None, choices=["rot180", "zero"],
                     help="predictability-gate models only: feed 180-degree-rotated or zero error maps (section 14E)")
+    ap.add_argument("--ssl-rotate", action="store_true",
+                    help="localisation-map models only: maps computed with the soundtrack of the next video of the "
+                         "test-fold list (surge_ssl_rot, section 14F)")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     which = ALL if a.metrics == "all" else tuple(a.metrics.split(","))
@@ -109,9 +112,21 @@ def main():
         for i, v in enumerate(videos):
             v.audio = aud[(i + 1) % len(videos)]
         print("audio rotated:", [(v.name, Path(v.audio).stem if v.audio else None) for v in videos], flush=True)
+    if a.ssl_rotate:  # control (section 14F): maps made with another video's soundtrack (scripts/ssl_maps.py)
+        for v in videos:
+            if v.ssl:
+                rot = Path(v.ssl).parent.parent / "surge_ssl_rot" / Path(v.ssl).name
+                if not rot.exists():
+                    raise FileNotFoundError(rot)
+                v.ssl = str(rot)
+        print("localisation maps rotated:", [(v.name, v.ssl is not None) for v in videos], flush=True)
     sauc = other_fixations(videos) if "sauc" in which else None
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = [load_model(ROOT / r, a.ckpt, device) for r in a.run]
+    if any(m.ssl for m, _ in models) and a.flip_tta:
+        raise ValueError("flip TTA does not flip the localisation maps")
+    if a.ssl_rotate and not all(m.ssl for m, _ in models):
+        raise ValueError("--ssl-rotate needs localisation-map models")
     if a.pgate_control:
         if not all(m.pgate for m, _ in models):
             raise ValueError("--pgate-control needs predictability-gate models")

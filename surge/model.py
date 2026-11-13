@@ -259,13 +259,16 @@ def pgate_input(err: torch.Tensor, control: str | None = None) -> torch.Tensor:
 
 class SurgeD(nn.Module):
     def __init__(self, backbone: Backbone, use_scm: bool = False, prior: bool = True, aux: bool = True, c: int = 256,
-                 audio: bool = False, expert: Expert | None = None, pgate: bool = False):
+                 audio: bool = False, expert: Expert | None = None, pgate: bool = False, ssl: bool = False):
         super().__init__()
+        if pgate and ssl:
+            raise ValueError("the predictability gate and the localisation-map condition share the modulation input")
         self.backbone = backbone
         self.expert = expert
         self.pgate = pgate  # predictability gate (section 14E): the predictor's error through the zero-init modulation
         self.pgate_control = None  # evaluation only: None, 'rot180' or 'zero'
-        self.decoder = Decoder(backbone.embed_dim, c, use_scm=use_scm or pgate, prior=prior, aux=aux, audio=audio,
+        self.ssl = ssl  # section 14F: per-frame sound-source localisation maps through the same modulation (`surprise`)
+        self.decoder = Decoder(backbone.embed_dim, c, use_scm=use_scm or pgate or ssl, prior=prior, aux=aux, audio=audio,
                                expert_dim=expert.backbone.embed_dim if expert is not None else None)
 
     @property

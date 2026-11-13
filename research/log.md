@@ -1271,3 +1271,34 @@ Secondary (descriptive), 97.5 % intervals: NSS +0.031 [−0.001, +0.068], SIM +0
 Reading: the second expert gives a small gain that is positive in all six seeds, but it cannot be told apart from
 zero on the 60-video holdout. The final model of 14C has no second expert unless a later test, written in advance,
 says otherwise.
+
+### 14F. Sound-source localisation maps (STAViS audio-visual datasets; rule written 2026-11-13, before any run)
+
+Goal: the audio route that 14B could not take. 11D's global audio features did not help, although on Coutrot2 the
+model used the sound (rotated audio −0.018). A sound-source localisation model gives a map of where the sound comes
+from, without face detection.
+
+- **Maps.** EZ-VSL (Mo & Morgado, ECCV 2022; code Apache-2.0), the released VGG-Sound-full checkpoint, frozen,
+  re-implemented in `scripts/ssl_maps.py` (checked on CPU against its forward pass; tensor-only checkpoint loading).
+  Per frame: the 7×7 cosine-similarity map between the frame's visual features (224², as in its test code) and the
+  embedding of 3 s of audio centred on the frame (one audio embedding every 0.1 s). Sample rate 44.1 kHz, chosen by a
+  check that uses no gaze data: matching each video's middle frame to its own soundtrack among the 233 videos with
+  audio gives AUC 0.657 / 0.675 / 0.693 / 0.722 / 0.736 / 0.729 at 16 / 22.05 / 24 / 32 / 44.1 / 48 kHz
+  (`runs/review/ssl_rate_check.json`). The STAViS WAVs are 22.05 kHz, so the maps see sound up to 11 kHz only.
+- **Model.** SURGE-D ViT-g. The map, standardised over its cells, resized to the 16×16 token grid and averaged per
+  tubelet, with an availability channel (1 if the video has audio), enters the zero-initialised modulation at the
+  four pyramid levels (the input path of 14E). The model starts as the visual model (CPU test: a visual checkpoint
+  loads with only the new modules missing, and the output at initialisation is the same for any map).
+- **Protocol.** Per fold, the recipe of the ViT-g fold models of 11E (`runs/g_stavis_<fold>_s0`: initialised from
+  `runs/vitg_s0/best.pt`, Stage 1, 3 epochs, same holdout, clips per video and frame step, seed 0). σ tuned on the
+  fold's holdout. Each test fold is scored once with matched maps and once with rotated maps (the soundtrack of the
+  next video with audio in the same test-fold list, the pairing of 11D), at the same σ. Visual baseline:
+  `runs/g_stavis_<fold>_s0` with its own σ (`runs/g_other/stavis_s0_<fold>.json`).
+- **Rule (the claim rule of 11D and 14B).** On a dataset the maps help if fold-mean ΔCC (maps − visual) ≥ +0.010
+  and matched − rotated ≥ +0.005. Stage 1 is Coutrot2 (3 folds). Only if the maps help there, stage 2 runs the other
+  13 folds, and the maps are adopted for the audio-visual results if no other dataset loses more than 0.005 fold-mean
+  CC. Bootstrap intervals over test videos are reported, but they do not decide.
+  `scripts/queue_14f.sh` (after queue 14E), `scripts/summarize_ssl.py`.
+- **Maps before training (Coutrot2, no gaze data used).** The maps mostly mark the people. Matched and rotated maps
+  correlate 0.96 per frame after standardisation, and their peaks fall in the same cell in 53 % of frames, so the
+  soundtrack mainly moves the peak.

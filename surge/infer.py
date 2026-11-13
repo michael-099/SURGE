@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import torch
 
-from .data import Video, audio_features, causal_windows, inference_windows, load_gray, load_rgb
+from .data import Video, audio_features, causal_windows, inference_windows, load_gray, load_rgb, ssl_condition, ssl_maps
 from .losses import log_softmax2d
 from .metrics import all_metrics
 from concurrent.futures import ThreadPoolExecutor
@@ -28,6 +28,11 @@ def predict_video(model, video: Video, T: int, stride: int, size, device, batch:
     wins = list(causal_windows(n, T, stride, frames) if causal else inference_windows(n, T, stride))
     cache = {}
     A = audio_features(video, n) if getattr(model, "uses_audio", False) else None
+    use_ssl = getattr(model, "ssl", False)  # section 14F: localisation maps as the modulation input
+    if use_ssl and surprise_fn is not None:
+        raise ValueError("a localisation-map model takes no surprise function")
+    C = ssl_maps(video, n) if use_ssl else None
+    hw = (size[0] // 16, size[1] // 16)
     for b0 in range(0, len(wins), batch):
         chunk = wins[b0:b0 + batch]
         need = sorted({j for idx, _ in chunk for j in idx if j not in cache})
@@ -40,6 +45,8 @@ def predict_video(model, video: Video, T: int, stride: int, size, device, batch:
         x = torch.from_numpy(np.stack(x)).permute(0, 1, 4, 2, 3).to(device, non_blocking=True)
         with torch.autocast("cuda", dtype=amp, enabled=device.type == "cuda"):
             s = surprise_fn(x) if surprise_fn is not None else None
+            if use_ssl:
+                s = torch.from_numpy(np.stack([ssl_condition(C, idx, hw) for idx, _ in chunk])).to(device)
             if A is not None:
                 a = torch.from_numpy(np.stack([A[idx] for idx, _ in chunk])).to(device)
                 out = model(x, surprise=s, audio=a)
