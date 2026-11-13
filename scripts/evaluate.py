@@ -75,7 +75,8 @@ def load_model(run: Path, ckpt: str, device):
         from surge.model import Expert
         expert = Expert(build_backbone(cfg["model"]["expert"]), img=EXPERT_IMG[cfg["model"]["expert"]])
     m = SurgeD(bb, use_scm=cfg["model"]["scm"], prior=cfg["model"]["prior"], aux=cfg["model"]["aux"],
-               c=cfg["model"]["channels"], audio=cfg["model"].get("audio", False), expert=expert)
+               c=cfg["model"]["channels"], audio=cfg["model"].get("audio", False), expert=expert,
+               pgate=cfg["model"].get("pgate", False))
     m.decoder.load_state_dict(st["decoder"])
     return m.to(device).eval(), cfg
 
@@ -97,6 +98,8 @@ def main():
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--batch", type=int, default=4)
     ap.add_argument("--save-maps", default=None, help="folder to write 8-bit PNG maps at native resolution")
+    ap.add_argument("--pgate-control", default=None, choices=["rot180", "zero"],
+                    help="predictability-gate models only: feed 180-degree-rotated or zero error maps (section 14E)")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     which = ALL if a.metrics == "all" else tuple(a.metrics.split(","))
@@ -109,6 +112,12 @@ def main():
     sauc = other_fixations(videos) if "sauc" in which else None
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     models = [load_model(ROOT / r, a.ckpt, device) for r in a.run]
+    if a.pgate_control:
+        if not all(m.pgate for m, _ in models):
+            raise ValueError("--pgate-control needs predictability-gate models")
+        for m, _ in models:
+            m.pgate_control = a.pgate_control
+        print(f"predictability gate control: {a.pgate_control}", flush=True)
     # Models trained with data.target=last are causal (research/log.md section 12D) and are run causally: one window
     # per scored frame, ending at that frame. An ensemble must not mix causal and offline members.
     modes = {cfg["data"].get("target", "central") for _, cfg in models}

@@ -242,13 +242,30 @@ class Decoder(nn.Module):
         return out
 
 
+def pgate_input(err: torch.Tensor, control: str | None = None) -> torch.Tensor:
+    """Input of the predictability gate (research/log.md section 14E): the masked-tube error (B, t, h, w), standardised
+    over the tokens of each tubelet, with an availability channel of ones -> (B, 2, t, h, w). Evaluation controls:
+    'rot180' rotates each map by 180 degrees (same statistics, misaligned content); 'zero' removes the map."""
+    e = err.float()
+    e = (e - e.mean((-2, -1), keepdim=True)) / (e.std((-2, -1), keepdim=True) + 1e-6)
+    if control == "rot180":
+        e = e.flip(-1).flip(-2)
+    elif control == "zero":
+        e = torch.zeros_like(e)
+    elif control is not None:
+        raise ValueError(control)
+    return torch.stack([e, torch.ones_like(e)], 1)
+
+
 class SurgeD(nn.Module):
     def __init__(self, backbone: Backbone, use_scm: bool = False, prior: bool = True, aux: bool = True, c: int = 256,
-                 audio: bool = False, expert: Expert | None = None):
+                 audio: bool = False, expert: Expert | None = None, pgate: bool = False):
         super().__init__()
         self.backbone = backbone
         self.expert = expert
-        self.decoder = Decoder(backbone.embed_dim, c, use_scm=use_scm, prior=prior, aux=aux, audio=audio,
+        self.pgate = pgate  # predictability gate (section 14E): the predictor's error through the zero-init modulation
+        self.pgate_control = None  # evaluation only: None, 'rot180' or 'zero'
+        self.decoder = Decoder(backbone.embed_dim, c, use_scm=use_scm or pgate, prior=prior, aux=aux, audio=audio,
                                expert_dim=expert.backbone.embed_dim if expert is not None else None)
 
     @property
@@ -257,7 +274,13 @@ class SurgeD(nn.Module):
 
     def forward(self, frames, surprise=None, backbone_grad: bool = False, audio=None):
         T = frames.shape[1]
-        if backbone_grad:
+        if self.pgate:
+            if backbone_grad:
+                raise ValueError("the predictability gate is defined for a frozen encoder")
+            with torch.no_grad():
+                taps, err = self.backbone.forward_with_error(frames)
+                surprise = pgate_input(err, self.pgate_control)
+        elif backbone_grad:
             taps = self.backbone(frames)
         else:
             with torch.no_grad():

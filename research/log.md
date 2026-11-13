@@ -1225,3 +1225,29 @@ random draws) it ranges from −0.0001 to +0.0001. The analysis as run (candidat
 bootstrap seed 0; 10,000 resamples) gave "inconclusive", and that outcome stands; it is not re-run with other
 draws. **Amendment to 14D (before any of its runs):** its test uses 100,000 resamples, bootstrap seed 0 and UMT-L
 as the only candidate, so that its decision does not depend on Monte Carlo noise of this size.
+
+### 14E. Predictability-gated decoder (rule written 2026-11-13, before any run)
+
+Goal: the one arrangement in the project without a precedent found (`report/architectural-novelty.md`, section 6),
+an interaction between the frozen V-JEPA 2 encoder and its own predictor inside the saliency decoder. Asked for by the
+user after the novelty assessment.
+
+- **Model.** SURGE-D ViT-g plus the masked-tube prediction error of the V-JEPA 2 ViT-g predictor, computed for every
+  clip in training and inference with the trained mask token. Four passes each hide the 4×4 token blocks of one
+  row/column parity in all tubelets (25 % of the tokens), as in 13C. The per-token error is standardised over the
+  tokens of each tubelet. With an availability channel, it enters the existing zero-initialised modulation at the four
+  pyramid levels, F ← F ⊙ (1 + γ(U)) + β(U) with U = φ(error), so the model starts as SURGE-D (checked on CPU: identical
+  output for real, rotated and zero error maps at initialisation). The batched readout (`VJEPA2.forward_with_error`)
+  reproduces the readout of 13C (`scripts/g2_maps.py`) exactly on CPU in fp32 (three clips, maximum difference 0).
+- **Protocol.** The ViT-g main recipe (3 epochs, batch 8, lr 3e-4, warm-up 0.25, best holdout epoch). A GPU smoke test
+  first; then seed 0; seeds 1 and 2 only if the seed-0 holdout CC is at least 0.5896. DHF1K val is not used.
+- **Adoption requires both of the following.**
+  (i) **Gain:** over seeds 0–2 against SURGE-D ViT-g seeds 0–2, the 12E rule on holdout CC (mean ΔCC ≥ +0.003 and
+  95 % interval above zero; 100,000 resamples, bootstrap seed 0).
+  (ii) **Attribution:** the same three models scored on the holdout with each error map rotated by 180° (same
+  statistics, misaligned content) must be worse; matched − rotated ΔCC must satisfy the same rule. Scores with zero
+  maps are reported descriptively.
+- If both 14D (UMT-L) and 14E are adopted, their combination is a separate test before the final model of 14C is
+  fixed.
+- **Cost.** The readout adds about three encoder passes per clip; the time per output frame of an adopted model is
+  measured with the protocol of 13D.

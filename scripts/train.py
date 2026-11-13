@@ -103,7 +103,9 @@ def main():
         expert = Expert(ebb, img=EXPERT_IMG[md["expert"]])
         log(f"expert {md['expert']}: {sum(p.numel() for p in ebb.parameters()) / 1e6:.1f}M frozen parameters")
     model = SurgeD(bb, use_scm=md["scm"], prior=md["prior"], aux=md["aux"], c=md["channels"], audio=use_audio,
-                   expert=expert).to(device)
+                   expert=expert, pgate=md.get("pgate", False)).to(device)
+    if md.get("pgate"):
+        log("predictability gate: masked-tube predictor error (trained mask token) -> zero-init modulation")
     if tr.get("init_from"):
         ck0 = torch.load(ROOT / tr["init_from"], map_location="cpu", weights_only=False)
         if use_audio and not any(k.startswith("av.") for k in ck0["decoder"]):  # visual checkpoint -> new audio modules

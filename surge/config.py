@@ -17,7 +17,7 @@ DEFAULTS = {
         "T": 16, "stride": 2, "size": [256, 256], "hflip": True,
         "salicon": False, "salicon_root": "D:/Datasets/SALICON", "salicon_limit": None,
     },
-    "model": {"backbone": "vjepa21_l", "scm": False, "prior": True, "aux": True, "channels": 256, "expert": None},
+    "model": {"backbone": "vjepa21_l", "scm": False, "prior": True, "aux": True, "channels": 256, "expert": None, "pgate": False},
     "train": {
         "stage": 1, "seed": 0, "epochs": 10, "clips_per_video": 8, "batch": 8, "workers": 12,
         "lr": 3e-4, "lr_prior": 1e-3, "lr_lora": 1e-4, "wd": 0.01, "warmup_epochs": 0.5,

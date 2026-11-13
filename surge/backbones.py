@@ -26,6 +26,18 @@ VJEPA2_G_HF = "facebook/vjepa2-vitg-fpc64-256"
 UMT_CKPT = "D:/models/umt/single_modality/l16_ptk710_ftk710_ftk400_f16_res224.pth"
 
 
+def _tube_ids(t: int, h: int, w: int, device):
+    """Visible (4, 3n/4) and masked (4, n/4) token ids of the four masked-tube passes: the token grid is divided into
+    4x4 blocks, and pass p hides the blocks of one (row, column) parity in every tubelet (scripts/g2_maps.py)."""
+    rr = torch.arange(h)[:, None] // 4 % 2
+    cc = torch.arange(w)[None, :] // 4 % 2
+    which = (rr * 2 + cc).flatten().repeat(t)
+    ids = torch.arange(t * h * w)
+    ids_m = torch.stack([ids[which == p] for p in range(4)])
+    ids_v = torch.stack([ids[which != p] for p in range(4)])
+    return ids_v.to(device), ids_m.to(device)
+
+
 def _tokens_to_volume(x: torch.Tensor, t: int, h: int, w: int) -> torch.Tensor:
     B, N, D = x.shape
     assert N == t * h * w, (N, t, h, w)
@@ -78,6 +90,7 @@ class VJEPA2(Backbone):
         self.model = AutoModel.from_pretrained(name, attn_implementation=attn)
         self.embed_dim = self.model.config.hidden_size
         self.taps = taps
+        self.tube_chunk = 2  # clips per chunk of the masked-tube readout (forward_with_error)
         if grad_ckpt:
             self.model.gradient_checkpointing_enable()
         self.lora_pattern = r"model\.encoder\.layer\.(1[2-9]|2[0-3])\.attention\.(query|key|value|proj)"
@@ -88,6 +101,49 @@ class VJEPA2(Backbone):
         out = self.model(pixel_values_videos=x, skip_predictor=True, output_hidden_states=True)
         t, h, w = self.grid(T, H, W)
         return [_tokens_to_volume(out.hidden_states[l], t, h, w) for l in self.taps]
+
+    def forward_with_error(self, x, token: int = 0):
+        """Taps plus the predictor's masked-tube error for every token (research/log.md section 14E):
+        (taps, err) with err (B, T', h, w). Four passes each hide the 4x4 token blocks of one row/column parity in all
+        tubelets (25 % of the tokens); the encoder sees only the visible tokens, the predictor predicts the hidden ones
+        with mask token `token` (0 = the trained token; the HF port reads index 1, a zero vector), and the error is
+        the mean absolute difference of the layer-normalised prediction and the full-clip encoding (as section 13C,
+        scripts/g2_maps.py, batched here)."""
+        import torch.nn.functional as F
+        B, T, C, H, W = x.shape
+        t, h, w = self.grid(T, H, W)
+        n = t * h * w
+        out = self.model(pixel_values_videos=x, skip_predictor=True, output_hidden_states=True)
+        taps = [_tokens_to_volume(out.hidden_states[l], t, h, w) for l in self.taps]
+        ids_v, ids_m = _tube_ids(t, h, w, x.device)                          # (4, 3n/4), (4, n/4)
+        P = ids_v.shape[0]
+        enc = self.model.encoder
+        full = F.layer_norm(out.last_hidden_state.float(), out.last_hidden_state.shape[-1:])
+        mt = self.model.predictor.embeddings.mask_tokens
+        d = 1 % mt.shape[0]
+        keep = mt.data[d].clone()
+        mt.data[d] = mt.data[token]
+        err = torch.zeros(B, n, device=x.device, dtype=torch.float32)
+        try:
+            for b0 in range(0, B, self.tube_chunk):  # clips in chunks, to bound memory; results do not depend on it
+                xb = x[b0:b0 + self.tube_chunk]
+                nb = xb.shape[0]
+                iv, im = ids_v.repeat(nb, 1), ids_m.repeat(nb, 1)            # (4nb, .), clip-major
+                hv = enc.embeddings(xb.repeat_interleave(P, dim=0))
+                hv = torch.gather(hv, 1, iv[..., None].expand(-1, -1, hv.shape[-1]))
+                for layer in enc.layer:
+                    hv = layer(hv, iv)[0]
+                hv = enc.layernorm(hv)
+                buf = hv.new_zeros(nb * P, n, hv.shape[-1])
+                buf.scatter_(1, iv[..., None].expand(-1, -1, hv.shape[-1]), hv)
+                pred = self.model.predictor(encoder_hidden_states=buf, context_mask=[iv],
+                                            target_mask=[im]).last_hidden_state
+                tgt = full[b0:b0 + nb].repeat_interleave(P, dim=0).gather(1, im[..., None].expand(-1, -1, full.shape[-1]))
+                e = (F.layer_norm(pred.float(), pred.shape[-1:]) - tgt).abs().mean(-1)  # (4nb, n/4)
+                err[b0:b0 + nb].scatter_(1, im.view(nb, -1), e.view(nb, -1))
+        finally:
+            mt.data[d] = keep
+        return taps, err.view(B, t, h, w)
 
     @torch.no_grad()
     def surprise(self, x, n_ctx_frames: int = 8):
