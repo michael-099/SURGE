@@ -1251,3 +1251,23 @@ user after the novelty assessment.
   fixed.
 - **Cost.** The readout adds about three encoder passes per clip; the time per output frame of an adopted model is
   measured with the protocol of 13D.
+
+### 14D results (queue 14D; `runs/vitg_s{3,4,5}`, `runs/xp_umt_l_s{3,4,5}`, `runs/review/expert_seeds_14d*.json`)
+
+Holdout CC (rescored per video; identical to the values recorded during training):
+
+| Seed | 3 | 4 | 5 |
+|---|---|---|---|
+| SURGE-D ViT-g | 0.5856 | 0.5865 | 0.5881 |
+| + UMT-L | 0.5894 | 0.5882 | 0.5913 |
+
+Six-seed test as fixed in 14D (two-level bootstrap, 100,000 resamples, bootstrap seed 0, UMT-L only):
+ΔCC +0.0038, **97.5 % interval [−0.0009, +0.0093]**; 95 % [−0.0004, +0.0085]; per seed +0.0040, +0.0070, +0.0033,
++0.0038, +0.0017, +0.0032. The interval includes zero, so **UMT-L is not adopted**, and there is no further look.
+
+Secondary (descriptive), 97.5 % intervals: NSS +0.031 [−0.001, +0.068], SIM +0.004 [−0.000, +0.008], KLD −0.006
+[−0.018, +0.006].
+
+Reading: the second expert gives a small gain that is positive in all six seeds, but it cannot be told apart from
+zero on the 60-video holdout. The final model of 14C has no second expert unless a later test, written in advance,
+says otherwise.
