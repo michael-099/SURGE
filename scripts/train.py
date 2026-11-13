@@ -93,7 +93,17 @@ def main():
         names = add_lora(bb, r=tr["lora_r"], alpha=tr["lora_alpha"])
         log(f"LoRA on {len(names)} linears")
     use_audio = md.get("audio", False)
-    model = SurgeD(bb, use_scm=md["scm"], prior=md["prior"], aux=md["aux"], c=md["channels"], audio=use_audio).to(device)
+    expert = None
+    if md.get("expert"):  # second frozen encoder (research/log.md section 14A)
+        from surge.backbones import EXPERT_IMG
+        from surge.model import Expert
+        ebb = build_backbone(md["expert"])
+        for p in ebb.parameters():
+            p.requires_grad_(False)
+        expert = Expert(ebb, img=EXPERT_IMG[md["expert"]])
+        log(f"expert {md['expert']}: {sum(p.numel() for p in ebb.parameters()) / 1e6:.1f}M frozen parameters")
+    model = SurgeD(bb, use_scm=md["scm"], prior=md["prior"], aux=md["aux"], c=md["channels"], audio=use_audio,
+                   expert=expert).to(device)
     if tr.get("init_from"):
         ck0 = torch.load(ROOT / tr["init_from"], map_location="cpu", weights_only=False)
         if use_audio and not any(k.startswith("av.") for k in ck0["decoder"]):  # visual checkpoint -> new audio modules

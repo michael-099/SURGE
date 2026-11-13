@@ -69,8 +69,13 @@ def load_model(run: Path, ckpt: str, device):
     if "lora" in st:
         add_lora(bb, r=cfg["train"]["lora_r"], alpha=cfg["train"]["lora_alpha"])
         bb.load_state_dict(st["lora"], strict=False)
+    expert = None
+    if cfg["model"].get("expert"):  # second frozen encoder (research/log.md section 14A)
+        from surge.backbones import EXPERT_IMG
+        from surge.model import Expert
+        expert = Expert(build_backbone(cfg["model"]["expert"]), img=EXPERT_IMG[cfg["model"]["expert"]])
     m = SurgeD(bb, use_scm=cfg["model"]["scm"], prior=cfg["model"]["prior"], aux=cfg["model"]["aux"],
-               c=cfg["model"]["channels"], audio=cfg["model"].get("audio", False))
+               c=cfg["model"]["channels"], audio=cfg["model"].get("audio", False), expert=expert)
     m.decoder.load_state_dict(st["decoder"])
     return m.to(device).eval(), cfg
 

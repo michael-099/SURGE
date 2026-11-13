@@ -140,11 +140,53 @@ class AudioFusion(nn.Module):
         return f * (1 + g) + b + self.res(f * s)
 
 
+class ExpertFusion(nn.Module):
+    """Gated fusion of a second encoder's pyramid level into the main one (research/log.md section 14A):
+    P <- P + gamma * sigmoid(W [P; P_e]) * P_e, gamma per channel and initialised to zero, so that the model starts
+    as SURGE-D and learns where the expert helps."""
+
+    def __init__(self, c: int):
+        super().__init__()
+        self.gate = nn.Conv3d(2 * c, c, 1)
+        self.gamma = nn.Parameter(torch.zeros(1, c, 1, 1, 1))
+
+    def forward(self, p, pe):
+        return p + self.gamma * torch.sigmoid(self.gate(torch.cat([p, pe], 1))) * pe
+
+
+class Expert(nn.Module):
+    """A frozen second encoder: resizes the (ImageNet-normalised) frames to its input size and resamples its taps
+    to the main encoder's token grid (t, h, w); trilinear 2:1 in time is the mean of each frame pair."""
+
+    def __init__(self, backbone: Backbone, img: int):
+        super().__init__()
+        self.backbone = backbone
+        self.img = img
+
+    def forward(self, frames, grid):
+        B, T, C, H, W = frames.shape
+        x = frames
+        if (H, W) != (self.img, self.img):
+            x = F.interpolate(frames.reshape(B * T, C, H, W), size=(self.img, self.img), mode="bilinear",
+                              align_corners=False, antialias=True).reshape(B, T, C, self.img, self.img)
+        out = []
+        for v in self.backbone(x):
+            v = v.float()
+            if tuple(v.shape[2:]) != tuple(grid):
+                v = F.interpolate(v, size=tuple(grid), mode="trilinear", align_corners=False)
+            out.append(v)
+        return out
+
+
 class Decoder(nn.Module):
     def __init__(self, d: int = 1024, c: int = 256, use_scm: bool = False, prior: bool = True, aux: bool = True,
-                 audio: bool = False):
+                 audio: bool = False, expert_dim: int | None = None):
         super().__init__()
         self.fpn = SimpleFPN3D(d, c)
+        self.expert_dim = expert_dim
+        if expert_dim:
+            self.fpn_e = SimpleFPN3D(expert_dim, c)
+            self.xf = nn.ModuleList([ExpertFusion(c) for _ in range(4)])  # P4, P8, P16a, P16b
         self.audio = audio
         if audio:
             self.av = nn.ModuleList([AudioFusion(c) for _ in range(3)])  # P8, P16a, P16b
@@ -163,8 +205,13 @@ class Decoder(nn.Module):
             self.aux8 = nn.Conv3d(c, 1, 1)
         self.prior = CenterPrior() if prior else None
 
-    def forward(self, taps, surprise=None, T_out: int | None = None, audio=None):
+    def forward(self, taps, surprise=None, T_out: int | None = None, audio=None, expert_taps=None):
         p4, p8, p16a, p16b = self.fpn(taps)
+        if self.expert_dim:
+            if expert_taps is None:
+                raise ValueError("expert fusion enabled but no expert taps given")
+            pe = self.fpn_e(expert_taps)
+            p4, p8, p16a, p16b = [m(f, e) for m, f, e in zip(self.xf, (p4, p8, p16a, p16b), pe)]
         if self.audio:
             if audio is None:
                 raise ValueError("audio enabled but no audio given")
@@ -197,10 +244,12 @@ class Decoder(nn.Module):
 
 class SurgeD(nn.Module):
     def __init__(self, backbone: Backbone, use_scm: bool = False, prior: bool = True, aux: bool = True, c: int = 256,
-                 audio: bool = False):
+                 audio: bool = False, expert: Expert | None = None):
         super().__init__()
         self.backbone = backbone
-        self.decoder = Decoder(backbone.embed_dim, c, use_scm=use_scm, prior=prior, aux=aux, audio=audio)
+        self.expert = expert
+        self.decoder = Decoder(backbone.embed_dim, c, use_scm=use_scm, prior=prior, aux=aux, audio=audio,
+                               expert_dim=expert.backbone.embed_dim if expert is not None else None)
 
     @property
     def uses_audio(self) -> bool:
@@ -214,7 +263,11 @@ class SurgeD(nn.Module):
             with torch.no_grad():
                 taps = self.backbone(frames)
         taps = [t.float() if t.dtype != torch.bfloat16 else t for t in taps]
-        return self.decoder(taps, surprise, T_out=T, audio=audio)
+        et = None
+        if self.expert is not None:
+            with torch.no_grad():
+                et = self.expert(frames, grid=taps[0].shape[2:])
+        return self.decoder(taps, surprise, T_out=T, audio=audio, expert_taps=et)
 
 
 def central(x: torch.Tensor, T: int) -> torch.Tensor:

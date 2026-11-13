@@ -1116,3 +1116,112 @@ Fixed before run 2 ends:
   SURGE-D ViT-g offline is below 2 at either batch size in any run.
 - If any median time per output frame differs by more than 10 % between any two of the three runs, the thesis says
   so and gives the range.
+
+## 14. Toward a novel architecture: a second frozen expert and a speaker-aware branch (rules written 2026-11-12, before any run)
+
+Goal set by the user: a novel video saliency architecture that beats the state of the art; the thesis is to be rebuilt
+around it, with SURGE-D (frozen V-JEPA 2 ViT-g + decoder) as the starting point and baseline. Two components are
+piloted, each under the rule below; the final model is fixed only after both pilots (14C). DHF1K val is not used by
+any pilot.
+
+### 14A. Second frozen expert (DHF1K holdout)
+
+- **Model.** SURGE-D ViT-g unchanged, plus one frozen expert encoder. The expert's four taps are resampled to the
+  8×16×16 token grid of V-JEPA 2 and pass through their own simple pyramid (same design as the main one). Each of
+  the four pyramid levels is fused as P ← P + γ ⊙ σ(W[P; P_e]) ⊙ P_e (W a 1×1×1 convolution, γ per channel,
+  initialised to zero), so training starts from a model equivalent to SURGE-D.
+- **Candidates.** E1 DINOv2-L/14 (`facebook/dinov2-large`, Apache-2.0; each frame at 224², 16×16 patches, taps
+  6/12/18/24, consecutive frame pairs averaged per tubelet). E2 UMT-L (the checkpoint of gate G1; 224², 16 frames,
+  taps 6/12/18/24; 16×14×14 resampled to 8×16×16).
+- **Protocol.** The ViT-g main recipe unchanged (3 epochs, batch 8, lr 3e-4, warm-up 0.25, best holdout epoch by
+  holdout CC on every fifth frame). Seed 0 first.
+- **Rule.** A candidate goes to seeds 1 and 2 if its seed-0 holdout CC is at least 0.5896 (ViT-g seed 0, 0.5866,
+  plus 0.003). It is adopted if, over seeds 0–2 against ViT-g seeds 0–2 (0.5866 / 0.5867 / 0.5829), the
+  seed-averaged ΔCC is an effect under the three-seed rule of 12E (95 % interval above zero and ΔCC ≥ +0.003). If
+  both are adopted, the one with the larger mean gain is used; a model with both experts is a separate test.
+
+### 14B. Speaker-aware branch (STAViS audio-visual datasets)
+
+- **Speaker maps.** Light-ASD (Liao et al., CVPR 2023; AVA-ActiveSpeaker weights from its repository, MIT) on each
+  video's frames and soundtrack: face tracks with per-frame speaking scores. Speaker map = Σ over faces of
+  sigmoid(score) × a Gaussian of the face box. Control: face map = the same Gaussians without the speaking score.
+- **Model.** The map enters through the existing map-conditioning module (zero-initialised feature-wise modulation
+  at the four pyramid levels), so training starts from the visual model.
+- **Protocol.** As the audio experiment (11D): per fold, initialised from the DHF1K ViT-g seed-0 SURGE-D model,
+  3 epochs, same holdouts and blur selection. Variants: visual (the existing ViT-g seed-0 fold models), + speaker
+  map, + face map.
+- **Rule.** On a dataset, the speaker branch helps if fold-mean ΔCC (speaker − visual) ≥ +0.010 and
+  (speaker − face) ≥ +0.005. It is adopted if it helps on Coutrot2 and lowers fold-mean CC by no more than 0.005 on
+  any other dataset.
+
+### 14C. Final model and claims (fixed now)
+
+- Final architecture: SURGE-D ViT-g plus the adopted components (none, either or both). Three seeds on the 540
+  DHF1K training videos; fine-tuning per dataset as in section 11; each test set scored once.
+- An adopted component counts as a contribution only if removing it (three seeds) loses accuracy under the 12E rule.
+- Comparisons: against SURGE-D and SalFoM, paired on the same videos; against published numbers with the tie margin
+  of 0.01 (T4.1). No state-of-the-art claim on DHF1K without official test-set scores.
+
+### 14B dropped before any training run (2026-11-12)
+
+A feasibility check of the speaker maps, run before any model was trained with them, showed that the STAViS release
+of all six audio-visual datasets is 256×340 pixels, so faces are only about 12–15 pixels wide. On Coutrot2 clip 1
+(35 s, four people in a meeting), Light-ASD marked speech in 1 % of face-frames (maximum score 0.68), and the four
+participants were split into 21 face tracks (`scripts/asd_speaker.py`). Speaker maps from it would be face maps, so
+the test of 14B could not separate speaking information from faces. The user decided to drop the speaker branch.
+The final model of 14C is therefore SURGE-D ViT-g, with or without the expert of 14A.
+
+### 14A seed-0 results (queue 14A; `runs/xp_dinov2_l_s0`, `runs/xp_umt_l_s0`)
+
+| Run | Best epoch | Holdout CC | NSS | SIM | KLD |
+|---|---|---|---|---|---|
+| ViT-g + DINOv2-L, seed 0 | 2 of 3 | 0.5907 | 3.408 | 0.458 | 1.193 |
+| ViT-g + UMT-L, seed 0 | 2 of 3 | 0.5906 | 3.403 | 0.457 | 1.191 |
+| ViT-g (reference), seed 0 | 2 of 3 | 0.5866 | 3.356 | 0.449 | 1.194 |
+
+Both candidates are above 0.5896, so both go to seeds 1 and 2 under the rule of 14A. The adoption test then uses
+per-video holdout scores of all nine runs, computed with the command of 12E (every fifth frame, σ = 0).
+
+### 14A three-seed results (queue 14A2; `runs/xp_{dinov2_l,umt_l}_s{0,1,2}`, `runs/review/holdout/`, `runs/review/expert_seeds_14a*.json`)
+
+Holdout CC, rescored per video with the command of 12E (every fifth frame, σ = 0); the rescored values reproduce the
+values recorded during training for all nine runs.
+
+| Model | Seed 0 | Seed 1 | Seed 2 | Mean |
+|---|---|---|---|---|
+| SURGE-D ViT-g (reference) | 0.5866 | 0.5867 | 0.5829 | 0.5854 |
+| + DINOv2-L | 0.5907 | 0.5932 | 0.5845 | 0.5895 |
+| + UMT-L | 0.5906 | 0.5938 | 0.5861 | 0.5902 |
+
+Two-level bootstrap of 12E (10,000 resamples), difference to the reference:
+
+| Candidate | ΔCC [95 %] | 90 % | Outcome | Secondary: ΔNSS [95 %] |
+|---|---|---|---|---|
+| DINOv2-L | +0.0041 [−0.0007, +0.0094] | [+0.0001, +0.0085] | inconclusive | +0.031 [−0.002, +0.068] |
+| UMT-L | +0.0047 [−0.0001, +0.0103] | [+0.0006, +0.0092] | inconclusive | +0.039 [+0.005, +0.076] |
+
+SIM and KLD: inconclusive for both. Under the rule of 14A, neither candidate is adopted: the mean gains exceed the
+margin of 0.003 and all six per-seed differences are positive, but neither 95 % interval of ΔCC lies above zero.
+
+### 14D. Follow-up of 14A with three more seeds (rule written 2026-11-13, before any of its runs)
+
+14A ended inconclusive for both experts. The user decided to continue with UMT-L, the candidate with the larger mean
+gain (the tie-break of 14A); DINOv2-L is not continued.
+
+- **Runs.** Seeds 3, 4 and 5 of SURGE-D ViT-g (reference) and of ViT-g + UMT-L, with the unchanged recipe of 14A.
+  Per-video holdout scores with the command of 12E.
+- **Test.** The two-level bootstrap of 12E over all six seeds (0–5) and the 60 holdout videos, paired by seed.
+- **Rule.** UMT-L is adopted if the mean ΔCC is at least +0.003 and its **97.5 %** interval (percentiles 1.25 and
+  98.75) lies above zero. Otherwise it is not adopted, and there is no further look. This is a second look at the
+  same question after an inconclusive first one. The stricter level bounds the false-positive rate of the two-look
+  procedure by 0.05 + 0.025 = 0.075 (Bonferroni); the true rate is lower, because the two looks share seeds 0–2.
+  The thesis reports both looks.
+- `scripts/ablation_seeds.py` is generalised before the runs to any number of seeds and to a chosen interval level.
+  With three seeds and the default level it gives the same results as before.
+
+**Note on 14A (added before any run of 14D).** The lower 95 % bound of UMT-L in 14A lies within the Monte Carlo
+error of the bootstrap: across bootstrap seeds 0–4 and both orders of the two candidates (the order changes the
+random draws) it ranges from −0.0001 to +0.0001. The analysis as run (candidates in the order DINOv2-L, UMT-L;
+bootstrap seed 0; 10,000 resamples) gave "inconclusive", and that outcome stands; it is not re-run with other
+draws. **Amendment to 14D (before any of its runs):** its test uses 100,000 resamples, bootstrap seed 0 and UMT-L
+as the only candidate, so that its decision does not depend on Monte Carlo noise of this size.

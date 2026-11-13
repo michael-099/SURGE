@@ -139,6 +139,40 @@ class UMT(Backbone):
         return [_tokens_to_volume(o, t, h, w) for o in outs]
 
 
+# ------------------------------------------------------------------------------------------------ DINOv2 (expert)
+DINOV2_L_HF = "facebook/dinov2-large"
+
+
+class DINOv2(Backbone):
+    """DINOv2 ViT-L/14 image encoder (Oquab et al., TMLR 2024; facebook/dinov2-large, Apache-2.0) applied frame by
+    frame, as a second frozen expert (research/log.md section 14A). Input frames must be 224x224 (16x16 patches);
+    returns taps of shape (B, D, T, 16, 16), one time step per frame; the Expert wrapper resamples them to the main
+    encoder's tubelet grid."""
+    tubelet = 1
+    patch = 14
+
+    def __init__(self, name: str = DINOV2_L_HF, taps=(6, 12, 18, 24)):
+        super().__init__()
+        from transformers import AutoModel
+
+        self.model = AutoModel.from_pretrained(name, attn_implementation="sdpa")
+        self.embed_dim = self.model.config.hidden_size
+        self.taps = taps
+
+    def forward(self, x):  # x: B,T,3,224,224, ImageNet-normalised
+        B, T, C, H, W = x.shape
+        out = self.model(pixel_values=x.reshape(B * T, C, H, W), output_hidden_states=True)
+        h, w = H // self.patch, W // self.patch
+        vols = []
+        for l in self.taps:
+            v = out.hidden_states[l][:, 1:, :]  # drop the CLS token (dinov2-large has no register tokens)
+            vols.append(v.reshape(B, T, h, w, -1).permute(0, 4, 1, 2, 3))
+        return vols
+
+
+EXPERT_IMG = {"dinov2_l": 224, "umt_l": 224}  # input size of each expert encoder
+
+
 def build_backbone(name: str, grad_ckpt: bool = False) -> Backbone:
     if name == "vjepa21_l":
         return VJEPA21(grad_ckpt=grad_ckpt)
@@ -148,6 +182,8 @@ def build_backbone(name: str, grad_ckpt: bool = False) -> Backbone:
         return VJEPA2(VJEPA2_G_HF, taps=(10, 20, 30, 40), grad_ckpt=grad_ckpt)
     if name == "umt_l":
         return UMT(grad_ckpt=grad_ckpt)
+    if name == "dinov2_l":
+        return DINOv2()
     raise ValueError(name)
 
 
