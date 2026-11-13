@@ -1302,3 +1302,11 @@ from, without face detection.
 - **Maps before training (Coutrot2, no gaze data used).** The maps mostly mark the people. Matched and rotated maps
   correlate 0.96 per frame after standardisation, and their peaks fall in the same cell in 53 % of frames, so the
   soundtrack mainly moves the peak.
+
+### 14E results (queue 14E; `runs/pg_g_s0`, `runs/review/holdout/pg_g_s0{,_rot,_zero}.json`)
+
+Seed 0, holdout CC by epoch: 0.5639 / **0.5857** / 0.5836 (SURGE-D ViT-g seed 0: 0.5658 / 0.5866 / 0.5844). The best
+epoch is below 0.5896, so seeds 1 and 2 were not run, and **the predictability gate is not adopted**.
+
+Descriptive, the seed-0 model rescored per video (every fifth frame, σ 0) with matched / 180°-rotated / zero error
+maps: CC 0.5857 / 0.5856 / 0.5856, NSS 3.362 / 3.361 / 3.361. The trained decoder hardly responds to the error map.
