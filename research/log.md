@@ -1310,3 +1310,22 @@ epoch is below 0.5896, so seeds 1 and 2 were not run, and **the predictability g
 
 Descriptive, the seed-0 model rescored per video (every fifth frame, σ 0) with matched / 180°-rotated / zero error
 maps: CC 0.5857 / 0.5856 / 0.5856, NSS 3.362 / 3.361 / 3.361. The trained decoder hardly responds to the error map.
+
+### 14F results, stage 1 (queue 14F; `runs/ssl_g_coutrot2_f{1,2,3}`, `runs/ssl/`, `runs/review/ssl_stage1.json`)
+
+Coutrot2, fold means over the three test folds (15 videos); σ from each fold's holdout (8 / 12 / 12, the same as for
+the visual fold models):
+
+| | Visual | Maps (matched) | Maps (rotated) |
+|---|---|---|---|
+| CC | 0.8203 | 0.8220 | 0.8213 |
+| NSS | 6.659 | 6.677 | 6.669 |
+| SIM | 0.600 | 0.601 | 0.601 |
+| sAUC | 0.757 | 0.759 | 0.758 |
+
+Maps − visual +0.0017 CC (bootstrap over the 15 videos, 95 % [+0.0001, +0.0036]); matched − rotated +0.0007
+([−0.0002, +0.0021]). Both are below the thresholds (+0.010, +0.005), so **the maps do not help on Coutrot2, stage 2
+was not run, and the maps are not adopted**. The small gain over the visual model mostly remains with another video's
+soundtrack (rotated − visual +0.0010), so it does not come from the sound.
+
+None of the components piloted in section 14 (14A/14D, 14B, 14E, 14F) has been adopted.
