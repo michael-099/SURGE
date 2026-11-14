@@ -35,13 +35,13 @@ variant needs nearly twice the computation but less time. After brief
 fine-tuning, it was competitive on UCF Sports and exceeded the best verified
 peer-reviewed results on four of six audio-visual datasets, by margins within
 the spread of published evaluations, but failed on conversations, where gaze
-follows the speaker. The predictor's error was anti-correlated with fixations;
-combined with simple cues, it added a little information about where people
-look, but with a negative weight. Encoder pre-training and scale produced
+follows the speaker. The predictor's error was anti-correlated with fixations
+and, combined with simple cues, added a little information with a negative
+weight. Encoder pre-training and scale produced
 the only large gains; over three seeds, a learned centre prior and deep
 supervision were equivalent to their absence within 0.003 in correlation, and
-no other addition tested, from encoder adaptation to audio, brought a gain that
-could be established. The thesis contributes a frozen-encoder saliency model, a
+no other addition, from encoder adaptation and a second encoder to the
+predictor's error as an input and audio, brought an established gain. The thesis contributes a frozen-encoder saliency model, a
 negative result on predictive surprise, controlled evidence on design choices
 and a transparent evaluation protocol.
 

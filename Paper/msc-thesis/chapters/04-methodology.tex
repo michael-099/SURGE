@@ -12,7 +12,8 @@ decision rule before the experiment that it governs
 (\cref{sec:formulation}). It then describes the eye-tracking data and their
 preparation (\cref{sec:dataset}), the proposed model, SURGE-D, as it is
 implemented (\cref{sec:architecture}), the components that were implemented
-and tested but not retained (\cref{sec:optional}), the training and inference
+and tested but not retained, among them four extensions tested after the main
+evaluation (\cref{sec:optional}), the training and inference
 procedures (\cref{sec:training,sec:inference}), and the evaluation metrics
 and statistical analysis (\cref{sec:evaluation-metrics}). The chapter closes
 with the ethical considerations of the work (\cref{sec:ethics}). Every
@@ -57,13 +58,30 @@ test set. No reported model or setting was selected on it. It did inform two
 decisions about the predictions prepared for the official test set; these are
 listed with every other use of the set in \cref{tab:val-ledger}.
 
+\paragraph{Extensions after the main evaluation.} Once the main model had been
+evaluated, four extensions were tested to find out whether information that
+the frozen encoder might lack would improve it further: a second frozen
+encoder with different pre-training, the speaking status of the people in
+view, the predictor's error as an input to the decoder, and maps of where the
+sound comes from
+(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps}). Each
+was planned as a candidate component of the final model, and its rule
+(\cref{tab:rules-ext}) fixed before its runs what would make it one.
+The extensions tested on DHF1K were first screened with one seed against the
+model of the same seed and received further seeds only if they passed the
+screen. The audio-visual extensions followed the rule of the audio experiment,
+applied first to the dataset on which they were expected to matter most. The
+final model includes an extension only if its rule was met
+(\cref{sec:extensions}).
+
 \begin{table}[htbp]
   \centering
   \caption{Decision rules, each written before the experiment that it
   governs, except the one marked $^{\ast}$ (see text). Rules marked $^{\dagger}$
   were written in a follow-up after the first draft of this thesis and rules
   marked $^{\ddagger}$ in a second follow-up, in each case before the runs they
-  govern. Holdout \acrshort{CC} is measured on the internal 60-video DHF1K
+  govern; the rules of the extensions are listed in \cref{tab:rules-ext}.
+  Holdout \acrshort{CC} is measured on the internal 60-video DHF1K
   holdout unless stated otherwise; outcomes are reported in
   \cref{ch:experiments}}\label{tab:rules}
   \small
@@ -120,6 +138,38 @@ listed with every other use of the set in \cref{tab:val-ledger}.
       per output frame than SalFoM is withdrawn if SalFoM's measured time per
       output frame is less than twice that of SURGE-D with \acrshort{ViT}-g at a
       batch size of one or of eight \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Decision rules of the extensions tested after the main evaluation,
+  each written before the runs that it governs. The three-seed rule is that of
+  the ablations in \cref{tab:rules}; outcomes are reported in
+  \cref{sec:extensions}}\label{tab:rules-ext}
+  \small
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright}p{3.3cm}>{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Extension} & \textbf{Rule} \\
+    \midrule
+    Second encoder & Seeds 1 and 2 only if the seed-0 holdout \acrshort{CC} is
+      at least $0.5896$ (the \acrshort{ViT}-g model of seed 0 plus $0.003$); adopted if the
+      three-seed rule finds an effect. Second look, seeds 3--5 of the candidate
+      with the larger gain: adopted if the six-seed mean $\Delta$\acrshort{CC} is at least
+      $+0.003$ and its 97.5\,\% interval lies above zero \\
+    Speaker maps & Help on a dataset if the fold-mean $\Delta$\acrshort{CC} over the
+      visual model is at least $+0.010$ and speaker maps beat face maps by at
+      least $0.005$; adopted if they help on Coutrot2 and lower no other dataset
+      by more than $0.005$ \\
+    Predictability gate & Seeds 1 and 2 only if the seed-0 holdout \acrshort{CC}
+      is at least $0.5896$; adopted if the three-seed rule finds an effect both
+      over SURGE-D and over the same models given error maps rotated by
+      $180^{\circ}$ \\
+    Sound-source maps & The rule of the audio fusion, first on Coutrot2
+      alone; the other datasets are run only if it is met there, and the maps are
+      adopted if, in addition, no other dataset loses more than $0.005$ fold-mean
+      \acrshort{CC} \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -502,9 +552,14 @@ frames (\cref{sec:inference}). The measured cost is reported in
 %----------------------------------------------------------------------------
 \section{Components Evaluated but Not Retained}\label{sec:optional}
 
-Four further components were implemented, tested under the rules of
-\cref{tab:rules}, and not retained. They are described here because their
-negative results are part of the contribution of the thesis.
+The components of this section were implemented, tested under the rules of
+\cref{tab:rules,tab:rules-ext}, and not retained. The first four belong to the original
+proposal and the first round of experiments
+(\cref{sec:surprise,sec:lora,sec:audio-fusion,sec:static}); the last four are
+the extensions tested after the main evaluation
+(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps}). They are
+described here because their negative results are part of the contribution of
+the thesis.
 
 \subsection{Predictive Surprise from the V-JEPA~2 Predictor}\label{sec:surprise}
 
@@ -537,8 +592,9 @@ token grid. All maps were upsampled to $640\times360$, blurred with a Gaussian
 of $\sigma=16$\,pixels and scored on the first frame of each target tubelet of
 the 60 holdout videos, at about 4 and 15 frames per second. A decoder module
 that injects the surprise map through zero-initialised feature-wise
-modulation was implemented but, following the outcome of the gate, never
-trained.
+modulation was implemented; following the outcome of the gate, it was not
+made part of the main model, and it was trained only in two of the later
+extensions (\cref{sec:pgate,sec:ssl-maps}).
 
 \paragraph{The mask token of the predictor.} The predictor marks every
 position that it has to predict with a learned \emph{mask token}, the
@@ -652,13 +708,103 @@ the audio of each test video replaced by that of another test video
 (\enquote{rotated audio}); a model that uses sound should do better with the
 matched soundtrack.
 
-\subsection{Static-Image Co-Training}
+\subsection{Static-Image Co-Training}\label{sec:static}
 
 Training on static images helped early video saliency
 models~\cite{wang2018revisiting}. To test whether it still helps on top of a
 video foundation encoder, the 10,000 SALICON training
 images~\cite{jiang2015salicon} were added to each training epoch, each image
 repeated over the 16 input frames, with the same loss.
+
+\subsection{A Second Frozen Encoder}\label{sec:second-encoder}
+
+\acrshort{V-JEPA}~2 learns by predicting the representations of masked video,
+without images, text or labels. Encoders trained in other ways may represent
+what it does not, and that could matter for saliency. The first extension
+therefore adds a second frozen encoder, the \emph{expert}, to SURGE-D. The
+expert's four taps pass through a feature pyramid of the same design as the
+main one, are resampled trilinearly to the $8\times16\times16$ token grid of
+\acrshort{V-JEPA}~2, and are fused into each of the four pyramid levels $P$ of
+the main encoder as
+\begin{equation}
+  P \leftarrow P + \gamma\odot\sigma\big(W[P;P_e]\big)\odot P_e,
+  \label{eq:expert}
+\end{equation}
+where $P_e$ is the corresponding level of the expert, $[\cdot\,;\cdot]$ denotes
+concatenation over channels, $W$ is a $1\times1\times1$ convolution, $\sigma$
+the logistic function and $\gamma$ a per-channel scale initialised to zero, so
+that training starts from a model equivalent to SURGE-D. Two experts were
+tried, both tapped after layers 6, 12, 18 and 24 and both run at
+$224\times224$ pixels: DINOv2-L/14~\cite{oquab2024dinov2}, an image encoder
+trained by self-distillation, applied to each frame, with the features of the
+two frames of each tubelet averaged; and the \acrshort{UMT}-L encoder of gate
+G1~\cite{li2023unmasked}, trained by masked video modelling under an
+image--text teacher and run on the 16 frames of the clip.
+
+\subsection{Speaker Maps}\label{sec:speaker-maps}
+
+In conversations, observers look at the person who is speaking, which an
+image-only model cannot determine (\cref{sec:transfer}). The second extension
+was to give the decoder a map of the active speaker. Light-ASD~\cite{liao2023light},
+an active speaker detector, would score each face track of a video for speech
+from the faces and the soundtrack, and the map of a frame would be the sum,
+over its faces, of a Gaussian of the face box weighted by the speaking
+probability. The same map without the speaking scores, a face map, was planned
+as the control. A check before any training showed that the frames of the
+released audio-visual datasets are too small for this (\cref{sec:extensions}),
+and the extension was dropped.
+
+\subsection{Predictability-Gated Decoder}\label{sec:pgate}
+
+Gate G2 compared the predictor's error with fixations directly, and the
+analysis of incremental information combined it with simple cues
+(\cref{sec:surprise}). Neither shows whether the decoder, which already sees
+the encoder's features, can use the error. The third extension therefore gives
+the decoder the masked-tube error of \cref{sec:surprise}, computed with the
+trained mask token for every clip, in training and in inference. The error of
+each token is standardised over the tokens of its tubelet, giving $\tilde e$,
+which is stacked with an availability channel of ones. A small network $\phi$ of two
+$3\times3\times3$ convolutions turns this input into features
+$U=\phi(\tilde e)$, which are resampled to the grid of each pyramid level and
+modulate it,
+\begin{equation}
+  F \leftarrow F\odot\big(1+\gamma(U)\big)+\beta(U),
+  \label{eq:modulation}
+\end{equation}
+where $\gamma$ and $\beta$ are $1\times1\times1$ convolutions initialised to
+zero. At initialisation the model is therefore SURGE-D, whatever the error
+map; this was checked on the processor with real, rotated and zero maps.
+A model that reads the content of the error should do worse when that content
+is misaligned, so the trained model is also scored with each error map rotated
+by $180^{\circ}$, which keeps its statistics but misaligns it with the frame,
+and with zero maps. The readout adds four passes of the encoder over three
+quarters of the tokens and four passes of the predictor to every clip.
+
+\subsection{Sound-Source Localisation Maps}\label{sec:ssl-maps}
+
+The audio fusion module of \cref{sec:audio-fusion} gives the decoder a global
+description of the soundtrack, from which it must work out where the sound
+comes from. The fourth extension supplies that location directly, as STAViS
+did with a sound localisation branch trained for the
+purpose~\cite{tsiami2020stavis}. The maps come from
+EZ-VSL~\cite{mo2022localizing}, a self-supervised sound-source localisation
+model, through its released checkpoint trained on
+VGG-Sound~\cite{chen2020vggsound}; the model was re-implemented from its
+released code and kept frozen. The map of a frame is the cosine similarity
+between the visual feature at each of $7\times7$ positions, computed from the
+frame at $224\times224$ pixels, and the embedding of the 3\,s of audio centred
+on the frame (a log spectrogram, with one audio embedding every 0.1\,s). The
+sampling rate that the checkpoint expects is not stated in its paper, so it was
+chosen without gaze data: the middle frame of each of the 233 videos with sound
+was matched with its own soundtrack against those of all other videos, and
+44.1\,kHz gave the best separation, an area under the curve of 0.736 against
+0.657 at 16\,kHz. The released soundtracks are sampled at 22.05\,kHz, so the
+maps receive no sound above 11\,kHz. Each map is standardised over its
+positions, resized to the $16\times16$ token grid and averaged over the two
+frames of each tubelet, and it enters the decoder through the modulation of
+\cref{eq:modulation}, with an availability channel that marks videos with
+sound. The control is that of the audio fusion: each test video is also scored
+with maps computed from the soundtrack of the next test video of its fold.
 
 %----------------------------------------------------------------------------
 \section{Training Procedure}\label{sec:training}
@@ -870,6 +1016,10 @@ of training videos (\cref{sec:learning-curve}) is analysed in the same way.
 There, the training subsets are drawn separately for each seed, so the
 resampling of seeds also covers the choice of subset. With three seeds, the
 seed level of this bootstrap is coarse, and its intervals are approximate.
+The second look at the second encoder (\cref{tab:rules-ext}) pools six seeds in the
+same bootstrap, with 100,000 resamples and a 97.5\,\% interval, so that the two
+looks at the same question together keep the rate of false positives below
+$0.05+0.025=0.075$ (Bonferroni).
 
 Published results of other methods were computed with other evaluation code
 and, sometimes, other protocol details. They cannot enter a paired test. They

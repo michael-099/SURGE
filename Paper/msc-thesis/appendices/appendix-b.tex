@@ -20,8 +20,8 @@ result with the folder it was read from.
     \toprule
     \textrm{\textbf{File}} & \textbf{Content} \\
     \midrule
-    surge/backbones.py & frozen encoders (\acrshort{V-JEPA}~2 \acrshort{ViT}-L and \acrshort{ViT}-g, \acrshort{V-JEPA}~2.1, \acrshort{UMT}-L) and their taps; predictor error for gate G2 \\
-    surge/model.py & feature pyramid, (2+1)D decoder, auxiliary heads, centre prior, surprise and audio modules \\
+    surge/backbones.py & frozen encoders (\acrshort{V-JEPA}~2 \acrshort{ViT}-L and \acrshort{ViT}-g, \acrshort{V-JEPA}~2.1, \acrshort{UMT}-L, DINOv2-L) and their taps; predictor error for gate G2 and the batched masked-tube readout of the predictability gate \\
+    surge/model.py & feature pyramid, (2+1)D decoder, auxiliary heads, centre prior, surprise and audio modules, second-encoder fusion \\
     surge/data.py & dataset readers, clip sampling, targets, inference windows \\
     surge/losses.py & training loss (\cref{eq:loss}) \\
     surge/metrics.py & \acrshort{CC}, \acrshort{NSS}, \acrshort{SIM}, \acrshort{KLD}, \acrshort{AUC-J} and \acrshort{sAUC} \\
@@ -44,6 +44,10 @@ result with the folder it was read from.
     scripts/time\_inference.py & measured inference time of SalFoM and SURGE-D (\cref{sec:cost}) \\
     scripts/count\_umt\_flops.py & operation count of SalFoM's encoder (\cref{sec:cost}) \\
     scripts/queue\_review\_a.sh to \_e.sh & the runs of the checks added after the first draft, in order \\
+    scripts/asd\_speaker.py & feasibility check of the speaker maps (\cref{sec:speaker-maps}) \\
+    scripts/ssl\_maps.py & sound-source localisation maps and the choice of the audio sampling rate (\cref{sec:ssl-maps}) \\
+    scripts/summarize\_ssl.py & outcome of the sound-source maps under their rule \\
+    scripts/queue\_14a.sh, \_14a2.sh, \_14d.sh, \_14e.sh, \_14f.sh & the runs of the extensions (\cref{sec:extensions}), in order \\
     configs/ & configurations and all split and holdout lists \\
     research/log.md & dated decision rules and results \\
     \bottomrule
@@ -103,6 +107,23 @@ neither used the \acrshort{GPU}. The measurement was therefore made a third time
 under the same rule, which it met, and the third run is reported
 (\cref{tab:timing}). The criterion was applied to all three runs, and their
 medians differ by at most 5.1\,\%.
+
+\paragraph{The second look at the second encoder.} The rule of the second
+encoder provided for one test over three seeds. After that test was
+inconclusive for both candidates, a second look with three more seeds was
+added for \acrshort{UMT}-L, the candidate with the larger gain, with its own rule
+written before its runs at a stricter level (\cref{sec:statistics}). Before
+those runs, it was also noted that the lower bound of the first look for
+\acrshort{UMT}-L, $-0.0001$, lies within the Monte Carlo error of the bootstrap,
+and the second look was therefore fixed at 100,000 resamples with
+\acrshort{UMT}-L as its only candidate. The outcome of the first look as
+computed was kept, and both looks are reported (\cref{sec:extensions}).
+
+\paragraph{Extensions that were not completed.} The predictability gate and
+the sound-source maps stopped at the first stage of their rules, an outcome
+that the rules provided for. The speaker maps were dropped after a feasibility
+check that their rule did not foresee; the check used no gaze data, and no
+model was trained with the maps, so no result of theirs was computed.
 
 \paragraph{Uses of the validation set.} The DHF1K validation set is the test
 set of this thesis. \Cref{tab:val-ledger} lists every use of it, including
@@ -167,20 +188,54 @@ python -I scripts/time_inference.py --out runs/review/timing_run3.json
 \noindent The last command needs SalFoM's released code and weights, which are
 not part of the repository of the thesis.
 
+The extensions of \cref{sec:extensions} are run, in the order of the research
+log, with the queues below; each writes the per-video holdout scores that the
+tests read. The second-encoder tests and the decision on the sound-source maps
+then follow from:
+
+\begin{small}
+\begin{verbatim}
+bash scripts/queue_14a.sh && bash scripts/queue_14a2.sh   # seeds 0-2
+bash scripts/queue_14d.sh                                 # seeds 3-5
+bash scripts/queue_14e.sh                                 # gate
+python -I scripts/ssl_maps.py --ckpt <EZ-VSL checkpoint> --rate 44100
+bash scripts/queue_14f.sh                                 # sound maps
+python scripts/ablation_seeds.py --ref vitg_s0,vitg_s1,vitg_s2 \
+    --variant dinov2_l=xp_dinov2_l_s0,xp_dinov2_l_s1,xp_dinov2_l_s2 \
+    --variant umt_l=xp_umt_l_s0,xp_umt_l_s1,xp_umt_l_s2 \
+    --out runs/review/expert_seeds_14a.json
+R=vitg_s0,vitg_s1,vitg_s2,vitg_s3,vitg_s4,vitg_s5
+U=xp_umt_l_s0,xp_umt_l_s1,xp_umt_l_s2
+U=$U,xp_umt_l_s3,xp_umt_l_s4,xp_umt_l_s5
+python scripts/ablation_seeds.py --ref $R --variant umt_l=$U \
+    --level 97.5 --n 100000 --seed 0 --out runs/review/expert_seeds_14d.json
+python scripts/summarize_ssl.py --stage 1
+\end{verbatim}
+\end{small}
+
+\noindent The EZ-VSL checkpoint is the one its authors released for
+VGG-Sound; it is read with tensor-only loading and is not part of the
+repository.
+
 \section{Forward Pass of the Decoder}
 
 The listing below is the forward method of the decoder in
 \texttt{surge/model.py}, which implements \cref{eq:fpn,eq:decoder,eq:output}
-(the softmax over pixels is applied in the loss and at inference). The two
-branches used only by the audio and surprise modules are abbreviated.
+(the softmax over pixels is applied in the loss and at inference). The three
+branches used only by the second encoder, the audio fusion and the modulation
+of \cref{eq:modulation} are abbreviated; none of them is part of the final
+model.
 
 \begin{footnotesize}
 \begin{verbatim}
-def forward(self, taps, surprise=None, T_out=None, audio=None):
+def forward(self, taps, surprise=None, T_out=None, audio=None,
+            expert_taps=None):
     p4, p8, p16a, p16b = self.fpn(taps)            # SimpleFPN-3D
+    if self.expert_dim:                             # second encoder only
+        ...
     if self.audio:                                  # audio experiment only
         ...
-    if self.use_scm:                                # surprise module (not used)
+    if self.use_scm:                                # gate and sound maps only
         ...
     d16 = self.r16(self.fuse16(torch.cat([p16a, p16b], 1)))
     d8 = self.r8(p8 + F.interpolate(d16, size=p8.shape[2:], mode="nearest"))

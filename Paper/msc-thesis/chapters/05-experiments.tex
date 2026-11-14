@@ -12,7 +12,8 @@ the setup (\cref{sec:setup}) and the validation of the evaluation code
 choice of the video encoder (\cref{sec:g1}) and the test of predictive surprise
 as a fixation cue (\cref{sec:g2}). The main results on DHF1K, the transfer to
 eight further test sets, qualitative examples and the computational cost follow
-in \cref{sec:results}, and the ablations in \cref{sec:ablation}. The chapter
+in \cref{sec:results}, the ablations in \cref{sec:ablation}, and the four
+extensions tested after the main evaluation in \cref{sec:extensions}. The chapter
 ends with a discussion organised by research question (\cref{sec:discussion})
 and an assessment of the threats to validity (\cref{sec:threats}). Unless stated
 otherwise, every number in this chapter was produced by the code and evaluator
@@ -52,12 +53,14 @@ three-epoch DHF1K model took about 15 minutes of training time with the
 \acrshort{ViT}-L encoder (4.7 minutes per epoch of 4,320 clips) and about 31 minutes with
 \acrshort{ViT}-g (9.9 minutes per epoch), plus the holdout evaluation after each epoch.
 \acrshort{ViT}-g fitted in 10\,GB of \acrshort{GPU} memory at a batch size of eight. In total, the
-experiments of this chapter comprise 40 DHF1K training runs and 125
-fine-tuning runs on the other datasets (including the 16 runs with audio).
+experiments of this chapter comprise 53 DHF1K training runs and 128
+fine-tuning runs on the other datasets (including the 16 runs with audio
+features and the 3 with sound-source maps).
 The DHF1K runs are 13 for the gates, the main program and its first
 ablations, 7 for the \acrshort{ViT}-g, 600-video and 32-frame experiments, 14
-for the first follow-up (eight further ablation seeds and six causal models)
-and 6 for the learning curve over the number of training videos. Holdout
+for the first follow-up (eight further ablation seeds and six causal models),
+6 for the learning curve over the number of training videos and 13 for the
+extensions (\cref{sec:extensions}). Holdout
 lists, configuration files and the log of every decision are part of the
 code accompanying the thesis.
 
@@ -1134,6 +1137,161 @@ test videos per fold, this observation is suggestive rather than conclusive.
 \end{table}
 
 %----------------------------------------------------------------------------
+\section{Extensions of SURGE-D}\label{sec:extensions}
+
+After the main evaluation, four extensions of SURGE-D were tested, each
+designed to add information that the frozen encoder might lack
+(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps}). Each was
+a candidate component of the final model under a rule written before its runs
+(\cref{tab:rules-ext}). \Cref{tab:extensions} summarises the outcomes. None met its
+rule, so the final model remains SURGE-D as described in
+\cref{sec:architecture} and evaluated in \cref{sec:results}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Extensions tested after the main evaluation. $\Delta$\acrshort{CC} is
+  relative to SURGE-D \acrshort{ViT}-g with the same seed on the DHF1K holdout, or
+  to its fine-tuned fold models on Coutrot2, with 95\,\% intervals unless stated
+  otherwise}\label{tab:extensions}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright}p{3.0cm}>{\raggedright}X>{\centering}p{3.1cm}>{\raggedright\arraybackslash}p{3.3cm}@{}}
+    \toprule
+    \textbf{Extension} & \textbf{Data and seeds} & $\Delta$\textbf{\acrshort{CC}} & \textbf{Outcome under the rule} \\
+    \midrule
+    Second encoder, DINOv2-L & DHF1K holdout, seeds 0--2
+      & \dci{$+0.0041$}{$-$0.0007, +0.0094} & inconclusive; not continued \\[4pt]
+    Second encoder, \acrshort{UMT}-L & DHF1K holdout, seeds 0--2
+      & \dci{$+0.0047$}{$-$0.0001, +0.0103} & inconclusive \\[4pt]
+    \acrshort{UMT}-L, second look & DHF1K holdout, seeds 0--5; 97.5\,\% interval
+      & \dci{$+0.0038$}{$-$0.0009, +0.0093} & not adopted \\[4pt]
+    Speaker maps & Coutrot2, one video, before any training
+      & --- & dropped: faces 12--15 pixels wide \\[4pt]
+    Predictability gate & DHF1K holdout, seed 0
+      & $-0.0009$ & screen not passed (0.5857 against 0.5896) \\[4pt]
+    Sound-source maps & Coutrot2, three folds, seed 0
+      & \dci{$+0.0017$}{+0.0001, +0.0036} & not adopted; other datasets not run \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{Second frozen encoder.} Both experts passed the seed-0 screen, with
+holdout \acrshort{CC} of 0.5907 (DINOv2-L) and 0.5906 (\acrshort{UMT}-L) against
+0.5866 for SURGE-D and a threshold of 0.5896. With seeds 1 and 2
+(\cref{tab:second-encoder}), every per-seed difference was positive and both
+mean gains exceeded the margin of 0.003, but neither 95\,\% interval lay above
+zero, so both outcomes were inconclusive\footnote{The lower bound for
+\acrshort{UMT}-L, $-0.0001$, lies within the Monte Carlo error of the bootstrap,
+which moved it between $-0.0001$ and $+0.0001$ across resampling seeds. The
+outcome as first computed was kept, and the second look used 100,000
+resamples.}. The second look, decided after this outcome and fixed before its
+runs, continued with \acrshort{UMT}-L, the candidate with the larger gain, and
+added seeds 3--5 of both models. Over six seeds, \acrshort{UMT}-L raised holdout
+\acrshort{CC} in every seed, by $+0.0040$, $+0.0070$, $+0.0033$, $+0.0038$,
+$+0.0017$ and $+0.0032$, a mean of $+0.0038$, but its 97.5\,\% interval
+($-0.0009$ to $+0.0093$) includes zero. The expert was therefore not adopted,
+and there was no further look. The other metrics moved in the same direction
+without establishing a gain (97.5\,\% intervals: \acrshort{NSS} $+0.031$
+[$-0.001$, $+0.068$], \acrshort{SIM} $+0.004$ [$-0.000$, $+0.008$], \acrshort{KLD}
+$-0.006$ [$-0.018$, $+0.006$]). The gain is consistent in sign, but it is
+comparable to the differences between seeds of SURGE-D itself (0.5829 to
+0.5881), and a 60-video holdout cannot separate it from zero. It would also
+come at the price of a second encoder of 0.3 billion parameters run on every
+clip.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Holdout \acrshort{CC} of SURGE-D \acrshort{ViT}-g with and without a
+  second frozen encoder (DHF1K holdout, every fifth frame, no blur). Seeds 3--5
+  belong to the second look, which continued only with
+  \acrshort{UMT}-L}\label{tab:second-encoder}
+  \footnotesize
+  \setlength{\tabcolsep}{4.5pt}
+  \begin{tabular}{@{}lcccccccc@{}}
+    \toprule
+    & \multicolumn{6}{c}{\textbf{Seed}} & \multicolumn{2}{c}{\textbf{Mean}} \\
+    \cmidrule(lr){2-7}\cmidrule(l){8-9}
+    \textbf{Model} & 0 & 1 & 2 & 3 & 4 & 5 & 0--2 & 0--5 \\
+    \midrule
+    SURGE-D \acrshort{ViT}-g & 0.5866 & 0.5867 & 0.5829 & 0.5856 & 0.5865 & 0.5881 & 0.5854 & 0.5861 \\
+    + DINOv2-L          & 0.5907 & 0.5932 & 0.5845 & --- & --- & --- & 0.5895 & --- \\
+    + \acrshort{UMT}-L  & 0.5906 & 0.5938 & 0.5861 & 0.5894 & 0.5882 & 0.5913 & 0.5902 & 0.5899 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Speaker maps.} The speaker maps were checked on one video before any
+model was trained with them. The released frames of all six audio-visual
+datasets are $256\times340$ pixels, so faces are only about 12 to 15 pixels
+wide. On the first video of Coutrot2, 35\,s of four people in a meeting,
+Light-ASD marked speech in 1\,\% of the face frames and split the four
+participants into 21 face tracks. Maps built from such detections would have
+been face maps, and the test could not have separated speaking from the mere
+presence of faces, so the extension was dropped before training.
+
+\paragraph{Predictability gate.} Because of the readout, the gated model
+trained about four times more slowly than SURGE-D, at 39 to 40 minutes per
+epoch against about 10. Its holdout \acrshort{CC} after the three epochs was
+0.5639, 0.5857 and 0.5836, against 0.5658, 0.5866 and 0.5844 for SURGE-D with
+the same seed. The best epoch, 0.5857, fell short of the screen of 0.5896 and
+was 0.0009 below SURGE-D, so seeds 1 and 2 were not run and the gate was not
+adopted. Scored with its own error maps, with maps rotated by $180^{\circ}$ and
+with zero maps, the trained model reached the same holdout \acrshort{CC} within
+0.0001 (0.5857, 0.5856 and 0.5856): the decoder had learned to ignore the
+error. The error adds information to frame difference and token atypicality
+(\cref{sec:g2}). One reading of the outcome is that the decoder can already
+obtain that information from the encoder's features; another is that three
+epochs on 540 videos were too few for the modulation to learn to use it. The
+experiment does not distinguish the two.
+
+\paragraph{Sound-source localisation maps.} Inspected on Coutrot2 before
+training, without gaze data, the maps mostly marked the people at the table.
+Computed with the soundtrack of another conversation, they correlated at 0.96
+with the maps of the matched soundtrack after standardisation, and their peaks
+fell in the same cell in 53\,\% of the frames, so the sound mainly moved the
+peak from one person to another. \Cref{tab:ssl} gives the first stage of the
+test. With matched maps, the fold-mean \acrshort{CC} rose by 0.0017 over the
+visual fold models (95\,\% interval over the 15 test videos $+0.0001$ to
+$+0.0036$), and matched maps beat maps from the wrong soundtrack by 0.0007
+($-0.0002$ to $+0.0021$). Both differences are far below the thresholds of
+0.010 and 0.005, so the maps were not adopted and the other datasets were not
+run. Most of the small gain remained with the wrong soundtrack (rotated $-$
+visual $+0.0010$), so it does not come from the sound; the visual part of the
+localisation model, which marks people, is the more likely source. Whereas the
+model with audio fusion lost 0.018 \acrshort{CC} on Coutrot2 when given the wrong
+soundtrack (\cref{tab:audio}), this model hardly depended on the sound at all.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Sound-source maps on Coutrot2, first stage of the test
+  (\acrshort{ViT}-g, seed 0, means over three folds of five test videos).
+  \enquote{Visual} is the fine-tuned \acrshort{ViT}-g model of \cref{tab:av};
+  \enquote{rotated} uses maps computed from the soundtrack of the next test video
+  of the fold}\label{tab:ssl}
+  \footnotesize
+  \begin{tabular}{@{}lcccccc@{}}
+    \toprule
+    \textbf{Model} & \textbf{\acrshort{CC}}\,$\uparrow$ & \textbf{\acrshort{NSS}}\,$\uparrow$
+      & \textbf{\acrshort{SIM}}\,$\uparrow$ & \textbf{\acrshort{KLD}}\,$\downarrow$
+      & \textbf{\acrshort{AUC-J}}\,$\uparrow$ & \textbf{\acrshort{sAUC}}\,$\uparrow$ \\
+    \midrule
+    Visual               & 0.8203 & 6.659 & 0.600 & 0.688 & 0.966 & 0.757 \\
+    Maps, matched sound  & 0.8220 & 6.677 & 0.601 & 0.686 & 0.966 & 0.759 \\
+    Maps, rotated sound  & 0.8213 & 6.669 & 0.601 & 0.687 & 0.966 & 0.758 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{What the extensions show.} The four extensions supplied
+information that the frozen encoder was thought to lack: a different
+pre-training, the speaking status of people, the encoder's own prediction error
+and the location of the sound. One could not be built from the released data,
+two were not used by the trained decoder, and one gave a gain that was
+consistent in sign over six seeds but could not be told apart from zero.
+Together with the ablations of \cref{sec:ablation}, they show that, with the
+data available for training and evaluation, SURGE-D is hard to improve by
+changing what its decoder receives.
+
+%----------------------------------------------------------------------------
 \section{Discussion}\label{sec:discussion}
 
 This section interprets the results in terms of the research questions of
@@ -1184,7 +1342,11 @@ not the information that surprise-driven attention predicts. This is a
 statement about one released predictor and two ways of reading it out, not a
 refutation of surprise-based accounts of attention~\cite{itti2009bayesian}.
 What the error measures that draws gaze away was not established, and a
-predictor trained to forecast could behave differently.
+predictor trained to forecast could behave differently. The extension of
+\cref{sec:pgate} asked the question once more, inside the model: given the error
+for every clip, through a modulation that could weight it either way, the
+decoder learned to ignore it (\cref{sec:extensions}). Whatever the error adds to
+the simple cues, the trained decoder did not use it.
 
 \paragraph{RQ3: Which design factors matter when the encoder is frozen?} The
 encoder dominates: its pre-training (\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L) and its
@@ -1199,10 +1361,16 @@ co-training, 32-frame clips and 11\,\% more training videos produced no gain
 that could be established; for static images and longer clips, the evidence is
 inconclusive rather than negative. A sparser temporal stride, at half the cost
 per output frame, improved holdout \acrshort{CC} with all three seeds without reaching
-the margin. One explanation is that, with a strong frozen encoder, the small
+the margin. Of the extensions tested after the main evaluation, a second frozen
+encoder came closest to a gain: with \acrshort{UMT}-L it raised holdout \acrshort{CC} in
+all six seeds, by $+0.0038$ on average, but the gain could not be told apart
+from zero on the 60-video holdout, and the predictor's error as a decoder input
+brought nothing. One explanation is that, with a strong frozen encoder, the small
 number of training videos limits further progress: the decoder overfits within
 three epochs (\cref{fig:g1}), and the additions that would increase its
-effective capacity do not help, whereas better features do. The learning curve
+effective capacity do not help, whereas better features do; the one extension
+that moved accuracy consistently was the one that added the features of
+another encoder. The learning curve
 of \cref{sec:learning-curve} tested this explanation and left it open. Holdout
 \acrshort{CC} rose with each doubling of the training set in every seed, by
 0.008 from 135 to 270 videos, which is an effect under the rule, and by 0.005
@@ -1229,8 +1397,15 @@ model. This agrees with the observations of Jain et al.~\cite{jain2021vinet} and
 Agrawal et al.~\cite{agrawal2022does}, who found that deep audio-visual saliency
 models tend to become insensitive to their audio input and that none of a range
 of audio modules and fusion techniques improved on visual-only models across
-ten datasets. Exploiting sound in this setting probably requires explicit
-speaker localisation rather than global feature modulation.
+ten datasets. Two spatial forms of the soundtrack were then tried as extensions
+(\cref{sec:extensions}). Sound-source maps, which mark where the sound comes
+from, did not help on Coutrot2 and hardly depended on the sound: in these
+scenes they marked the people at the table more than the person who spoke.
+Maps of the active speaker could not be built at all, because the faces in the
+released frames are only 12 to 15 pixels wide. Exploiting sound on these
+datasets therefore probably requires speaker-level information that the
+released data do not support, such as the videos at their original
+resolution.
 
 \paragraph{Relation to the original proposal.} The final model differs from the
 proposed one in three respects, each decided by a test whose rule was written
@@ -1239,11 +1414,13 @@ encoder is \acrshort{V-JEPA}~2 rather than \acrshort{V-JEPA}~2.1, it is frozen r
 \acrshort{LoRA}, and the surprise branch that gave the project its name is absent.
 The second follow-up did not overturn the last decision: the predictor's error
 carries information about fixations, but with the opposite sign to the one on
-which the branch was premised; whether a decoder could use it as a cue with a
-negative weight was not tested. The
+which the branch was premised, and a decoder given the error as an input
+learned to ignore it. The
 proposal's ranking of what drives performance, which placed the encoder first,
 was confirmed. Its expectation that \acrshort{LoRA} would help, based on results with much
-larger training sets, was not.
+larger training sets, was not. Finally, the four extensions tested after the
+main evaluation, aimed at improving the model beyond the proposal, left it
+unchanged, because none met the rule written for it.
 
 %----------------------------------------------------------------------------
 \section{Threats to Validity}\label{sec:threats}
@@ -1262,7 +1439,12 @@ than derived formally, and the tie margin of 0.01 for published results was
 fixed only after the first such comparison had been seen. Many design choices
 were fixed without a test (\cref{sec:design}). On the audio-visual datasets, the
 best epoch and the output blur were selected on one to six holdout videos per
-fold. Finally, the SalFoM baseline was run by a program that is not part of the
+fold. The extensions were screened with one seed against a threshold 0.003
+above the model of the same seed, and the sound-source maps were tested first
+on the 15 videos of one dataset; screens of this kind can discard a real gain
+smaller than the differences between seeds. The second look at the second
+encoder was decided after an inconclusive first look; its stricter level bounds
+the combined rate of false positives, and both looks are reported. Finally, the SalFoM baseline was run by a program that is not part of the
 code of this thesis, and how its released weights were selected is not
 documented; if they were selected on the DHF1K validation set, the baseline's
 scores on that set are optimistic, which would make the reported differences

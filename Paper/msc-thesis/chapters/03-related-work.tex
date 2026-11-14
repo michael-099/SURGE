@@ -175,6 +175,14 @@ improved on visual-only models. On several audio-visual datasets, visual-only
 models such as ViNet-E report results that equal or exceed those of
 audio-visual models~\cite{girmaji2025minimalistic}.
 
+Two neighbouring tasks supply the kind of spatial audio information that these
+models must otherwise learn from a few hundred videos. Self-supervised
+sound-source localisation learns from unlabelled video which image regions
+correspond to the soundtrack~\cite{mo2022localizing}, and active speaker
+detection decides which visible face is speaking~\cite{liao2023light}. Both are
+trained on far larger collections than the saliency datasets, and both are used
+in the extensions of this thesis (\cref{sec:speaker-maps,sec:ssl-maps}).
+
 %----------------------------------------------------------------------------
 \section{Prediction Error as an Attention Signal}\label{sec:related-surprise}
 

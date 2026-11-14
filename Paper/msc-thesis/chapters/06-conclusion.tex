@@ -18,7 +18,10 @@ sixteen frames per forward pass. Each component that was tested was evaluated
 under a rule written in a dated log before the corresponding experiment, all
 models were scored once on their test sets by a single evaluator validated
 against reference code, and differences were assessed with paired statistics.
-The answers to the research questions are as follows.
+After the main evaluation, four extensions that could supply information the
+frozen encoder might lack were tested in the same way. None was adopted, so
+the final model is the SURGE-D evaluated throughout the thesis. The answers to
+the research questions are as follows.
 
 \paragraph{RQ1.} With the larger encoder, yes. On the DHF1K validation set, the
 frozen \acrshort{V-JEPA}~2 \acrshort{ViT}-g model reached a correlation coefficient of 0.600 as a
@@ -49,9 +52,11 @@ zero. This held with the trained mask token as with the untrained one of the
 first run, and for a readout that fills in masked tubes as in pre-training.
 Combined with the centre prior and the two simple cues, the error added 0.069
 and 0.062 bits per fixation in the two comparisons fixed in advance, with a
-negative weight: observers looked less often where the error was high. The
-finding concerns one released predictor and two ways of reading it out; it
-does not refute surprise-based accounts of attention.
+negative weight: observers looked less often where the error was high. Given
+the error as an input for every clip, a decoder learned to ignore it: with its
+own, rotated or zero error maps, its holdout \acrshort{CC} was the same within
+0.0001. The finding concerns one released predictor and a few ways of reading
+it out; it does not refute surprise-based accounts of attention.
 
 \paragraph{RQ3.} With a frozen encoder, the encoder itself dominated. Its
 pre-training (\acrshort{V-JEPA}~2 over \acrshort{V-JEPA}~2.1 and
@@ -62,7 +67,10 @@ keeping them, within $\pm0.003$ \acrshort{CC}, and low-rank adaptation of the en
 in every seed. Static-image co-training, 32-frame clips and 11\,\% more training
 videos produced no gain that could be established, and a sparser temporal
 stride, which halves the cost per output frame, improved with every seed
-without reaching the margin. Whether the amount of training data, rather than
+without reaching the margin. A second frozen encoder raised holdout \acrshort{CC}
+in all six seeds, by 0.0038 on average with \acrshort{UMT}-L, but the gain
+could not be told apart from zero on the 60-video holdout, so it was not
+adopted. Whether the amount of training data, rather than
 the capacity of the decoder, limits further progress was tested with a learning
 curve and remains open: holdout \acrshort{CC} rose with every doubling of the
 training set between 135 and 540 videos, but the last doubling, a gain of
@@ -80,7 +88,10 @@ failure was on recordings of
 conversations, where gaze follows the speaker, which an image-only model cannot
 identify. Adding the soundtrack through a simple fusion module did not improve
 any dataset, in line with earlier findings that audio-visual saliency models
-tend not to exploit the audio.
+tend not to exploit the audio. Sound-source maps from a localisation model did
+not help on conversations either and hardly depended on the sound, and maps of
+the active speaker could not be built from the released frames, in which faces
+are only 12 to 15 pixels wide.
 
 %----------------------------------------------------------------------------
 \section{Contributions}\label{sec:final-contributions}
@@ -101,7 +112,13 @@ which design choices matter
 once the encoder is frozen: the encoder's pre-training and scale dominate,
 while two components commonly included in saliency models, a learned centre
 prior and deep supervision, are equivalent to their absence over three seeds,
-and the low-rank adaptation of the encoder that was tested did not help. Fourth, it
+and the low-rank adaptation of the encoder that was tested did not help. Of
+four extensions designed to supply information that the encoder might lack,
+three were tested under rules written in advance (a second frozen encoder, the
+predictor's error as a decoder input and sound-source maps) and none could be
+adopted, while the fourth, maps of the active speaker, could not be built from
+the released data; with the data available, the frozen-encoder model is hard
+to improve. Fourth, it
 contributes an evaluation methodology, with a validated evaluator, decision
 rules fixed in advance, paired statistics and a reproducible ground truth for
 Hollywood-2 built from openly licensed gaze recordings, that makes its positive
@@ -130,7 +147,12 @@ was still improving at the end of its schedule, so it merits a longer training
 run under a new rule written in advance. The learning curve ended at the 540
 training videos that DHF1K provides, and its last step was inconclusive; more
 seeds, or training videos from a second dataset, would show whether the amount
-of data limits progress.
+of data limits progress. Among the additions, the second encoder is the one
+most worth settling: with \acrshort{UMT}-L it raised holdout \acrshort{CC} in all six
+seeds, yet a 60-video holdout could not establish the gain. A larger
+evaluation set, for instance cross-validation over the 600 DHF1K training
+videos, together with a measurement of its cost, would decide whether a second
+encoder is worth running.
 
 \paragraph{Adapting the stronger encoder.} Low-rank adaptation was tested only
 with \acrshort{ViT}-L, and full fine-tuning not at all. Whether adaptation helps the larger
@@ -139,9 +161,11 @@ The \acrshort{V-JEPA}~2.1 encoder should also be compared at the resolution at w
 was trained.
 
 \paragraph{Speaker-aware audio-visual prediction.} The failure on conversations
-calls for models that determine who is speaking, for example by explicit
-localisation of the active speaker, rather than modulating visual features with
-a global audio embedding.
+calls for models that determine who is speaking. Neither a global audio
+embedding nor sound-source maps did so here, and active speaker detection
+could not work on faces 12 to 15 pixels wide. Videos at their original
+resolution, in which faces are large enough for active speaker detection, would
+allow the speaker maps of \cref{sec:speaker-maps} to be tested as planned.
 
 \paragraph{Efficient causal prediction.} A causal model needs one forward pass
 per output frame, so the saving that SURGE-D gains from predicting sixteen
@@ -160,7 +184,10 @@ or object boundaries that they contain, and to test whether the negative weight
 survives when such properties are added to the simple cues. Predictors trained
 explicitly to extrapolate into the future, or surprise measured as a change of
 belief relative to the scene's own history, may behave differently, and the
-incremental-information analysis of this thesis could test them directly.
+incremental-information analysis of this thesis could test them directly. A
+decoder given the released predictor's error learned to ignore it, so a
+further attempt to use prediction error inside a saliency model should start
+from a predictor whose error behaves differently on its own.
 
 \paragraph{Evaluation practice.} Scoring each metric with the map that is optimal
 for it under the model's prediction~\cite{kummerer2018saliency}, and reporting

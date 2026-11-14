@@ -200,10 +200,13 @@ experiment, with one stated exception (\cref{sec:design}).
 \paragraph{Scope.} The study covers offline (non-causal) saliency prediction for
 video, in which the map of a frame may depend on the frames around it; a causal
 variant, which sees only past frames, is evaluated on DHF1K as a control. The main
-model is visual; the soundtrack is examined in one separate experiment. The
+model is visual; the soundtrack is examined in separate experiments. The
 encoders are frozen \acrshort{V-JEPA}~2 models in two sizes; \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L are
 included in the encoder comparison. Evaluation covers nine test sets: DHF1K,
 UCF Sports, Hollywood-2 with the Vig gaze data, and six audio-visual datasets.
+After the main evaluation, four extensions of the model were tested: a second
+frozen encoder, maps of the active speaker, the predictor's error as an input
+to the decoder, and sound-source localisation maps.
 
 \paragraph{Limitations.} The DHF1K test-set annotations are withheld by the
 dataset authors; predictions for the test set were prepared, but their scores
@@ -211,10 +214,11 @@ were not available when the thesis was written, so DHF1K results are reported on
 the official validation set. The standard Hollywood-2 ground truth could not be
 obtained, so the Hollywood-2 results use other gaze data and are not comparable
 with published numbers. Full fine-tuning of the encoder, other foundation
-encoders and efficient causal (streaming) prediction were outside the scope of
-the study; the causal variant was evaluated only on DHF1K, on every tenth frame,
-and the encoder comparison, the clip-length test and the audio experiment used
-a single training seed because of the available computing resources.
+encoders as the main encoder and efficient causal (streaming) prediction were
+outside the scope of the study; the causal variant was evaluated only on DHF1K, on every tenth frame,
+and the encoder comparison, the clip-length test, the audio experiments and the
+screening stage of the extensions used a single training seed because of the
+available computing resources.
 
 %----------------------------------------------------------------------------
 \section{Contributions}\label{sec:contributions}
@@ -251,6 +255,12 @@ The main contributions of this thesis are:
     supervision are equivalent to their absence within 0.003 \acrshort{CC}, while
     low-rank adaptation, static-image co-training, longer clips, more training
     videos and a simple audio fusion produce no gain that could be established.
+    Four extensions designed to add information that the encoder might lack
+    did not yield a component worth adopting either: a second frozen encoder
+    raised holdout \acrshort{CC} in all six seeds, by 0.0038 on average, without an
+    established gain; a decoder given the predictor's error ignored it;
+    sound-source maps hardly depended on the sound; and maps of the active
+    speaker could not be built from the released frames.
   \item \textbf{A transparent evaluation} across nine test sets with a validated
     evaluator, decision rules written in advance in a dated log, paired
     statistics and a new,
