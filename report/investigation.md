@@ -1,6 +1,6 @@
 # Systematic investigation of SURGE-D: behaviour, limitations and research gaps
 
-**Status:** in progress (last updated 2026-11-15). Results arrive from the queues of research log section 15.
+**Status:** in progress (last updated 2026-11-16). Results arrive from the queues of research log section 15.
 **Object:** SURGE-D ViT-g, the final model of the thesis: a frozen V-JEPA 2 ViT-g/16 encoder (1,012 M parameters)
 and a 7.39 M-parameter decoder, unchanged. Reference runs `runs/vitg_s{0..5}`.
 **Rules:** every experiment was specified, with its decision rule, in `research/log.md` section 15 and committed before
@@ -99,7 +99,7 @@ Test-time conditions have one seed, so they use the video bootstrap only. They m
 model, not of the training recipe.
 
 **Tools written for this investigation.** All are off by default, and the default paths are tested to be unchanged
-(45 tests).
+(51 tests).
 - `scripts/probe_eval.py`: test-time probes. It covers temporal order, stride, input size, tilings, perturbations,
   per-position scores, flip consistency and shot clamping. With its defaults it reproduces the thesis evaluator
   exactly.
@@ -691,6 +691,19 @@ with their type:*
 - A V-JEPA prediction error detects physically impossible events (Garrido et al., 2025, arXiv preprint).
 - The thesis's negative result (error anti-correlated with fixations) is consistent with the noisy-TV account. A
   disagreement-based (epistemic) readout has not been tested against gaze.
+
+**Input size, fine detail and frame rate.**
+- Image classifiers trained with random-resized crops see objects at another apparent size at test time. A cheap
+  fine-tuning at the test resolution corrects this (Touvron, Vedaldi, Douze & Jégou, NeurIPS 2019). SURGE-D loses CC
+  both below and above its training size (section 4.4). F3, training at 384², tests whether a larger input helps
+  once the model is trained at that size [Pending].
+- "Fixations from lower resolution images can predict fixations on higher resolution images", and inter-observer
+  consistency rises with resolution "until around 16-64 pixels (1/2 to 2 cycles per degree) after which consistency
+  remains relatively constant" (Judd, Durand & Torralba, JOV 2011, doi:10.1167/11.4.14). Where people look is thus
+  largely set by coarse content. Yet SURGE-D loses 0.052 CC under blur σ 8 (section 6.1). The ground truth comes from
+  sharp video, so part of that loss is information the blurred input no longer contains.
+- SURGE-D loses 0.012–0.019 CC when its frame stride differs from training (section 4.3). Schiappa et al. (CVPR 2023,
+  below) found action-recognition models mostly robust to such changes.
 
 **Robustness and evaluation.**
 - Common corruptions: Hendrycks & Dietterich (ICLR 2019).
