@@ -512,6 +512,23 @@ with their type:*
 - No saliency model found so far treats shot boundaries explicitly. Sliding-window models (TASED-Net, ICCV 2019;
   ViNet, IROS 2021; SalFoM, ICPR 2024; SURGE-D) feed cross-shot frames as context.
 
+**State carried across clips.**
+- Recurrent video saliency models carry state from frame to frame on top of image backbones: ACLNet (Wang et al.,
+  CVPR 2018; TPAMI 2021), UNISAL (Droste, Jiao & Noble, ECCV 2020) and SalEMA (Linardos et al., BMVC 2019). SalEMA
+  found that an exponential moving average of an internal state gives results and maps similar to a ConvLSTM.
+- MeMViT (Wu et al., CVPR 2022, doi:10.1109/CVPR52688.2022.01322) processes a video online as a sequence of short
+  clips, attending to a cached memory of earlier clips. This gave 30× longer temporal support for 4.5 % more compute
+  in action recognition. The memory sits inside the encoder, so it does not apply directly to a frozen encoder.
+- LSTD-Net (Moradi et al., CVIU 2026, doi:10.1016/j.cviu.2026.104740) adds long- and short-term temporal modelling
+  to a UMT foundation encoder. Its full text could not be accessed, so whether it carries state across clips is
+  unverified.
+- A preprint (Wulff, Abawi, Allgeuer & Wermter, arXiv 2504.05913, 2025) reports that short-term context helps up to
+  a threshold, while longer-term context keeps helping. Within a clip, SURGE-D's benefit from past context also
+  saturates, after ≈0.4 s (section 4.1).
+- No peer-reviewed study was found of a light decoder that carries state across clips of a frozen clip-level video
+  encoder. Sections 4.1 and 5.2 quantify what such a state would have to recover: up to 0.077 CC at the start of a
+  window, and 0.0063 CC overall if all 16 positions were kept.
+
 **Frozen backbones and readouts.**
 - DeepGaze II (ICCV 2017) and DeepGaze IIE (ICCV 2021) read out frozen image backbones.
 - Video Depth Anything (CVPR 2025) pairs a frozen encoder with a light temporal head.
