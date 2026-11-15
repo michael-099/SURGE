@@ -128,7 +128,7 @@ model, not of the training recipe.
 | H | Perturbations; flip consistency | Completed |
 | I | Zero-shot on five datasets | Running (MVVA and AViMoS completed) |
 | J | Failure analysis | Completed |
-| K | Multi-face scenes (MVVA) | Running |
+| K | Multi-face scenes (MVVA) | Completed |
 | 15L | Scene cuts: cross-shot context or post-cut gaze? (hypothesis test) | Completed |
 
 ---
@@ -395,6 +395,33 @@ per-video means with 95 % video-bootstrap intervals.
 - CC is not comparable across datasets either, because each dataset blurs its ground truth differently (the DHF1K
   holdout gives 0.587).
 
+**Multi-face scenes (15K)** [Completed, descriptive; `runs/review/inv/k_mvva_faces.json`]. The frames are the MVVA
+frames of the zero-shot run that show at least one talking and one silent face: 279 videos, 23,102 frames. Face boxes
+and talking labels come from the MVVA release. As in the authors' demo script (`demo_face_talking.py`), a face counts
+as talking only when its label is 1. An undocumented label 2 (0.7 % of face-frames, 41 videos) therefore counts as
+silent. Values are per-video means, with 95 % video-bootstrap intervals for the last column.
+
+| Share of | Talking faces | Silent faces | Talking faces' share of the face total |
+|---|---|---|---|
+| Frame area | 1.8 % | 2.7 % | 41.5 % |
+| Human fixations | 38.7 % | 17.2 % | 66.7 % |
+| Ground-truth density | 31.7 % | 14.0 % | 66.8 % [65.3, 68.3] |
+| Predicted density | 24.4 % | 18.9 % | 54.6 % [52.8, 56.4] |
+
+- The model puts the right total on faces: 43.3 % predicted against 45.6 % in the ground truth.
+- It splits that total wrongly. It puts 7.2 points less on talking faces (95 % [−7.9, −6.5]) and 4.9 points more on
+  silent ones ([+4.2, +5.6]). It favours talking faces beyond their area (54.6 % against 41.5 %), but much less than
+  people do (66.8 %).
+- Cross-fitted oracles, with weights chosen on one half of the videos and scored on the other (both halves chose the
+  same weights):
+  - Raising all faces ×1.5 adds +0.0046 CC [+0.0033, +0.0059].
+  - Doubling the talking faces adds +0.0242 CC [+0.0207, +0.0276].
+  - The difference, +0.0196 CC [+0.0163, +0.0229] (+0.17 NSS), estimates what knowing the speaker is worth to this
+    model's map through re-weighting alone.
+- The thesis could not test speaker cues on the STAViS sets, where faces are 12–15 pixels wide at 256×340 (14B).
+  Neither global audio features (11D) nor sound-source maps (14F) helped on Coutrot2. MVVA is 1280×720 and comes with
+  face tracks and talking labels, so the speaker gap can be measured there.
+
 ---
 
 ## 7. Failure cases and unexpected observations
@@ -574,6 +601,7 @@ with their type:*
 | Post-cut frames score lower in the default tiling | 7.2 | **Not a weakness of cross-shot fusion** (15L: that context helps, because gaze lags the cut). What remains is a tiling property: some post-cut frames see less of the previous shot (descriptive, one seed) |
 | Tuned to the training frame rate and input size | 4.3, 4.4 | design/training (no scale or rate augmentation) |
 | Small, off-centre, action-relevant targets | 7.3, 7.4 | open: representation or resolution (15B, F3 inform) |
+| In multi-face scenes, faces are found but the speaker is under-weighted | 6.2 (15K) | input: no speaker information in a visual-only model at 256²; a speaker oracle adds +0.020 CC through re-weighting |
 | Decoder overfits after ~2 epochs; data-limited | 1 | optimisation/data |
 | Most per-video variance is ground-truth reliability | 7.3 | evaluation limitation, not the model |
 
@@ -653,7 +681,8 @@ with their type:*
   jointly on MVVA.
 - Active-speaker detectors exist: TalkNet (ACM MM 2021, doi:10.1145/3474085.3475587) and Light-ASD (CVPR 2023).
 - Explicit speaker modelling is therefore established for multi-face video. What it adds on top of a strong frozen
-  visual encoder has not been measured.
+  visual encoder had not been measured. For SURGE-D, 15K now gives a first estimate: on MVVA, a speaker oracle adds
+  +0.020 CC beyond a face oracle through re-weighting alone (section 6.2).
 
 **Prediction error as attention.**
 - Bayesian surprise (Itti & Baldi, Vision Research 2009) is a change of belief, not a prediction error.

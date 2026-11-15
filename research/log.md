@@ -1445,6 +1445,11 @@ With MVVA's face tracks and per-face talking labels: the share of ground-truth a
 talking and non-talking face boxes. Two oracles, each fitted on half of the videos and tested on the other half: the
 predicted map re-weighted inside all faces, and inside talking faces only. Their difference bounds what knowing the
 speaker could add to this model.
+**Result (2026-11-16; `runs/review/inv/k_mvva_faces.json`).** 279 videos, 23,102 frames with a talking and a silent
+face. Shares of talking / silent faces: area 1.8 % / 2.7 %, ground truth 31.7 % / 14.0 %, prediction 24.4 % / 18.9 %.
+Oracles on held-out halves: all faces ×1.5 +0.0046 CC [+0.0033, +0.0059]; talking faces ×2 +0.0242 [+0.0207,
++0.0276]; speaker − face +0.0196 [+0.0163, +0.0229]. A face counts as talking only when its label is 1, as in the
+authors' `demo_face_talking.py`; the undocumented label 2 (0.7 % of face-frames) counts as silent.
 
 **Order.** One GPU job at a time under the safety monitor: A1, the evaluator check, E1, E3, G, F2, H (test time); B;
 C/D (seeds 0–2); E2; F3; A2; I; A3. CPU work (F1, J, the MVVA and AViMoS preparation, K) runs alongside with the GPU
