@@ -1513,3 +1513,20 @@ mainly content. In between: mixed. Expectation [hypothesis]: low shares on Coutr
 *Clarification of 15I (before any zero-shot run):* UCF Sports and Hollywood-2 mix frame sizes (480–720 pixels wide),
 and the evaluator applies one σ per dataset, so σ uses the median width: 9 for UCF Sports (median 720) and 7.5 for
 Hollywood-2 (median 600; the queue had 8). The STAViS ground truth is 640 wide (σ 8), AViMoS 960 (σ 12), MVVA 640 (σ 8).
+
+*Data corrections, made before any MVVA or AViMoS score was used (2026-11-15).* The zero-shot MVVA run stopped
+while scoring video 138: its map was 960×540 and its fixations 640×360. Before the stop, per-video scores of 95
+MVVA videos had been printed. All 95 are 1280×720 videos, which the corrections below do not change.
+- MVVA layout: the release's heatmaps are at half the native size. 291 videos are 1280×720, and their layout
+  (fixations ÷ 2) was exact. Eight videos have other native sizes. Their fixations and face boxes are now scaled per
+  axis from the native size, and their heatmaps are resized to 640×360 (`scripts/prep_mvva.py`,
+  `scripts/inv_mvva_faces.py`). Video 343 has no heatmaps and is left out.
+- MVVA ground-truth check, with no model involved (`scripts/inv_gt_alignment.py`,
+  `runs/review/inv/gt_alignment_mvva.json`): the NSS of each video's map at its own fixations. Five videos, exactly
+  the five 1920×1080 ones (138, 140, 265, 300, 314), score at most 0.28. No scaling of their fixations tried (1/3, 1/2,
+  2/3, 1) aligns them. The other 294 videos score at least 4.37 (median 6.0). For those five, the two ground-truth
+  files disagree, so the videos are left out (rule: NSS < 1). MVVA is scored on 294 videos.
+- AViMoS: two public-test videos (1142, 1143) are portrait. Their frames and maps are stored squeezed to 540×960,
+  while their fixations had been pooled to a portrait grid. Fixations are now mapped per axis onto the map grid
+  (`scripts/prep_avimos_fix.py`), which gives identical maps for the other 148 videos (checked). In the same
+  ground-truth check, all 150 videos score at least 2.31 (median 4.4), and none is left out.

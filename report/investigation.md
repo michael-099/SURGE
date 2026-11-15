@@ -60,6 +60,12 @@ the second doubling gives 0.64 of the first doubling's gain. DHF1K has no furthe
   Feeding another input size without rebuilding the encoder would silently use wrong positions. The code now rebuilds
   the encoder for other sizes and raises an error on a mismatch. All earlier runs used 256² and were not affected
   (implementation hazard, not a bug in any reported result).
+- The preparation of MVVA assumed that every source video is 1280×720. The zero-shot run stopped on the first video
+  that is not, before any MVVA score was used. The eight videos of other sizes are now laid out by per-axis scaling.
+  A ground-truth-only check then showed that in the five 1920×1080 videos the released maps and fixations disagree
+  (NSS of the map at its own fixations ≤ 0.28, against ≥ 4.37 elsewhere), so those five are left out. Video 343 has
+  no ground truth. Two portrait AViMoS videos had their fixations on the wrong grid and were corrected the same way
+  (research log 15I). Implementation bugs in data preparation; no result had been computed from the affected videos.
 - A command-line override written in exponent notation without a decimal point (`train.lr=1e-3`) was read by
   PyYAML as a string. The smoke test of the training queue caught this before any run used such a value. Overrides
   now convert these values to numbers (`surge/config.py`, with a test). Every stored run configuration was checked,

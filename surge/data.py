@@ -201,17 +201,31 @@ MVVA = "D:/Datasets/MVVA/surge"
 MVVA_SRC = "D:/Datasets/MVVA/extracted"
 
 
-def mvva_videos(root: str = MVVA, src: str = MVVA_SRC) -> list[Video]:
+# MVVA videos whose released ground-truth maps and fixations disagree (NSS of the map at the fixations below 1; the
+# other 294 videos score 4.37 or more): the five 1920x1080 videos. Ground-truth check before any model score of them,
+# runs/review/inv/gt_alignment_mvva.json; research/log.md section 15I.
+MVVA_EXCLUDE = ("138", "140", "265", "300", "314")
+
+
+def mvva_videos(root: str = MVVA, src: str = MVVA_SRC, exclude=MVVA_EXCLUDE) -> list[Video]:
     """MVVA (Liu et al., ECCV 2020; research/log.md sections 15I, 15K): frames and fixation maps laid out by
-    scripts/prep_mvva.py (640x360), the release's heatmaps (also 640x360) as ground-truth maps."""
+    scripts/prep_mvva.py at 640x360; ground-truth maps are the release's heatmaps where they are 640x360 and the
+    resized copies (maps/<id>) of the eight videos whose native size is not 1280x720. Videos without ground truth
+    (n = 0: 343) and the videos in `exclude` are left out."""
     import csv
     out = []
     for r in csv.DictReader(open(Path(root) / "index.csv")):
         vid, n = r["id"], int(r["n"])
-        hm = sorted((Path(src) / "mvva_database_v1" / "save_our_hmap" / f"video_{int(vid):03d}").glob("*.jpg"),
-                    key=lambda p: int(p.stem))[:n]  # heatmap folders are zero-padded (video_084 for 84.avi)
-        out.append(Video(vid, [str(Path(root) / "frames" / vid / f"{i:04d}.jpg") for i in range(n)],
-                         [str(p) for p in hm],
+        if n == 0 or vid in exclude:
+            continue
+        md = Path(root) / "maps" / vid
+        if r.get("gt") == "resized":
+            maps = [str(md / f"{i:04d}.png") for i in range(n)]
+        else:
+            hm = sorted((Path(src) / "mvva_database_v1" / "save_our_hmap" / f"video_{int(vid):03d}").glob("*.jpg"),
+                        key=lambda p: int(p.stem))[:n]  # heatmap folders are zero-padded (video_084 for 84.avi)
+            maps = [str(p) for p in hm]
+        out.append(Video(vid, [str(Path(root) / "frames" / vid / f"{i:04d}.jpg") for i in range(n)], maps,
                          [str(Path(root) / "fixation" / vid / f"{i:04d}.png") for i in range(n)], skip_empty=True))
     return out
 

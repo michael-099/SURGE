@@ -4,7 +4,8 @@
 
 Frames used: scored frames (as saved by scripts/probe_eval.py --save-small) with at least one talking and one
 non-talking face box (MVVA face tracks and per-face talking labels; label 1 = talking, other values = not talking or not
-annotated, boxes in video pixels, halved to the 640x360 maps). The prediction is resized to 640x360, blurred with the
+annotated, boxes in native video pixels, scaled per axis to the 640x360 maps with the native size from the layout
+index). The prediction is resized to 640x360, blurred with the
 sigma of the zero-shot run (8) and normalised.
   shares     ground-truth mass, fixations and predicted mass inside talking faces (T), other faces (N) and elsewhere,
              and the area of each
@@ -36,20 +37,29 @@ W, H = 640, 360
 GRID = [0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 
 
+def native_sizes() -> dict:
+    """{video id: (width, height)} of the source videos, from the layout index (scripts/prep_mvva.py)."""
+    import csv
+    return {r["id"]: (int(r["width"]), int(r["height"]))
+            for r in csv.DictReader(open(Path("D:/Datasets/MVVA/surge") / "index.csv"))}
+
+
 def boxes_for(vid: str):
     t = np.load(SRC / "all_face_tracking_release" / f"{vid}.npy", allow_pickle=False)
     k = np.load(SRC / "all_face_talking_release" / f"{vid}.npy", allow_pickle=False)
     return t, k
 
 
-def masks(t, k, f):
-    """Talking and other-face masks at 640x360 for frame f, or None if the frame lacks either kind."""
+def masks(t, k, f, size=(2 * W, 2 * H)):
+    """Talking and other-face masks at 640x360 for frame f (boxes x1, y1, x2, y2 in native pixels of a video of
+    `size` = (width, height), scaled per axis), or None if the frame lacks either kind."""
     if f >= t.shape[0] or t.ndim != 3:
         return None
+    scale = np.array([W / size[0], H / size[1], W / size[0], H / size[1]])
     mt, mn = np.zeros((H, W), bool), np.zeros((H, W), bool)
     nt = nn = 0
     for j in range(t.shape[1]):
-        b = t[f, j] / 2.0
+        b = t[f, j] * scale
         if not np.all(np.isfinite(b)):
             continue
         x1, y1, x2, y2 = [int(round(v)) for v in b]
@@ -75,10 +85,11 @@ def one_video(args):
     v = {x.name: x for x in mvva_videos()}[vid]
     z = np.load(Path(small) / f"{vid}.npz")
     t, k = boxes_for(vid)
+    size = native_sizes()[vid]
     rows = []
     for f, m in zip(z["frames"], z["maps"]):
         f = int(f)
-        mk = masks(t, k, f)
+        mk = masks(t, k, f, size)
         if mk is None:
             continue
         mt, mn = mk

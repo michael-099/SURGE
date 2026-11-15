@@ -208,3 +208,39 @@ def test_bias_fit_recovers_known_transform():
     (m, gm, k), info = fit(items, np.array(vid), sigma0)
     assert (m, gm, k) == (2.0, 1.5, 4.0)
     assert info["fit_cc_best"] > 0.999 and info["fit_cc_identity"] < info["fit_cc_best"]
+
+
+def test_prep_mvva_fixation_scaling():
+    """Per-axis scaling reproduces the first layout (video pixels / 2) for 1280x720 videos and maps 1920x1080."""
+    from scripts.prep_mvva import fixation_map
+    p = np.array([[0.0, 1279.0, 640.4, np.nan, -3.0, 2000.0], [0.0, 719.0, 360.9, 5.0, 10.0, 100.0]])
+    old = np.zeros((360, 640), np.uint8)
+    x, y = np.floor(p[0] / 2.0), np.floor(p[1] / 2.0)
+    keep = np.isfinite(x) & np.isfinite(y) & (x >= 0) & (x < 640) & (y >= 0) & (y < 360)
+    old[y[keep].astype(int), x[keep].astype(int)] = 255
+    assert np.array_equal(fixation_map(p, 640 / 1280, 360 / 720), old)
+    m = fixation_map(np.array([[1919.0, 960.0], [1079.0, 540.0]]), 640 / 1920, 360 / 1080)
+    assert m[359, 639] == 255 and m[180, 320] == 255 and m.sum() == 2 * 255
+
+
+def test_prep_avimos_grid_equals_maxpool():
+    """Fixations mapped to the map grid equal 2x2 max-pooling for landscape videos at twice the map size."""
+    from scripts.prep_avimos_fix import to_grid
+    rng = np.random.default_rng(0)
+    f = (rng.random((108, 192)) > 0.995).astype(np.uint8) * 255
+    pooled = (f > 0).reshape(54, 2, 96, 2).any(axis=(1, 3)).astype(np.uint8) * 255
+    assert np.array_equal(to_grid(f, 54, 96), pooled)
+    g = np.zeros((192, 108), np.uint8)  # portrait fixations onto a landscape grid: per-axis scaling
+    g[191, 107] = g[0, 0] = 255
+    t = to_grid(g, 54, 96)
+    assert t[53, 95] == 255 and t[0, 0] == 255 and t.sum() == 2 * 255
+
+
+def test_mvva_face_boxes_scale_per_axis():
+    from scripts.inv_mvva_faces import masks
+    t = np.array([[[100.0, 100.0, 300.0, 300.0], [900.0, 500.0, 1100.0, 700.0]]])  # (frames, faces, 4)
+    k = np.array([[1], [0]])  # face 0 talks in frame 0
+    mt, mn = masks(t, k, 0)  # default: a 1280x720 video, boxes halved
+    assert mt[50:150, 50:150].all() and not mt[160, 160] and mn[250:350, 450:550].all()
+    mt2, mn2 = masks(t * 1.5, k, 0, (1920, 1080))  # the same boxes in a 1920x1080 video
+    assert np.array_equal(mt, mt2) and np.array_equal(mn, mn2)
