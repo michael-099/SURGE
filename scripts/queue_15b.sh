@@ -13,14 +13,14 @@ L=runs/inv
 mkdir -p $O $L $O/holdout
 stop() { if [ -f SAFETY_STOP.txt ]; then echo "$(date -Is) SAFETY_STOP present; queue stops"; exit 2; fi; }
 run() { stop; echo "$(date -Is) $*"; "$@" || { echo "$(date -Is) FAILED: $*"; exit 3; }; }
-n=0
-until grep -q "queue 15t done\|SAFETY_STOP present\|queue stops\|FAILED\|not starting" $L/queue_15t.log 2>/dev/null; do
-  n=$((n+1)); if [ $n -gt 900 ]; then echo "$(date -Is) queue 15t not finished after 15 h; not starting"; exit 1; fi
+n=0  # waits for queue 15l (section 15L), which itself runs after queue 15t
+until grep -q "queue 15l done\|SAFETY_STOP present\|queue stops\|FAILED\|not starting" $L/queue_15l.log 2>/dev/null; do
+  n=$((n+1)); if [ $n -gt 1200 ]; then echo "$(date -Is) queue 15l not finished after 20 h; not starting"; exit 1; fi
   sleep 60
 done
-grep -q "queue 15t done" $L/queue_15t.log || { echo "$(date -Is) queue 15t did not finish cleanly; not starting"; exit 1; }
+grep -q "queue 15l done" $L/queue_15l.log || { echo "$(date -Is) queue 15l did not finish cleanly; not starting"; exit 1; }
 sleep 20
-echo "$(date -Is) queue 15t done; starting queue 15b"
+echo "$(date -Is) queue 15l done; starting queue 15b"
 G="model.backbone=vjepa2_g train.epochs=3 train.warmup_epochs=0.25 data.size=[256,256]"
 TM="$PY -u scripts/train_multi.py --config configs/main_b1.yaml --set"
 # ---- smoke tests (ViT-L, 1 epoch, 1 clip per video, coarse holdout scoring)
@@ -35,6 +35,11 @@ if [ ! -f runs/inv_smoke_probe/DONE ]; then
       train.lr=1e-3 --probes 1-24 > $L/smoke_probe.log 2>&1
 fi
 echo "$(date -Is) smoke tests passed"
+# ---- 15I first part: MVVA (its maps feed 15K) and AViMoS, zero-shot with runs/vitg_s0
+[ -f $O/zs_mvva.json ] || run $PY -u scripts/probe_eval.py --run runs/vitg_s0 --dataset mvva --split val --sigma 8 \
+    --frame-step 5 --save-small runs/inv/mvva_small_s0 --out $O/zs_mvva.json > $L/zs_mvva.log 2>&1
+[ -f $O/zs_avimos.json ] || run $PY -u scripts/evaluate.py --run runs/vitg_s0 --metrics cc,nss,sim,kld --dataset avimos \
+    --split val --sigma 12 --frame-step 5 --out $O/zs_avimos.json > $L/zs_avimos.log 2>&1
 # ---- 15B: linear probes per block (ViT-g, seed 0)
 [ -f runs/inv_b_s0/DONE ] || run $TM run_dir=runs/inv_b_s0 train.seed=0 $G train.lr=1e-3 --probes 1-40 > $L/inv_b_s0.log 2>&1
 # ---- 15C/D: decoder ablations and training configuration (seeds 0-2; seed 0 also trains R for 6 epochs)

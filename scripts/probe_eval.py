@@ -95,16 +95,54 @@ def make_loader(perturb: str, size: int):
     return load
 
 
+# ------------------------------------------------------------------------------------------------ shots
+def load_shots(kind: str, video_name: str, n: int) -> list[tuple[int, int]]:
+    """Shots (first, last frame, inclusive) of a video from TransNet V2 scene files; one shot if none is found."""
+    import csv
+    if kind == "dhf1k":
+        p = Path("D:/DHF1K/transnet_scenes") / f"{int(video_name):03d}.AVI.scenes.txt"
+    elif kind == "diem":
+        ids = {r["name"]: int(r["id"]) for r in csv.DictReader(open("D:/Datasets/DIEM/graft/ids.csv"))}
+        p = Path("D:/Datasets/DIEM/graft/transnet_scenes") / f"{ids[video_name]:03d}.scenes.txt"
+    elif kind == "hollywood":
+        p = Path("D:/Datasets/Hollywood2/surge/transnet_scenes") / f"{video_name}.scenes.txt"
+    elif kind == "avimos":
+        p = Path("D:/Datasets/AViMoS/transnet_scenes") / f"{int(video_name):04d}.scenes.txt"
+    else:
+        raise ValueError(kind)
+    if not p.exists():
+        raise FileNotFoundError(p)
+    sh = sorted(tuple(int(x) for x in line.split()[:2]) for line in open(p) if line.strip())
+    out = []
+    for i, (a, b) in enumerate(sh):  # make the shots tile [0, n-1]
+        a = 0 if i == 0 else a
+        b = n - 1 if i == len(sh) - 1 else min(b, sh[i + 1][0] - 1)
+        if a <= b and a < n:
+            out.append((a, min(b, n - 1)))
+    return out or [(0, n - 1)]
+
+
+def shot_of(shots, f):
+    for a, b in shots:
+        if a <= f <= b:
+            return a, b
+    return shots[-1]
+
+
 # ------------------------------------------------------------------------------------------------ windows
-def windows(n: int, T: int, stride: int, tiling: str, scored: list[int]):
+def windows(n: int, T: int, stride: int, tiling: str, scored: list[int], shots=None):
     """Yield (clamped indices, raw indices, [(frame, fractional output position)]). 'default' is exactly
-    surge.data.inference_windows; only frames in `scored` are assigned."""
+    surge.data.inference_windows; only frames in `scored` are assigned. With `shots` (dense tiling only), each
+    window is clamped to the shot of its frame instead of to the video."""
     want = set(scored)
     if tiling == "dense":  # one window per scored frame, which sits at position T/2
         for f in scored:
             raw = [f + (k - T // 2) * stride for k in range(T)]
-            yield [min(max(j, 0), n - 1) for j in raw], raw, [(f, float(T // 2))]
+            lo, hi = shot_of(shots, f) if shots else (0, n - 1)
+            yield [min(max(j, lo), hi) for j in raw], raw, [(f, float(T // 2))]
         return
+    if shots:
+        raise ValueError("shot clamping is defined for the dense tiling")
     k0, k1, hop = {
         "default": (T // 4, 3 * T // 4, (T // 2) * stride),
         "all16": (0, T, T * stride),
@@ -145,10 +183,11 @@ def run_video(model, v, T, stride, size, device, a, loader, rng_tag: str):
     """Returns ({frame: summed map}, {frame: count}, positions list, {frame: flipped map sum})."""
     n = len(v)
     scored = list(range(0, n, a.frame_step))
+    shots = load_shots(a.shots, v.name, n) if a.shots else None
     if a.temporal == "static":
         wins = list(static_windows(n, T, scored))
     else:
-        wins = list(windows(n, T, stride, a.tiling, scored))
+        wins = list(windows(n, T, stride, a.tiling, scored, shots))
     acc, cnt, accf = {}, {}, {}
     positions = []
     cache = {}
@@ -229,6 +268,8 @@ def main():
     ap.add_argument("--positions", action="store_true")
     ap.add_argument("--flip-consistency", action="store_true")
     ap.add_argument("--per-frame", action="store_true")
+    ap.add_argument("--shots", default=None, choices=["dhf1k", "diem", "hollywood", "avimos"],
+                    help="dense tiling only: clamp each window to the shot of its frame (TransNet V2 scenes)")
     ap.add_argument("--save-small", default=None,
                     help="folder: per video an .npz with the scored frames and their maps at decoder resolution "
                          "(float16), for analyses that need the maps (section 15K)")
@@ -276,7 +317,8 @@ def main():
                 pos_rows += [(v.name, k, j, r["cc"], r["nss"]) for (k, j, _), r in zip(positions, pres)]
             passes += sum(1 for _ in (static_windows(len(v), T, list(range(0, len(v), a.frame_step)))
                                       if a.temporal == "static" else
-                                      windows(len(v), T, stride, a.tiling, list(range(0, len(v), a.frame_step)))))
+                                      windows(len(v), T, stride, a.tiling, list(range(0, len(v), a.frame_step)),
+                                              load_shots(a.shots, v.name, len(v)) if a.shots else None)))
             print(f"[{vi + 1}/{len(videos)}] {v.name} " + " ".join(f"{k}={x:.4f}" for k, x in per_video[v.name].items()),
                   flush=True)
     mean = {k: float(np.mean([pv[k] for pv in per_video.values()])) for k in METRICS}

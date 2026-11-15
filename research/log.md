@@ -1446,3 +1446,25 @@ speaker could add to this model.
 **Order.** One GPU job at a time under the safety monitor: A1, the evaluator check, E1, E3, G, F2, H (test time); B;
 C/D (seeds 0–2); E2; F3; A2; I; A3. CPU work (F1, J, the MVVA and AViMoS preparation, K) runs alongside with the GPU
 hidden.
+
+### 15L. Scene cuts: cross-shot context or post-cut gaze? (hypothesis test; rule written 2026-11-15, before any run)
+
+**Evidence that motivates it (section 15, seed 0, holdout).** A frame predicted with less past inside its clip scores
+lower (same frame, position 0 against 8: −0.077 CC); in the 17 holdout videos with cuts, frames in the 15 frames after
+a cut score 0.043 CC below the other frames (95 % [−0.084, −0.003]), deepest 5–9 frames after the cut; temporal fusion
+hurts on cut-heavy DIEM (El-Jiz et al., WACV 2026).
+**Competing explanations of the post-cut dip.** (i) Contamination: the window's past belongs to the previous shot and
+misleads the model. (ii) Missing context: after a cut no past is useful, whatever fills the window. (iii) Gaze
+behaviour: post-cut gaze is more central and less predictable (Tseng et al., JOV 2009), whatever the model sees.
+**Test.** Dense windows (one per scored frame, the frame at position 8, stride 2), scored with and without clamping the
+window to the frame's shot (TransNet V2 scenes; clamped positions repeat the shot's first or last frame); same models,
+same frames, σ 0, every fifth frame.
+- Primary: DIEM, STAViS fold 1 test (17 videos, 231 cuts), the fine-tuned ViT-g fold models
+  `runs/g_stavis_diem_f1_s{0,1,2}`. Post-cut frames: 0–14 frames after a cut. Outcome by the 12E rule on per-video mean
+  ΔCC (clamped − unclamped) over post-cut frames (two-level bootstrap over seeds and videos).
+- Reading: an **effect with ΔCC > 0** supports (i) (shot-aware windows are a remedy); **equivalent**, or an effect with
+  ΔCC < 0, refutes (i) in favour of (ii)/(iii); inconclusive otherwise.
+- Secondary (descriptive): the same on all DIEM frames; DHF1K holdout with `runs/vitg_s0` (clamped against the dense
+  run of 15G); the post-cut dip (0–14 against ≥ 60 frames after a cut) under each condition — if it persists under
+  clamping, explanation (iii) carries it.
+- Tooling: `scripts/probe_eval.py --tiling dense [--shots diem|dhf1k]`; analysis `scripts/inv_cuts.py`.
