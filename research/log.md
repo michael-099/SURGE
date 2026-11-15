@@ -1474,6 +1474,21 @@ same frames, σ 0, every fifth frame.
   during the previous shot. Clamping may then cost accuracy in 0–9 and help only in 10–14. The primary outcome is
   unchanged.
 
+**Result (2026-11-15; `runs/review/inv/summary_cuts.json`, `summary_cuts_bins.json`).**
+- Primary (DIEM, 3 seeds, 14 videos with post-cut frames): post-cut CC 0.7065 unclamped, 0.6052 clamped, ΔCC −0.101
+  [−0.139, −0.063]. That is an effect with ΔCC < 0, so (i) is refuted: cross-shot context helps post-cut frames.
+- Secondary: DIEM all frames −0.0125 [−0.0217, −0.0049]. DHF1K holdout post-cut −0.137 [−0.199, −0.079], all frames
+  −0.0034 [−0.0057, −0.0015].
+- Post-cut dip (0–14 against ≥ 60 frames after a cut): unclamped, DIEM −0.004 [−0.057, +0.045] and DHF1K −0.010
+  [−0.058, +0.042]; clamped, −0.105 and −0.146. The secondary reading does not apply, because clamping causes the
+  dip.
+- Bins: DIEM 0–4 −0.230, 5–9 −0.064, 10–14 −0.007 (n.s.); DHF1K −0.201, −0.163, −0.041 (n.s.).
+- Descriptive follow-up, specified after the result (`scripts/inv_cut_gaze.py`, ground truth only,
+  `summary_cut_gaze.json`). For 2–4 frames (DIEM, 1,254 cuts) or 6 frames (DHF1K, 81 cuts) after a cut, the ground
+  truth is as similar to the last pre-cut frame as in uncut footage. It is closer to its settled post-cut state than
+  to the pre-cut one from frame 8 (DIEM) or 11 (DHF1K) on, against 17 and 13 at pseudo-cuts. Gaze lags the cut, so
+  the previous shot predicts it. Neither (ii) nor (iii) fits.
+
 ### 15M. Dataset bias in zero-shot transfer (rule written 2026-11-15, before any zero-shot result of 15I)
 
 **Motivation.** For image saliency, fewer than 20 dataset-specific parameters (centre bias, fixation spread, scale)

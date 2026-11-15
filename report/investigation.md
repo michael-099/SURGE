@@ -367,7 +367,7 @@ largest fine-tuning gains, and both are factors that a free-viewing visual model
 The output grid costs nothing, and even the 16×16 token grid would allow CC 0.91. Spatial resolution does not limit
 average CC at the current accuracy. Fine localisation matters more for NSS (ceiling 5.61 at 16², 7.58 at 64²).
 
-### 7.2 Scene cuts (15J) [Completed, holdout, seed 0]
+### 7.2 Scene cuts (15J descriptive, 15L test) [Completed]
 
 17 of the 60 holdout videos contain TransNet V2 cuts. Within those videos, frames in the 15 frames after a cut score
 CC 0.562, against 0.605 for their other frames: **−0.043 [−0.084, −0.003]** (video bootstrap). Profile by frames
@@ -392,8 +392,55 @@ since the cut (≈60 scored frames per bin, so noisy):
   frames) and less dispersed (entropy 8.57–8.80 vs 8.99).
 
 By centrality and entropy, these frames should be easier for a model with a centre bias, yet the model scores lower
-on them. This analysis cannot tell whether cross-shot context causes the dip or post-cut gaze behaviour does; the
-pre-registered test 15L does (section 13).
+on them. This analysis cannot tell whether cross-shot context causes the dip or post-cut gaze behaviour does. The
+pre-registered test 15L addresses that.
+
+**Test of the explanations (15L) [Completed; DIEM fold-1 test with 3 seeds (primary); DHF1K holdout, seed 0].**
+Dense windows (the scored frame at position 8) were scored with and without clamping each window to the frame's own
+shot. Clamped positions repeat the shot's first or last frame. `runs/review/inv/summary_cuts.json`.
+
+| | Post-cut frames (0–14 after a cut): unclamped → clamped | ΔCC [95 %] | All frames: ΔCC [95 %] |
+|---|---|---|---|
+| DIEM (primary; 14 videos, 689 post-cut frames per seed) | 0.7065 → 0.6052 | **−0.101 [−0.139, −0.063]** | −0.0125 [−0.0217, −0.0049] |
+| DHF1K holdout (17 videos, 176 post-cut frames) | 0.5858 → 0.4488 | −0.137 [−0.199, −0.079] | −0.0034 [−0.0057, −0.0015] |
+
+By frames since the cut. These bins were registered before the result (`summary_cuts_bins.json`):
+
+| ΔCC (clamped − unclamped) | 0–4 | 5–9 | 10–14 | ≥60 |
+|---|---|---|---|---|
+| DIEM, 3 seeds | −0.230 [−0.317, −0.142] | −0.064 [−0.089, −0.037] | −0.007 [−0.018, +0.004] | −0.000 [−0.002, +0.001] |
+| DHF1K holdout, seed 0 | −0.201 [−0.283, −0.115] | −0.163 [−0.232, −0.101] | −0.041 [−0.102, +0.003] | −0.002 [−0.005, +0.002] |
+
+**Outcome, by the pre-registered reading: an effect with ΔCC < 0, so explanation (i), contamination, is refuted.**
+Frames from the previous shot do not mislead the model. They help it, by 0.10–0.14 CC on post-cut frames.
+- With the unclamped dense tiling, post-cut frames score about as well as frames ≥60 after a cut: DIEM −0.004
+  [−0.057, +0.045], DHF1K −0.010 [−0.058, +0.042].
+- The registered secondary reading ("if the dip persists under clamping, explanation (iii) carries it") does not
+  apply, because clamping itself creates the dip (−0.105 on DIEM, −0.146 on DHF1K).
+
+**Why: gaze lags the cut [Completed; descriptive, specified after the result; ground truth only, no model;
+`scripts/inv_cut_gaze.py`].** The ground truth k frames after a cut is compared (CC) with the ground truth of the
+last frame before the cut. The control applies the same measure around pseudo-cuts in the middle of uncut shots.
+
+| k (frames after the cut) | 0 | 2 | 4 | 6 | 8 | 10 | 14 | 20 |
+|---|---|---|---|---|---|---|---|---|
+| DIEM, at cuts (1,254 cuts, 75 videos) | 0.979 | 0.935 | 0.843 | 0.630 | 0.486 | 0.404 | 0.319 | 0.290 |
+| DIEM, no cut (352 pseudo-cuts) | 0.976 | 0.931 | 0.881 | 0.835 | 0.791 | 0.754 | 0.690 | 0.614 |
+| DHF1K holdout + val, at cuts (81 cuts, 33 videos) | 0.836 | 0.716 | 0.643 | 0.612 | 0.537 | 0.445 | 0.343 | 0.258 |
+| DHF1K holdout + val, no cut (162 pseudo-cuts) | 0.863 | 0.736 | 0.662 | 0.610 | 0.570 | 0.535 | 0.493 | 0.430 |
+
+- For the first 2–4 frames (DIEM) or 6 frames (DHF1K) after a cut, gaze stays as close to its pre-cut position as
+  it does in uncut footage. Only then does it move to the new shot.
+- Gaze is closer to its settled post-cut distribution (frames 30–44) than to the pre-cut one from frame 8 (DIEM) or
+  11 (DHF1K) on. Without a cut, that crossing comes at frame 17 and 13.
+- This time course matches the cost of clamping, which is largest at 0–4 frames and gone by 10–14. It also matches
+  the first-saccade latency after a scene onset (≈356 ms, about 11 frames at 30 fps; Tseng et al., JOV 2009).
+- For a few hundred milliseconds after a cut, the previous shot predicts where people look. The model uses this.
+
+**Default tiling [Completed; descriptive, post hoc; DHF1K holdout, seed 0].** Part of the dip of the default tiling
+reported above comes from the tiling itself. At 5–9 frames after a cut, the default tiling scores 0.026 [0.006, 0.051]
+below the dense tiling (0.554 vs 0.579). At ≥60 frames after a cut, the two agree (+0.001 [−0.003, +0.005]).
+[Hypothesis] In the default tiling, some post-cut frames sit early in their window and see less of the previous shot.
 
 ### 7.3 What predicts per-video accuracy [Completed, descriptive]
 
@@ -435,7 +482,9 @@ All three are cut-free and low-motion. The common factor is target size and posi
 - **Heavy blur costs as much as reversing time** (σ 8: −0.052 CC), while noise, JPEG compression and greyscale
   cost at most 0.0033 (section 6.1).
 - **The default tiling is near the accuracy-efficiency knee**, although it was chosen without a sweep (thesis).
-- **Gaze after cuts is more central and more concentrated**, yet the model scores lower there.
+- **Gaze after cuts is more central and more concentrated**, yet the model scores lower there in the default tiling.
+- **Cross-shot context helps after cuts, contrary to the pre-registered hypothesis.** Removing it costs 0.10–0.14
+  CC on post-cut frames, because gaze stays where it was for 2–6 frames after a cut (section 7.2).
 
 ---
 
@@ -478,7 +527,7 @@ with their type:*
 | Candidate | Evidence (completed) | Type (provisional) |
 |---|---|---|
 | Positions without past context are poor, so half of each window's outputs are discarded | 4.1, 5.2 | design (clip-based processing without state); efficiency cost |
-| Post-cut frames score lower | 7.2 | open: architectural (cross-shot context) or data/gaze behaviour (15L decides) |
+| Post-cut frames score lower in the default tiling | 7.2 | **Not a weakness of cross-shot fusion** (15L: that context helps, because gaze lags the cut). What remains is a tiling property: some post-cut frames see less of the previous shot (descriptive, one seed) |
 | Tuned to the training frame rate and input size | 4.3, 4.4 | design/training (no scale or rate augmentation) |
 | Small, off-centre, action-relevant targets | 7.3, 7.4 | open: representation or resolution (15B, F3 inform) |
 | Decoder overfits after ~2 epochs; data-limited | 1 | optimisation/data |
@@ -498,6 +547,9 @@ with their type:*
   not test a remedy.
 - Together, these papers suggest that temporal integration helps on coherent footage and hurts on edited footage.
   Neither studies a frozen video world-model encoder, positional effects inside a clip, or a remedy for cuts.
+- For SURGE-D the cut part does not hold: 15L shows that context from before a cut helps the frames after it
+  (section 7.2). Whatever hurts El-Jiz et al.'s temporal model on DIEM, it is not, for SURGE-D, the presence of
+  cross-shot frames.
 
 **Gaze around cuts (vision science).**
 - Every observer re-centres on a new scene. The first saccade comes ≈356 ms after scene onset, and the centring
@@ -511,6 +563,11 @@ with their type:*
   doi:10.3758/s13428-022-01949-7).
 - No saliency model found so far treats shot boundaries explicitly. Sliding-window models (TASED-Net, ICCV 2019;
   ViNet, IROS 2021; SalFoM, ICPR 2024; SURGE-D) feed cross-shot frames as context.
+- **Gap withdrawn.** The candidate gap "reset temporal context at cuts" is refuted for SURGE-D. Resetting costs
+  0.10–0.14 CC on post-cut frames, because gaze lags the cut by 2–6 frames (section 7.2). Any cut-aware design has
+  to keep the previous shot for the first ≈10 frames. The time course itself (lag, then re-centring) is
+  well described in vision science and is already exploited implicitly. No measurable post-cut deficit remains under
+  the dense tiling.
 
 **State carried across clips.**
 - Recurrent video saliency models carry state from frame to frame on top of image backbones: ACLNet (Wang et al.,
@@ -578,9 +635,17 @@ with their type:*
 
 ## 13. Proposed experiments for validating the improvement
 
-### 13.1 Pre-registered and queued: scene cuts (15L) [Pending]
+### 13.1 Scene cuts (15L) [Completed; result in section 7.2]
 
-Three explanations compete for the post-cut dip:
+**Outcome.** ΔCC = −0.101 [−0.139, −0.063] on DIEM (3 seeds), an effect with ΔCC < 0, so (i) is refuted. The
+registered reading named (ii) or (iii) as the alternatives. The data support neither:
+- **Against (ii):** past frames from the previous shot help.
+- **Against (iii):** under the dense tiling, post-cut frames show no significant dip.
+
+The explanation that fits is a fourth one, found by a descriptive follow-up on the ground truth: gaze lags the cut,
+so the previous shot is informative. Shot-aware windows would harm the model, not help it.
+
+The registered design, kept for the record. Three explanations competed for the post-cut dip:
 - **(i) Contamination:** the window's past comes from the previous shot and misleads the model.
 - **(ii) Missing context:** after a cut, no past helps, whatever fills the window.
 - **(iii) Gaze behaviour:** post-cut gaze is harder for this model, whatever it sees.
