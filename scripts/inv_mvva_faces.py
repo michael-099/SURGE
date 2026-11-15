@@ -126,10 +126,19 @@ def main():
     ap.add_argument("--sigma", type=float, default=8.0)
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--rows", default=None, help="per-frame rows: written after the per-video pass; with --reuse, read "
+                                                 "instead of recomputing")
+    ap.add_argument("--reuse", action="store_true")
+    ap.add_argument("--limit", type=int, default=None, help="first N videos only (smoke test)")
     a = ap.parse_args()
-    vids = sorted(p.stem for p in Path(a.small).glob("*.npz"))
-    with ProcessPoolExecutor(a.workers) as ex:
-        res = dict(ex.map(one_video, [(v, a.small, a.sigma) for v in vids]))
+    if a.reuse:
+        res = json.loads(Path(a.rows).read_text())
+    else:
+        vids = sorted(p.stem for p in Path(a.small).glob("*.npz"))[:a.limit]
+        with ProcessPoolExecutor(a.workers) as ex:
+            res = dict(ex.map(one_video, [(v, a.small, a.sigma) for v in vids]))
+        if a.rows:
+            Path(a.rows).write_text(json.dumps(res), newline="\n")
     res = {v: r for v, r in res.items() if r}
     vids = sorted(res, key=lambda s: int(s))
     halves = [vids[0::2], vids[1::2]]
@@ -163,11 +172,11 @@ def main():
     # per-video values for a bootstrap of the speaker-over-face gain (held-out halves only)
     per = []
     for fd, (fit, test) in zip(fold, ((halves[0], halves[1]), (halves[1], halves[0]))):
-        a = fd["face_weight"]
+        fa = fd["face_weight"]
         sa, sb = fd["speaker_weights"]["other"], fd["speaker_weights"]["talking"]
         for v in test:
             per.append([np.nanmean([r["cc"] for r in res[v]]),
-                        np.nanmean([r[f"face_{a}"][0] for r in res[v]]),
+                        np.nanmean([r[f"face_{fa}"][0] for r in res[v]]),
                         np.nanmean([r[f"spk_{sa}_{sb}"][0] for r in res[v]])])
     per = np.array(per)
     rng = np.random.default_rng(0)

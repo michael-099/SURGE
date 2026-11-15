@@ -117,7 +117,7 @@ model, not of the training recipe.
 | A1, evaluator check | Is the reported baseline reproducible from the stored checkpoint? | Completed |
 | A2 | How large is run-to-run non-determinism at a fixed seed? | Pending |
 | A3 | Cost: parameters, FLOPs, time, memory | Pending (thesis values available) |
-| B | What does each encoder depth carry (41 linear probes)? | Pending |
+| B | What does each encoder depth carry (41 linear probes)? | Completed |
 | C | Decoder ablations V1–V6, 3 seeds | Pending |
 | D | Learning rate, loss terms, schedule length | Pending |
 | E1, E3 | Temporal order and stride at test time | Completed |
@@ -125,11 +125,11 @@ model, not of the training recipe.
 | F1, F2 | Resolution ceilings; test-time input size | Completed |
 | F3 | Training at 384² | Pending |
 | G | Output position and tiling | Completed |
-| H | Perturbations; flip consistency | Running (flip completed) |
-| I | Zero-shot on five datasets | Pending |
+| H | Perturbations; flip consistency | Completed |
+| I | Zero-shot on five datasets | Running (MVVA and AViMoS completed) |
 | J | Failure analysis | Completed |
-| K | Multi-face scenes (MVVA) | Pending (needs I) |
-| 15L | Scene cuts: cross-shot context or post-cut gaze? (hypothesis test) | Pending |
+| K | Multi-face scenes (MVVA) | Running |
+| 15L | Scene cuts: cross-shot context or post-cut gaze? (hypothesis test) | Completed |
 
 ---
 
@@ -162,10 +162,32 @@ of the same run:
 - V5 64 instead of 256 channels;
 - V6 neither prior nor auxiliary heads (an interaction test of the two dispensable parts).
 
-### What each encoder depth carries (15B) [Pending]
+### What each encoder depth carries (15B) [Completed, seed 0, holdout, descriptive]
 
-Forty linear probes, one per ViT-g block, each with a learned prior, and a prior-only readout, all trained on one
-encoder stream.
+Forty linear probes, one per ViT-g block, each with its own learned centre prior, and a prior-only readout. All were
+trained on one encoder stream (3 epochs, lr 1e-3) and scored after the last epoch with the protocol of
+`runs/review/holdout/vitg_s0.json` (σ 0, every fifth frame; `runs/inv_b_s0`, `summary_probes.json`).
+
+| Readout | Holdout CC | NSS | KLD |
+|---|---|---|---|
+| Centre prior alone | 0.298 | 1.50 | 2.11 |
+| Block 1 | 0.339 | 1.76 | 1.99 |
+| Block 10 (decoder tap) | 0.399 | 2.15 | 1.78 |
+| Block 20 (decoder tap) | 0.466 | 2.58 | 1.55 |
+| Block 27 (first within 1 % of the best) | 0.505 | 2.85 | 1.44 |
+| Block 30 (decoder tap) | 0.509 | 2.89 | 1.43 |
+| Block 34 (best) | 0.510 | 2.89 | 1.43 |
+| Block 40 (decoder tap) | 0.503 | 2.85 | 1.46 |
+| Full decoder R on taps 10/20/30/40 (`runs/vitg_s0`) | 0.587 | 3.36 | 1.19 |
+
+- Linearly decodable saliency rises steadily with depth and plateaus over blocks 27–40. The last six blocks lose
+  0.006, one seed, so this is not established.
+- Block 1 already beats the prior alone by 0.041 CC, so low-level token features carry some saliency.
+- The full decoder exceeds the best single block by 0.077 CC. Two things could explain the gap: combining depths, and
+  the non-linear decoder with its finer output. The four-tap linear readout of 15C (V1) will separate them.
+- Two of the four taps (30, 40) lie on the plateau. Whether tap 10 adds anything to the full decoder is the question
+  of V2 (last tap only).
+- This matches layer-wise ViT analyses in which mid-to-late layers serve localised tasks best (section 10).
 
 ---
 
@@ -359,7 +381,19 @@ original. The model was trained with flip augmentation, yet the correlation is n
 Transfer is weakest where gaze is driven by a task (UCF Sports) or by who is speaking (Coutrot2). Those are the two
 largest fine-tuning gains, and both are factors that a free-viewing visual model cannot infer from DHF1K.
 
-**Zero-shot ViT-g on five datasets, including AViMoS and MVVA (15I)** [Pending].
+**Zero-shot ViT-g (15I)** [Completed for MVVA and AViMoS; the other datasets pending]. The model is `runs/vitg_s0`,
+trained on DHF1K only. σ was fixed in advance at 8 × native width / 640, and every fifth frame is scored. Values are
+per-video means with 95 % video-bootstrap intervals.
+
+| Dataset | Videos | Gaze data | CC | NSS | SIM | KLD |
+|---|---|---|---|---|---|---|
+| MVVA (multi-face scenes, 34 observers) | 294 | eye tracking | 0.726 [0.715, 0.737] | 3.90 [3.80, 4.00] | 0.553 | 0.855 |
+| AViMoS public test | 150 | mouse tracking | 0.680 [0.665, 0.694] | 2.84 [2.70, 2.98] | 0.483 | 0.928 |
+
+- These scores are not compared with published models. MVVA results in the literature use the authors' own split,
+  which the release does not include, and no published AViMoS result uses this zero-shot protocol.
+- CC is not comparable across datasets either, because each dataset blurs its ground truth differently (the DHF1K
+  holdout gives 0.587).
 
 ---
 

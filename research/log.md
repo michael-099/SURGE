@@ -1363,6 +1363,9 @@ One frozen-encoder pass feeds 41 readouts: one per block output of ViT-g (1–40
 1×1×1 convolution to one channel on the 8×16×16 token grid → trilinear to 16×64×64 → plus its own learned centre
 prior → softmax, and one with zero logits (the centre prior alone). Main recipe otherwise (clips, 3 epochs, seed 0,
 same loss), lr 1e-3. Holdout scored after the last epoch. Descriptive.
+**Result (2026-11-16; `runs/inv_b_s0`, `summary_probes.json`; last epoch, σ 0, every fifth frame).** Prior alone CC
+0.298. Block 1 0.339, block 10 0.399, block 20 0.466, block 30 0.509, block 34 0.510 (best), block 40 0.503. The curve
+plateaus from block 27 (0.505). The full decoder `runs/vitg_s0` scores 0.587 under the same protocol.
 
 ### 15C. Decoder ablations
 A multi-decoder trainer (`scripts/train_multi.py`) trains several decoders on one frozen-encoder stream: each batch is
