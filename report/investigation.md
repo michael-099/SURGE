@@ -60,6 +60,10 @@ the second doubling gives 0.64 of the first doubling's gain. DHF1K has no furthe
   Feeding another input size without rebuilding the encoder would silently use wrong positions. The code now rebuilds
   the encoder for other sizes and raises an error on a mismatch. All earlier runs used 256² and were not affected
   (implementation hazard, not a bug in any reported result).
+- A command-line override written in exponent notation without a decimal point (`train.lr=1e-3`) was read by
+  PyYAML as a string. The smoke test of the training queue caught this before any run used such a value. Overrides
+  now convert these values to numbers (`surge/config.py`, with a test). Every stored run configuration was checked,
+  and no earlier run used such an override (implementation bug, no result affected).
 - GroupNorm in the decoder pools statistics over the whole clip, so the decoder mixes time steps even where it has no
   temporal convolution. This is a property of the design, found by a CPU test; it changed the design of ablation V3
   (section 3), not any earlier result.

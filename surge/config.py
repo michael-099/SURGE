@@ -2,11 +2,22 @@
 from __future__ import annotations
 
 import copy
+import re
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+_EXP_FLOAT = re.compile(r"[+-]?(\d+(\.\d*)?|\.\d+)[eE][+-]?\d+")
+
+
+def override_value(v: str):
+    """Value of a command-line override `a.b=v`, parsed as YAML. PyYAML (YAML 1.1) reads exponent notation without a
+    decimal point ('1e-3') as a string; such values are returned as floats."""
+    x = yaml.safe_load(v)
+    if isinstance(x, str) and _EXP_FLOAT.fullmatch(x.strip()):
+        return float(x)
+    return x
 
 DEFAULTS = {
     "run_dir": "runs/debug",
@@ -51,5 +62,5 @@ def load_config(path: str, overrides=()) -> dict:
         keys = k.split(".")
         for kk in keys[:-1]:
             cur = cur[kk]
-        cur[keys[-1]] = yaml.safe_load(v)
+        cur[keys[-1]] = override_value(v)
     return cfg

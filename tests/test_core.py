@@ -176,3 +176,17 @@ def test_audio_features_alignment(tmp_path):
     assert f.shape == (7, 768) and f.dtype == np.float32
     assert np.array_equal(f[:5], a.astype(np.float32)) and np.array_equal(f[6], f[4])  # last row repeats
     assert not audio_features(Video("w", ["0.jpg", "1.jpg"])).any()  # no audio -> zeros
+
+
+def test_override_exponent_floats():
+    """PyYAML reads '1e-3' as a string; command-line overrides must give a float (queue 15b smoke test)."""
+    from surge.config import load_config, override_value
+    for s, want in (("1e-3", 1e-3), ("3E-4", 3e-4), ("+2.5e2", 250.0), (".5e-1", 0.05), ("1.0e-5", 1e-5)):
+        x = override_value(s)
+        assert isinstance(x, float) and x == want, s
+    assert override_value("0.001") == 0.001
+    assert override_value("1") == 1 and isinstance(override_value("1"), int)
+    assert override_value("vjepa2_g") == "vjepa2_g" and override_value("lr1e-4") == "lr1e-4"
+    assert override_value("[256,256]") == [256, 256] and override_value("true") is True
+    cfg = load_config("configs/main_b1.yaml", ["train.lr=1e-3", "run_dir=runs/x"])
+    assert cfg["train"]["lr"] == 1e-3 and isinstance(cfg["train"]["lr"], float) and cfg["run_dir"] == "runs/x"

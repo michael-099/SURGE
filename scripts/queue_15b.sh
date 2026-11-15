@@ -119,8 +119,8 @@ zs avimos avimos val 12 5
 [ -f $O/zs_mvva.json ] || run $PY -u scripts/probe_eval.py --run runs/vitg_s0 --dataset mvva --split val --sigma 8 \
     --frame-step 5 --save-small runs/inv/mvva_small_s0 --out $O/zs_mvva.json > $L/zs_mvva.log 2>&1
 zs hollywood hollywood_vig val 7.5 5
+# ---- 15M: dataset bias in zero-shot transfer (CPU; before A3, so that a failure of A3 cannot block it)
+[ -f $O/summary_bias.json ] || run env CUDA_VISIBLE_DEVICES="" $PY -u scripts/inv_bias.py > $L/inv_bias.log 2>&1
 # ---- 15A3: cost profile
 [ -f $O/a3_cost.json ] || run $PY -u scripts/inv_cost.py --out $O/a3_cost.json > $L/a3_cost.log 2>&1
-# ---- 15M: dataset bias in zero-shot transfer (CPU)
-[ -f $O/summary_bias.json ] || run env CUDA_VISIBLE_DEVICES="" $PY -u scripts/inv_bias.py > $L/inv_bias.log 2>&1
 echo "$(date -Is) queue 15b done"
