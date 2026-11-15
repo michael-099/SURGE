@@ -17,15 +17,29 @@ from concurrent.futures import ThreadPoolExecutor
 _IO_POOL = ThreadPoolExecutor(8)  # frame decoding (OpenCV releases the GIL)
 
 
+def static_windows(n: int, T: int, frames=None):
+    """Static clips (research/log.md section 15E): for each requested frame f, the frame repeated T times. The
+    assignment position -1 marks that the map is the mean of the central T/2 outputs."""
+    for f in (range(n) if frames is None else frames):
+        if 0 <= f < n:
+            yield [f] * T, [(f, -1.0)]
+
+
 @torch.no_grad()
 def predict_video(model, video: Video, T: int, stride: int, size, device, batch: int = 4, amp=torch.bfloat16,
-                  surprise_fn=None, causal: bool = False, frames=None):
+                  surprise_fn=None, causal: bool = False, frames=None, static: bool = False):
     """Yield (frame_index, probability map at decoder resolution) for every frame of the video.
 
     causal=True (research/log.md section 12D): one window per frame, ending at that frame, and only for `frames`
-    (default: every frame); the map is the output at the last sampled position."""
+    (default: every frame); the map is the output at the last sampled position.
+    static=True (section 15E): one static clip per frame of `frames` (see static_windows)."""
     n = len(video)
-    wins = list(causal_windows(n, T, stride, frames) if causal else inference_windows(n, T, stride))
+    if causal and static:
+        raise ValueError("causal and static inference are exclusive")
+    if static:
+        wins = list(static_windows(n, T, frames))
+    else:
+        wins = list(causal_windows(n, T, stride, frames) if causal else inference_windows(n, T, stride))
     cache = {}
     A = audio_features(video, n) if getattr(model, "uses_audio", False) else None
     use_ssl = getattr(model, "ssl", False)  # section 14F: localisation maps as the modulation input
@@ -55,6 +69,9 @@ def predict_video(model, video: Video, T: int, stride: int, size, device, batch:
         p = log_softmax2d(out["logits"].float()).exp().cpu().numpy()  # B,T,h,w
         for bi, (_, assign) in enumerate(chunk):
             for f, q in assign:
+                if q < 0:  # static clip: mean of the central T/2 outputs
+                    yield f, p[bi, T // 4: T // 4 + T // 2].mean(0)
+                    continue
                 a = int(np.floor(q))
                 w = q - a
                 m = p[bi, a] if w == 0 else (1 - w) * p[bi, a] + w * p[bi, min(a + 1, T - 1)]
@@ -105,18 +122,19 @@ def other_fixations(videos: list[Video], k_videos: int = 10, frames_per_video: i
 
 def evaluate(model, videos: list[Video], T, stride, size, device, sigma: float = 0.0, frame_step: int = 1,
              which=("cc", "nss", "sim", "kld"), workers: int = 12, batch: int = 4, sauc_maps=None,
-             surprise_fn=None, save_small: dict | None = None, log=None, causal: bool = False):
+             surprise_fn=None, save_small: dict | None = None, log=None, causal: bool = False, static: bool = False):
     """Score every `frame_step`-th frame. Returns (mean over videos of per-video means, per-video dict).
-    causal=True predicts only the scored frames, each from the window that ends at it (section 12D)."""
+    causal=True predicts only the scored frames, each from the window that ends at it (section 12D).
+    static=True predicts only the scored frames, each from a static clip of it (section 15E)."""
     model.eval()
     per_video = {}
     with ProcessPoolExecutor(workers) as ex:
         for vi, v in enumerate(videos):
             jobs, frames = [], []
             preds = {}
-            sub = range(0, len(v), frame_step) if causal else None
+            sub = range(0, len(v), frame_step) if (causal or static) else None
             for f, m in predict_video(model, v, T, stride, size, device, batch=batch, surprise_fn=surprise_fn,
-                                      causal=causal, frames=sub):
+                                      causal=causal, frames=sub, static=static):
                 if save_small is not None:
                     preds[f] = m.astype(np.float16)
                 if f % frame_step:

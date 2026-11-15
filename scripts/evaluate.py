@@ -44,6 +44,12 @@ def get_videos(dataset: str, split: str, root: str | None):
     if dataset == "hollywood_vig":
         from surge.data import hollywood_vig_videos
         return hollywood_vig_videos(split, ROOT / "configs/splits")
+    if dataset == "mvva":  # research/log.md section 15I: all 300 videos (no official split)
+        from surge.data import mvva_videos
+        return mvva_videos()
+    if dataset == "avimos":  # section 15I: 'val' = public test
+        from surge.data import avimos_videos
+        return avimos_videos(split)
     raise ValueError(dataset)
 
 
@@ -64,7 +70,7 @@ def load_model(run: Path, ckpt: str, device):
     from surge.backbones import add_lora, build_backbone
     from surge.model import SurgeD
     cfg = json.loads((run / "config.json").read_text())
-    bb = build_backbone(cfg["model"]["backbone"])
+    bb = build_backbone(cfg["model"]["backbone"], img=cfg["data"]["size"][0])
     st = torch.load(run / ckpt, map_location="cpu", weights_only=False)
     if "lora" in st:
         add_lora(bb, r=cfg["train"]["lora_r"], alpha=cfg["train"]["lora_alpha"])

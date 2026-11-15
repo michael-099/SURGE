@@ -83,11 +83,17 @@ class VJEPA21(Backbone):
 
 # ------------------------------------------------------------------------------------------------ V-JEPA 2 (HF)
 class VJEPA2(Backbone):
-    def __init__(self, name: str = VJEPA2_HF, taps=(6, 12, 18, 24), grad_ckpt=False, attn="sdpa"):
+    def __init__(self, name: str = VJEPA2_HF, taps=(6, 12, 18, 24), grad_ckpt=False, attn="sdpa",
+                 crop_size: int | None = None):
         super().__init__()
         from transformers import AutoModel
 
-        self.model = AutoModel.from_pretrained(name, attn_implementation=attn)
+        # The HF port derives every token's (t, h, w) position from config.crop_size (research/log.md section 15F):
+        # an input of another size needs crop_size equal to it, or positions are silently wrong. None keeps the
+        # checkpoint's own value (256 for the checkpoints used here).
+        kw = {} if crop_size is None else {"crop_size": int(crop_size)}
+        self.model = AutoModel.from_pretrained(name, attn_implementation=attn, **kw)
+        self.crop_size = self.model.config.crop_size
         self.embed_dim = self.model.config.hidden_size
         self.taps = taps
         self.tube_chunk = 2  # clips per chunk of the masked-tube readout (forward_with_error)
@@ -98,6 +104,9 @@ class VJEPA2(Backbone):
     def forward(self, x):
         B, T, C, H, W = x.shape
         assert H == W, "the HF V-JEPA 2 port assumes a square token grid"
+        if H != self.crop_size:
+            raise ValueError(f"input {H}x{W} but the encoder's positions assume {self.crop_size}; "
+                             f"build it with crop_size={H}")
         out = self.model(pixel_values_videos=x, skip_predictor=True, output_hidden_states=True)
         t, h, w = self.grid(T, H, W)
         return [_tokens_to_volume(out.hidden_states[l], t, h, w) for l in self.taps]
@@ -229,13 +238,16 @@ class DINOv2(Backbone):
 EXPERT_IMG = {"dinov2_l": 224, "umt_l": 224}  # input size of each expert encoder
 
 
-def build_backbone(name: str, grad_ckpt: bool = False) -> Backbone:
+def build_backbone(name: str, grad_ckpt: bool = False, img: int | None = None, taps=None) -> Backbone:
+    """img: input size for the HF V-JEPA 2 encoders; any value other than 256 rebuilds their position grid
+    (section 15F). taps: override the tapped depths of V-JEPA 2 (section 15B probes); None keeps the defaults."""
+    crop = None if img in (None, 256) else img
     if name == "vjepa21_l":
         return VJEPA21(grad_ckpt=grad_ckpt)
     if name == "vjepa2_l":
-        return VJEPA2(grad_ckpt=grad_ckpt)
+        return VJEPA2(grad_ckpt=grad_ckpt, crop_size=crop, **({"taps": tuple(taps)} if taps else {}))
     if name == "vjepa2_g":
-        return VJEPA2(VJEPA2_G_HF, taps=(10, 20, 30, 40), grad_ckpt=grad_ckpt)
+        return VJEPA2(VJEPA2_G_HF, taps=tuple(taps) if taps else (10, 20, 30, 40), grad_ckpt=grad_ckpt, crop_size=crop)
     if name == "umt_l":
         return UMT(grad_ckpt=grad_ckpt)
     if name == "dinov2_l":

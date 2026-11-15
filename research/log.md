@@ -1372,7 +1372,10 @@ paired reference. Variants:
 - V1 linear: the four taps concatenated → LayerNorm → 1×1×1 convolution → logits at 16×16, upsampled (+ prior).
 - V2 last tap: the full decoder with tap 40 in all four pyramid branches.
 - V3 2D: the full decoder with the 3×1×1 temporal convolution of every residual block replaced by a 1×1×1
-  convolution (no temporal mixing in the decoder; the encoder is unchanged).
+  convolution (no temporal mixing in the decoder; the encoder is unchanged). *Amendment, before any run of 15C:* a
+  CPU test showed that GroupNorm pools its statistics over the whole clip, so the decoder still couples time steps
+  without its temporal convolutions; in V3 every GroupNorm of the decoder therefore computes its statistics per time
+  step (same parameters), and each output time step then depends only on its own tubelet.
 - V4 coarse: no top-down path; the 1/16 stage feeds the head and the logits are upsampled ×4.
 - V5 narrow: 64 channels instead of 256.
 - V6 without centre prior and without auxiliary heads (the two components found dispensable in 12E, together).

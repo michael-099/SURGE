@@ -11,19 +11,34 @@ import torch.nn.functional as F
 from .backbones import Backbone
 
 
-def gn(c: int) -> nn.GroupNorm:
-    return nn.GroupNorm(min(32, c // 4), c)
+class FrameGroupNorm(nn.GroupNorm):
+    """GroupNorm with statistics per time step of a (B, C, T, H, W) volume (research/log.md section 15C, V3): the
+    plain GroupNorm pools them over the clip, which couples time steps. Same parameters as nn.GroupNorm."""
+
+    def forward(self, x):
+        if x.dim() != 5:
+            return super().forward(x)
+        B, C, T, H, W = x.shape
+        y = super().forward(x.transpose(1, 2).reshape(B * T, C, H, W))
+        return y.reshape(B, T, C, H, W).transpose(1, 2)
+
+
+def gn(c: int, per_frame: bool = False) -> nn.GroupNorm:
+    return (FrameGroupNorm if per_frame else nn.GroupNorm)(min(32, c // 4), c)
 
 
 class R21(nn.Module):
-    """(2+1)D residual block: 1x3x3 spatial conv -> GN -> GELU -> 3x1x1 temporal conv -> GN, + skip, GELU."""
+    """(2+1)D residual block: 1x3x3 spatial conv -> GN -> GELU -> 3x1x1 temporal conv -> GN, + skip, GELU.
+    kt=1 (research/log.md section 15C, V3) makes the second conv 1x1x1 and the norms per frame: the block then
+    processes every time step independently."""
 
-    def __init__(self, c: int):
+    def __init__(self, c: int, kt: int = 3):
         super().__init__()
+        pf = kt == 1
         self.s = nn.Conv3d(c, c, (1, 3, 3), padding=(0, 1, 1), bias=False)
-        self.n1 = gn(c)
-        self.t = nn.Conv3d(c, c, (3, 1, 1), padding=(1, 0, 0), bias=False)
-        self.n2 = gn(c)
+        self.n1 = gn(c, pf)
+        self.t = nn.Conv3d(c, c, (kt, 1, 1), padding=(kt // 2, 0, 0), bias=False)
+        self.n2 = gn(c, pf)
 
     def forward(self, x):
         y = F.gelu(self.n1(self.s(x)))
@@ -34,10 +49,10 @@ class R21(nn.Module):
 class Up2(nn.Module):
     """Spatial x2 upsampling with a transposed conv (1,2,2)."""
 
-    def __init__(self, cin: int, cout: int):
+    def __init__(self, cin: int, cout: int, per_frame: bool = False):
         super().__init__()
         self.up = nn.ConvTranspose3d(cin, cout, (1, 2, 2), stride=(1, 2, 2))
-        self.n = gn(cout)
+        self.n = gn(cout, per_frame)
 
     def forward(self, x):
         return F.gelu(self.n(self.up(x)))
@@ -46,14 +61,19 @@ class Up2(nn.Module):
 class SimpleFPN3D(nn.Module):
     """ViTDet-style pyramid from 4 plain-ViT taps: P4 (x4), P8 (x2), P16a, P16b (x1)."""
 
-    def __init__(self, d: int, c: int = 256):
+    def __init__(self, d: int, c: int = 256, fine: bool = True, per_frame: bool = False):
         super().__init__()
-        self.p4 = nn.Sequential(nn.Conv3d(d, c, 1), gn(c), nn.GELU(), Up2(c, c), Up2(c, c))
-        self.p8 = nn.Sequential(nn.Conv3d(d, c, 1), gn(c), nn.GELU(), Up2(c, c))
-        self.p16a = nn.Sequential(nn.Conv3d(d, c, 1), gn(c), nn.GELU())
-        self.p16b = nn.Sequential(nn.Conv3d(d, c, 1), gn(c), nn.GELU())
+        self.fine = fine  # False (section 15C, V4): only the two 1/16 levels exist
+        pf = per_frame  # True (section 15C, V3): norms per time step
+        if fine:
+            self.p4 = nn.Sequential(nn.Conv3d(d, c, 1), gn(c, pf), nn.GELU(), Up2(c, c, pf), Up2(c, c, pf))
+            self.p8 = nn.Sequential(nn.Conv3d(d, c, 1), gn(c, pf), nn.GELU(), Up2(c, c, pf))
+        self.p16a = nn.Sequential(nn.Conv3d(d, c, 1), gn(c, pf), nn.GELU())
+        self.p16b = nn.Sequential(nn.Conv3d(d, c, 1), gn(c, pf), nn.GELU())
 
     def forward(self, taps):
+        if not self.fine:
+            return [None, None, self.p16a(taps[2]), self.p16b(taps[3])]
         return [self.p4(taps[0]), self.p8(taps[1]), self.p16a(taps[2]), self.p16b(taps[3])]
 
 
@@ -179,10 +199,20 @@ class Expert(nn.Module):
 
 
 class Decoder(nn.Module):
+    """temporal, topdown and tap_mode are the decoder ablations of research/log.md section 15C (V2-V4); their
+    defaults build the unchanged SURGE-D decoder (same modules, same order, same initialisation)."""
+
     def __init__(self, d: int = 1024, c: int = 256, use_scm: bool = False, prior: bool = True, aux: bool = True,
-                 audio: bool = False, expert_dim: int | None = None):
+                 audio: bool = False, expert_dim: int | None = None, temporal: bool = True, topdown: bool = True,
+                 tap_mode: str = "all"):
         super().__init__()
-        self.fpn = SimpleFPN3D(d, c)
+        if tap_mode not in ("all", "last"):
+            raise ValueError(tap_mode)
+        if not topdown and (use_scm or audio or expert_dim):
+            raise ValueError("the coarse decoder (no top-down path) supports no conditioning modules")
+        self.temporal, self.topdown, self.tap_mode = temporal, topdown, tap_mode
+        kt = 3 if temporal else 1
+        self.fpn = SimpleFPN3D(d, c, fine=topdown, per_frame=not temporal)
         self.expert_dim = expert_dim
         if expert_dim:
             self.fpn_e = SimpleFPN3D(expert_dim, c)
@@ -194,19 +224,31 @@ class Decoder(nn.Module):
         if use_scm:
             self.phi = SurpriseEncoder(64)
             self.scm = nn.ModuleList([SCM(64, c) for _ in range(4)])
-        self.fuse16 = nn.Sequential(nn.Conv3d(2 * c, c, 1), gn(c), nn.GELU())
-        self.r16 = nn.Sequential(R21(c), R21(c))
-        self.r8 = nn.Sequential(R21(c), R21(c))
-        self.r4 = nn.Sequential(R21(c), R21(c))
+        self.fuse16 = nn.Sequential(nn.Conv3d(2 * c, c, 1), gn(c, not temporal), nn.GELU())
+        self.r16 = nn.Sequential(R21(c, kt), R21(c, kt))
+        if topdown:
+            self.r8 = nn.Sequential(R21(c, kt), R21(c, kt))
+            self.r4 = nn.Sequential(R21(c, kt), R21(c, kt))
         self.head = nn.Sequential(nn.Conv3d(c, c // 2, (1, 3, 3), padding=(0, 1, 1)), nn.GELU(), nn.Conv3d(c // 2, 1, 1))
         self.aux = aux
         if aux:
             self.aux16 = nn.Conv3d(c, 1, 1)
-            self.aux8 = nn.Conv3d(c, 1, 1)
+            if topdown:
+                self.aux8 = nn.Conv3d(c, 1, 1)
         self.prior = CenterPrior() if prior else None
 
     def forward(self, taps, surprise=None, T_out: int | None = None, audio=None, expert_taps=None):
+        if self.tap_mode == "last":  # section 15C, V2: the deepest tap feeds every pyramid branch
+            taps = [taps[-1]] * 4
         p4, p8, p16a, p16b = self.fpn(taps)
+        if not self.topdown:  # section 15C, V4: decode at 1/16 only, logits upsampled x4
+            d16 = self.r16(self.fuse16(torch.cat([p16a, p16b], 1)))
+            lg = self.head(d16)[:, 0]
+            out = {"logits": F.interpolate(lg[:, None], scale_factor=(1, 4, 4), mode="trilinear",
+                                           align_corners=False)[:, 0]}
+            if self.aux and self.training:
+                out["aux16"] = self.aux16(d16)[:, 0]
+            return self._finish(out, T_out)
         if self.expert_dim:
             if expert_taps is None:
                 raise ValueError("expert fusion enabled but no expert taps given")
@@ -230,6 +272,10 @@ class Decoder(nn.Module):
         if self.aux and self.training:
             out["aux16"] = self.aux16(d16)[:, 0]
             out["aux8"] = self.aux8(d8)[:, 0]
+        return self._finish(out, T_out)
+
+    def _finish(self, out, T_out):
+        """Aux maps to the output grid, tubelets to sampled frames, plus the log centre prior."""
         for k in list(out):
             x = out[k]
             if k != "logits":
@@ -240,6 +286,35 @@ class Decoder(nn.Module):
                 x = x + self.prior(x.shape[-2], x.shape[-1], x.device)
             out[k] = x
         return out
+
+
+class LinearReadout(nn.Module):
+    """Linear readout of frozen features (research/log.md section 15B probes and 15C V1): the given taps concatenated
+    over channels, LayerNorm without affine, a 1x1x1 convolution to one channel at the token grid, logits upsampled
+    x4 in space and to T_out in time, plus a learned log centre prior. zero=True gives the prior alone."""
+
+    def __init__(self, d_in: int, prior: bool = True, zero: bool = False):
+        super().__init__()
+        self.zero = zero
+        if not zero:
+            self.proj = nn.Conv3d(d_in, 1, 1)
+        self.prior = CenterPrior() if prior else None
+        self.aux = False
+
+    def forward(self, taps, T_out: int | None = None):
+        x = torch.cat(list(taps), 1) if len(taps) > 1 else taps[0]
+        B, C, t, h, w = x.shape
+        if self.zero:
+            lg = torch.zeros(B, t, h, w, device=x.device, dtype=torch.float32)
+        else:
+            xn = F.layer_norm(x.permute(0, 2, 3, 4, 1).float(), (C,)).permute(0, 4, 1, 2, 3)
+            lg = self.proj(xn)[:, 0]
+        lg = F.interpolate(lg[:, None].float(), scale_factor=(1, 4, 4), mode="trilinear", align_corners=False)[:, 0]
+        if T_out is not None and lg.shape[1] != T_out:
+            lg = F.interpolate(lg[:, None], size=(T_out, *lg.shape[2:]), mode="trilinear", align_corners=False)[:, 0]
+        if self.prior is not None:
+            lg = lg + self.prior(lg.shape[-2], lg.shape[-1], lg.device)
+        return {"logits": lg}
 
 
 def pgate_input(err: torch.Tensor, control: str | None = None) -> torch.Tensor:

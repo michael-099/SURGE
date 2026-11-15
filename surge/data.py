@@ -197,6 +197,45 @@ def hollywood_vig_videos(split: str, splits_dir, root: str = HOLLYWOOD) -> list[
                   _sorted_files(root / "fixation" / n, (".png",)), skip_empty=True) for n in sorted(names)]
 
 
+MVVA = "D:/Datasets/MVVA/surge"
+MVVA_SRC = "D:/Datasets/MVVA/extracted"
+
+
+def mvva_videos(root: str = MVVA, src: str = MVVA_SRC) -> list[Video]:
+    """MVVA (Liu et al., ECCV 2020; research/log.md sections 15I, 15K): frames and fixation maps laid out by
+    scripts/prep_mvva.py (640x360), the release's heatmaps (also 640x360) as ground-truth maps."""
+    import csv
+    out = []
+    for r in csv.DictReader(open(Path(root) / "index.csv")):
+        vid, n = r["id"], int(r["n"])
+        hm = sorted((Path(src) / "mvva_database_v1" / "save_our_hmap" / f"video_{int(vid):03d}").glob("*.jpg"),
+                    key=lambda p: int(p.stem))[:n]  # heatmap folders are zero-padded (video_084 for 84.avi)
+        out.append(Video(vid, [str(Path(root) / "frames" / vid / f"{i:04d}.jpg") for i in range(n)],
+                         [str(p) for p in hm],
+                         [str(Path(root) / "fixation" / vid / f"{i:04d}.png") for i in range(n)], skip_empty=True))
+    return out
+
+
+AVIMOS = "D:/Datasets/AViMoS"
+
+
+def avimos_videos(split: str, root: str = AVIMOS) -> list[Video]:
+    """AViMoS (AIM 2024; mouse tracking, CC-BY-4.0; research/log.md section 15I) in the GRAFT-A layout: frames and
+    maps at 540x960; fixations max-pooled to 540x960 by scripts/prep_avimos_fix.py. split: 'val' = public test
+    (ids 1001-1150), 'test' = private test, 'train'."""
+    import csv
+    part = {"val": "public_test", "test": "private_test", "train": "train"}[split]
+    out = []
+    for r in csv.DictReader(open(Path(root) / "ids.csv")):
+        if r["split"] != part:
+            continue
+        vid = f"{int(r['id']):04d}"
+        out.append(Video(vid, _sorted_files(Path(root) / "frames" / vid, (".jpg",)),
+                         _sorted_files(Path(root) / "maps" / vid, (".png",)),
+                         _sorted_files(Path(root) / "surge_fix540" / vid, (".png",)), skip_empty=True))
+    return out
+
+
 def read_split_file(path: str) -> list[int]:
     with open(path) as f:
         return [int(x) for x in f.read().split()]
@@ -259,11 +298,15 @@ class ClipDataset(Dataset):
 
     def __init__(self, videos: list[Video], T: int = 16, stride: int = 2, size=(256, 256), out_size=(64, 64),
                  clips_per_video: int = 8, hflip: bool = True, seed: int = 0, audio: bool = False,
-                 target: str = "central", ssl: bool = False):
+                 target: str = "central", ssl: bool = False, static: bool = False):
         if target not in ("central", "last"):
             raise ValueError(target)
         self.videos = [v for v in videos if len(v) >= 1]
         self.audio = audio
+        # research/log.md section 15E (E2): each clip becomes one of its target frames, drawn at random and repeated
+        # T times, with that frame's map on every target position. Off by default (the draws of other items are
+        # unchanged: the extra random draw happens only when static is on).
+        self.static = static
         self.ssl = ssl  # section 14F: item["cond"] = the localisation-map condition (flipped with the frames)
         self.T, self.stride, self.size, self.out_size = T, stride, size, out_size
         self.cpv, self.hflip = clips_per_video, hflip
@@ -289,12 +332,15 @@ class ClipDataset(Dataset):
             start = rng.randint(lo, hi)
         idx = window_indices(n, start, self.T, self.stride)
         flip = self.hflip and rng.random() < 0.5
-        frames = np.stack([load_rgb(v.frames[j], self.size) for j in idx])
         if self.target == "last":
             tgt = idx[-1:]
         else:
             c0 = self.T // 4
             tgt = idx[c0:c0 + self.T // 2]
+        if self.static:
+            j = tgt[rng.randrange(len(tgt))]
+            idx, tgt = [j] * self.T, [j] * len(tgt)
+        frames = np.stack([load_rgb(v.frames[j], self.size) for j in idx])
         dens = np.stack([density_small(load_gray(v.maps[j]), self.out_size) for j in tgt])
         fixs = np.stack([fixations_small(load_gray(v.fixations[j]), self.out_size) for j in tgt])
         if flip:

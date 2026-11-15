@@ -85,7 +85,7 @@ def main():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
-    bb = build_backbone(md["backbone"], grad_ckpt=tr.get("grad_ckpt", False))
+    bb = build_backbone(md["backbone"], grad_ckpt=tr.get("grad_ckpt", False), img=d["size"][0])
     for p in bb.parameters():
         p.requires_grad_(False)
     stage2 = tr["stage"] == 2
@@ -140,9 +140,14 @@ def main():
         raise ValueError("static images have no localisation maps")
     if causal:
         log("causal variant: each clip is supervised on its last sampled frame; holdout scored causally")
+    static = d.get("static", False)  # research/log.md section 15E (E2): static clips in training and holdout
+    if static and (causal or use_ssl or use_audio or d.get("salicon")):
+        raise ValueError("the static model is defined for the visual main recipe only")
+    if static:
+        log("static model: each clip is one of its central frames repeated; holdout scored on static clips")
     train_ds = ClipDataset(videos_for(cfg, "train"), T=d["T"], stride=d["stride"], size=size, out_size=g,
                            clips_per_video=tr["clips_per_video"], hflip=d["hflip"], seed=tr["seed"], audio=use_audio,
-                           target=tmode, ssl=use_ssl)
+                           target=tmode, ssl=use_ssl, static=static)
     ds = train_ds
     if d.get("salicon"):
         sal = SaliconDataset(d["salicon_root"], "train", T=d["T"], size=size, out_size=g, limit=d.get("salicon_limit"))
@@ -243,7 +248,8 @@ def main():
         # ---- internal validation
         t1 = time.time()
         mean, _ = evaluate(model, val_videos, T, d["stride"], size, device, sigma=cfg["eval"]["sigma"],
-                           frame_step=cfg["eval"]["frame_step"], workers=cfg["eval"]["workers"], causal=causal)
+                           frame_step=cfg["eval"]["frame_step"], workers=cfg["eval"]["workers"], causal=causal,
+                           static=static)
         log(f"epoch {epoch} holdout " + " ".join(f"{k}={v:.4f}" for k, v in mean.items()) +
             f" ({(time.time() - t1) / 60:.1f} min)", event="holdout", epoch=epoch, **mean)
         st = trainable_state()
