@@ -171,3 +171,40 @@ def test_static_windows_predict(tmp_path):
     out = dict(predict_video(_Echo(), v, 8, 2, (16, 16), torch.device("cpu"), frames=[0, 5], static=True))
     assert set(out) == {0, 5}
     assert out[0].shape == (4, 4)
+
+
+# ---- section 15M: dataset-bias transform (scripts/inv_bias.py)
+def test_bias_transform_identity_equals_to_native():
+    import numpy as np
+    from scripts.inv_bias import transform
+    from surge.infer import to_native
+    rng = np.random.default_rng(0)
+    small = rng.random((64, 64)).astype(np.float32)
+    for sigma in (0.0, 8.0):
+        a = transform(small, (360, 640), sigma, 1.0, 0.0)
+        b = to_native(small, (360, 640), sigma)
+        assert a.dtype == b.dtype and np.array_equal(a, b)
+
+
+def test_bias_fit_recovers_known_transform():
+    import cv2
+    import numpy as np
+    from scripts.inv_bias import FIT_WIDTH, centre_r2, fit
+    rng = np.random.default_rng(1)
+    W, H, sigma0 = 640, 360, 8.0
+    h = int(round(H * FIT_WIDTH / W))
+    items, vid = [], []
+    for i in range(24):
+        small = np.zeros((64, 64), np.float32)
+        for _ in range(3):
+            small[rng.integers(4, 60), rng.integers(4, 60)] = rng.random() + 0.5
+        small = cv2.GaussianBlur(small, (0, 0), 2.0) + 1e-4
+        b = cv2.resize(small, (FIT_WIDTH, h), interpolation=cv2.INTER_LINEAR)
+        g = cv2.GaussianBlur(b, (0, 0), 2.0 * sigma0 * FIT_WIDTH / W).astype(np.float64)
+        g = g / g.sum()
+        g = np.power(g, 1.5) * np.exp(-4.0 * centre_r2(h, FIT_WIDTH))
+        items.append((b, g.astype(np.float32), W))
+        vid.append(i // 4)
+    (m, gm, k), info = fit(items, np.array(vid), sigma0)
+    assert (m, gm, k) == (2.0, 1.5, 4.0)
+    assert info["fit_cc_best"] > 0.999 and info["fit_cc_identity"] < info["fit_cc_best"]

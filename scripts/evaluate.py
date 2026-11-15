@@ -104,6 +104,10 @@ def main():
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--batch", type=int, default=4)
     ap.add_argument("--save-maps", default=None, help="folder to write 8-bit PNG maps at native resolution")
+    ap.add_argument("--save-small", default=None,
+                    help="folder: per video an .npz with the scored frames and their maps at decoder resolution, "
+                         "before resizing and blur (float32, summed over models), for analyses of the maps "
+                         "(research/log.md section 15M); scoring is unchanged")
     ap.add_argument("--pgate-control", default=None, choices=["rot180", "zero"],
                     help="predictability-gate models only: feed 180-degree-rotated or zero error maps (section 14E)")
     ap.add_argument("--ssl-rotate", action="store_true",
@@ -180,6 +184,11 @@ def main():
                                 acc[f] += o[f]
                 hw = load_gray(v.maps[0]).shape if v.maps else None
                 preds = {f: to_native(acc[f], hw, a.sigma) for f in range(0, n, a.frame_step)}
+                if a.save_small:
+                    Path(a.save_small).mkdir(parents=True, exist_ok=True)
+                    fr = list(range(0, n, a.frame_step))
+                    np.savez_compressed(Path(a.save_small) / f"{v.name}.npz", frames=np.array(fr),
+                                        maps=np.stack([acc[f] for f in fr]).astype(np.float32))
                 if a.save_maps:
                     od = Path(a.save_maps) / v.name
                     od.mkdir(parents=True, exist_ok=True)

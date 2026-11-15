@@ -57,6 +57,11 @@ def videos_for(cfg, part: str):
     if d["dataset"] == "hollywood_vig":
         from surge.data import hollywood_vig_videos
         return hollywood_vig_videos(part, ROOT / "configs/splits")
+    if d["dataset"] == "avimos":  # research/log.md section 15: AViMoS training videos minus a seeded 50-video holdout
+        from surge.data import avimos_videos
+        vids = avimos_videos("train")
+        hold = set(open(ROOT / "configs/splits/avimos_holdout50.txt").read().split())
+        return [v for v in vids if (v.name in hold) == (part == "holdout")]
     raise ValueError(d["dataset"])
 
 

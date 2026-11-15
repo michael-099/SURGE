@@ -1468,3 +1468,28 @@ same frames, σ 0, every fifth frame.
   run of 15G); the post-cut dip (0–14 against ≥ 60 frames after a cut) under each condition — if it persists under
   clamping, explanation (iii) carries it.
 - Tooling: `scripts/probe_eval.py --tiling dense [--shots diem|dhf1k]`; analysis `scripts/inv_cuts.py`.
+
+### 15M. Dataset bias in zero-shot transfer (rule written 2026-11-15, before any zero-shot result of 15I)
+
+**Motivation.** For image saliency, fewer than 20 dataset-specific parameters (centre bias, fixation spread, scale)
+close more than 75 % of the cross-dataset generalisation gap (Kümmerer, Khanuja & Bethge, ICCV 2025); video datasets
+were not studied. The thesis's fine-tuning gains differ widely between datasets (ViT-L zero-shot → fine-tuned:
++0.03 on DIEM, AVAD and SumMe, +0.12 on UCF Sports, +0.17 on Coutrot2). Question: how much of SURGE-D's transfer gap
+is such a low-dimensional bias, and how much is content the DHF1K model does not represent?
+**Design.** The 15I runs save the zero-shot maps of `runs/vitg_s0` at decoder resolution (`scripts/evaluate.py
+--save-small`; MVVA through `probe_eval.py`); scoring is unchanged. Per dataset (STAViS folds pooled), three parameters
+are fitted: blur (multiples 0–4 of the pre-registered σ), exponent γ (0.5–2), and a centre factor exp(−κ r²)
+(κ −2 to 16). Two-fold cross-fitting over videos (split fixed by seed 0): chosen by mean per-video CC on one half (at
+most 40 frames per video, about 4,000 per half, at 160 pixels wide), scored on the other half at native resolution.
+Check first: the identity transform must reproduce the 15I per-video CC (largest difference 1e-3); a smoke test early
+in queue 15b requires 1e-5. `scripts/inv_bias.py`, CPU.
+**Reported (descriptive).** Adapted − zero-shot CC with a 95 % video bootstrap interval. Where a fine-tuned ViT-g
+seed-0 model exists (UCF Sports, the six STAViS datasets, Hollywood-2), the share of the fine-tuning gain recovered,
+(adapted − zero-shot) / (fine-tuned − zero-shot) on the same videos, reported where the gain is at least 0.02 CC.
+Caveat: the fine-tuned models were scored on every frame with their own tuned σ, the zero-shot maps on the 15I frames.
+**Reading, fixed now.** Share ≥ 0.5: the dataset's transfer gap is mainly a low-dimensional bias. Share ≤ 0.2: it is
+mainly content. In between: mixed. Expectation [hypothesis]: low shares on Coutrot2 (who is speaking) and UCF Sports
+(task-driven gaze), higher shares on the free-viewing datasets.
+*Clarification of 15I (before any zero-shot run):* UCF Sports and Hollywood-2 mix frame sizes (480–720 pixels wide),
+and the evaluator applies one σ per dataset, so σ uses the median width: 9 for UCF Sports (median 720) and 7.5 for
+Hollywood-2 (median 600; the queue had 8). The STAViS ground truth is 640 wide (σ 8), AViMoS 960 (σ 12), MVVA 640 (σ 8).

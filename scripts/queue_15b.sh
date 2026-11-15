@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Section 15 (research/log.md), training block: smoke tests of scripts/train_multi.py, then 15B (linear probes),
 # 15C/D (decoder ablations and training configuration, seeds 0-2), 15E2 (static model, seeds 0-2), 15F3 (384 pixels),
-# 15A2 (reproduction of seed 0), 15I (zero-shot generalisation) and 15A3 (cost). Waits for queue 15t (one GPU job at a
+# 15A2 (reproduction of seed 0), 15I (zero-shot generalisation; maps saved for 15M) and 15A3 (cost). Waits for queue 15t (one GPU job at a
 # time). Stops if SAFETY_STOP.txt (repo root) exists. Resumable (finished runs and outputs are skipped).
 # Usage: bash scripts/queue_15b.sh > runs/inv/queue_15b.log 2>&1
 set -u
@@ -34,12 +34,21 @@ if [ ! -f runs/inv_smoke_probe/DONE ]; then
   run $TM run_dir=runs/inv_smoke_probe model.backbone=vjepa2_l train.epochs=1 train.clips_per_video=1 eval.frame_step=50 \
       train.lr=1e-3 --probes 1-24 > $L/smoke_probe.log 2>&1
 fi
+# saved low-resolution maps reproduce the evaluator (section 15M)
+if [ ! -f $L/smoke_small/OK ]; then
+  rm -rf $L/smoke_small
+  run $PY -u scripts/evaluate.py --run runs/vitg_s0 --metrics cc,nss,sim,kld --split holdout --frame-step 25 \
+      --max-videos 2 --save-small $L/smoke_small --out $L/smoke_small/zs.json > $L/smoke_small.log 2>&1
+  run env CUDA_VISIBLE_DEVICES="" $PY scripts/inv_bias.py --selfcheck $L/smoke_small/zs.json $L/smoke_small dhf1k \
+      holdout >> $L/smoke_small.log 2>&1
+  touch $L/smoke_small/OK
+fi
 echo "$(date -Is) smoke tests passed"
 # ---- 15I first part: MVVA (its maps feed 15K) and AViMoS, zero-shot with runs/vitg_s0
 [ -f $O/zs_mvva.json ] || run $PY -u scripts/probe_eval.py --run runs/vitg_s0 --dataset mvva --split val --sigma 8 \
     --frame-step 5 --save-small runs/inv/mvva_small_s0 --out $O/zs_mvva.json > $L/zs_mvva.log 2>&1
 [ -f $O/zs_avimos.json ] || run $PY -u scripts/evaluate.py --run runs/vitg_s0 --metrics cc,nss,sim,kld --dataset avimos \
-    --split val --sigma 12 --frame-step 5 --out $O/zs_avimos.json > $L/zs_avimos.log 2>&1
+    --split val --sigma 12 --frame-step 5 --save-small $L/zs_small/avimos --out $O/zs_avimos.json > $L/zs_avimos.log 2>&1
 # ---- 15B: linear probes per block (ViT-g, seed 0)
 [ -f runs/inv_b_s0/DONE ] || run $TM run_dir=runs/inv_b_s0 train.seed=0 $G train.lr=1e-3 --probes 1-40 > $L/inv_b_s0.log 2>&1
 # ---- 15C/D: decoder ablations and training configuration (seeds 0-2; seed 0 also trains R for 6 epochs)
@@ -97,7 +106,8 @@ EOF
 # ---- 15I: zero-shot generalisation of runs/vitg_s0 (sigma = 8 x native width / 640, fixed in advance)
 EV="$PY -u scripts/evaluate.py --run runs/vitg_s0 --metrics cc,nss,sim,kld"
 zs() {  # name dataset split sigma frame_step
-  [ -f $O/zs_$1.json ] || run $EV --dataset $2 --split $3 --sigma $4 --frame-step $5 --out $O/zs_$1.json > $L/zs_$1.log 2>&1
+  [ -f $O/zs_$1.json ] || run $EV --dataset $2 --split $3 --sigma $4 --frame-step $5 --save-small $L/zs_small/$1 \
+      --out $O/zs_$1.json > $L/zs_$1.log 2>&1
 }
 zs ucf ucf val 9 1
 for F in diem_f1 coutrot1_f1 coutrot1_f2 coutrot1_f3 coutrot2_f1 coutrot2_f2 coutrot2_f3 etmd_f1 etmd_f2 etmd_f3 \
@@ -108,7 +118,9 @@ zs avimos avimos val 12 5
 # MVVA through the probe evaluator (same protocol and metrics), keeping the maps for the multi-face analysis (15K)
 [ -f $O/zs_mvva.json ] || run $PY -u scripts/probe_eval.py --run runs/vitg_s0 --dataset mvva --split val --sigma 8 \
     --frame-step 5 --save-small runs/inv/mvva_small_s0 --out $O/zs_mvva.json > $L/zs_mvva.log 2>&1
-zs hollywood hollywood_vig val 8 5
+zs hollywood hollywood_vig val 7.5 5
 # ---- 15A3: cost profile
 [ -f $O/a3_cost.json ] || run $PY -u scripts/inv_cost.py --out $O/a3_cost.json > $L/a3_cost.log 2>&1
+# ---- 15M: dataset bias in zero-shot transfer (CPU)
+[ -f $O/summary_bias.json ] || run env CUDA_VISIBLE_DEVICES="" $PY -u scripts/inv_bias.py > $L/inv_bias.log 2>&1
 echo "$(date -Is) queue 15b done"
