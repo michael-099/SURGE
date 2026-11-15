@@ -281,10 +281,41 @@ A3: FLOPs and measured time at 192/256/384 pixels and 16/32 frames; training ste
 
 ## 6. Robustness and generalisation evaluation
 
-### 6.1 Perturbations (15H) [Running; flip completed]
+### 6.1 Perturbations (15H) [Completed, seed 0, holdout; video bootstrap, rule of 12E]
 
 Ground truth comes from unperturbed viewing, so these results measure the stability of the prediction, not accuracy
-under the perturbation. Gaze itself changes under image transformations (Che et al., IEEE TIP 2020).
+under the perturbation. Gaze itself changes under image transformations (Che et al., IEEE TIP 2020). Every
+perturbation is applied at the native 640×360 resolution, before resizing to 256².
+
+| Perturbation | CC | ΔCC [95 %] | ΔNSS | Outcome |
+|---|---|---|---|---|
+| None (reference) | 0.5866 | — | — | — |
+| No-op through the perturbation code path (control) | 0.5865 | −0.0002 [−0.0004, +0.0000] | −0.001 | equivalent |
+| Gaussian noise σ 0.04 (pixel range 0–1) | 0.5855 | −0.0011 [−0.0026, +0.0003] | −0.009 | equivalent |
+| Gaussian noise σ 0.16 | 0.5845 | −0.0021 [−0.0059, +0.0015] | −0.013 | inconclusive |
+| Gaussian blur σ 2 native px | 0.5840 | −0.0027 [−0.0070, +0.0008] | −0.029 | inconclusive |
+| Gaussian blur σ 8 native px | 0.5346 | **−0.0520 [−0.0689, −0.0368]** | −0.369 | effect |
+| JPEG quality 10 | 0.5836 | −0.0031 [−0.0066, +0.0003] | −0.025 | inconclusive |
+| Contrast ×0.5 | 0.5868 | +0.0002 [−0.0023, +0.0026] | −0.004 | equivalent |
+| Brightness ×0.5 | 0.5828 | −0.0038 [−0.0073, −0.0004] | −0.061 | effect (just above the margin) |
+| Greyscale | 0.5833 | −0.0033 [−0.0074, +0.0004] | −0.029 | inconclusive |
+| Duplicated frames (both frames of every tubelet identical) | 0.5817 | −0.0050 [−0.0088, −0.0010] | −0.044 | effect |
+
+**Findings.**
+- **Photometric changes and compression barely matter.** Strong noise, JPEG quality 10, halved contrast and
+  greyscale each change CC by at most 0.0033. Only halved brightness clears the 0.003 margin, by 0.0008.
+- **Loss of fine spatial detail is the one severe perturbation.** Blur σ 8 native pixels (≈3 px across and ≈6 px
+  down at the 256² input, where a patch is 16 px) costs 0.052 CC and 0.37 NSS. That is close to the cost of reversing time (−0.064) or removing all
+  motion (−0.062, section 4.2). Mild blur (σ 2) stays within 0.003.
+- [Hypothesis] Two different ways of removing detail cost about the same: blur σ 8 at the trained 16×16 token grid
+  (−0.052), and a 192² input with a 12×12 grid (−0.047, section 4.4). If so, much of the 192² loss comes from lost
+  detail rather than from the smaller grid. Neither run separates the two factors, so this is not established.
+- **Most of the temporal signal comes from change across tubelets, not within them.** V-JEPA 2 embeds each pair of
+  sampled frames as one tubelet. Duplicating the first frame of every pair removes all motion inside tubelets but
+  keeps the 1.07 s span and the tubelet spacing, and it costs 0.005 CC. Removing all motion costs 0.062, and
+  changing the stride costs 0.012–0.019 (section 4.3). One confound: at odd output positions (half of the scored frames)
+  the model sees a frame 2 native frames (67 ms) older than the frame being scored, so part of the 0.005 may be this
+  lag.
 
 **Flip consistency [Completed].** Maps of the mirrored video, mirrored back, correlate 0.971 with the maps of the
 original. The model was trained with flip augmentation, yet the correlation is not 1.0. Accuracy is the same
