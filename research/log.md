@@ -1538,3 +1538,23 @@ MVVA videos had been printed. All 95 are 1280×720 videos, which the corrections
   while their fixations had been pooled to a portrait grid. Fixations are now mapped per axis onto the map grid
   (`scripts/prep_avimos_fix.py`), which gives identical maps for the other 148 videos (checked). In the same
   ground-truth check, all 150 videos score at least 2.31 (median 4.4), and none is left out.
+
+### 15N. Can an off-the-shelf active-speaker detector supply the speaker? (MVVA, CPU; rule written 2026-11-16, before any run)
+
+**Motivation.** In 15K, re-weighting the talking faces gains +0.020 CC beyond re-weighting all faces when MVVA's
+labels say who speaks. Whether a detector can supply that information decides whether the gain is reachable. 14B could
+not test this, because STAViS faces are 12–15 pixels wide. MVVA face boxes are 60–177 pixels tall (10th–90th
+percentile at 720p).
+**Detector.** Light-ASD (Liao et al., CVPR 2023; AVA-ActiveSpeaker weights, MIT), run on MVVA's own face tracks with
+no face detection. Each run of consecutive frames in which a face has a box, if at least 1 s long, is one track.
+Crops, MFCCs, resampling to 25 fps and window averaging follow `scripts/asd_speaker.py` (14B). Native video frames;
+soundtracks from `all_audio`. `scripts/inv_mvva_asd.py`.
+**Part 1 (labels only, no gaze data).** Over the face-frames with a label and a score: ROC AUC of the score for
+label 1 against all other labels, pooled and as the mean of per-video AUCs. In frames with exactly one talking face
+and at least one silent face: how often the talking face has the highest score, against chance (mean of 1/faces).
+**Part 2 (gaze, descriptive).** The 15K speaker oracle on the 15K frames and halves, with the detector's split in
+place of the labels: a face is talking if its score is above 0 (Light-ASD's decision threshold); a face without a
+score counts as silent. Weights are cross-fitted on the 15K grid. Reported: ΔCC against the unchanged map and against
+the face oracle of 15K, with the 15K bootstrap, next to the label-based +0.0196. `scripts/inv_mvva_asd_eval.py`.
+**Reading.** Share of the label-based gain the detector realises: (detector − face) / (label − face).
+[Hypothesis] Above one half, because MVVA faces are large enough for Light-ASD.
