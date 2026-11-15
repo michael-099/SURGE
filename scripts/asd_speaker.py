@@ -145,7 +145,9 @@ def crop_track(frames, track):
 @torch.no_grad()
 def score_track(asd, faces25, mfcc, device):
     """Light-ASD scores at 25 fps, averaged over windows of 1-6 s (Light-ASD's evaluate_network)."""
-    length = min(mfcc.shape[0] / 100.0, faces25.shape[0] / 25.0)
+    # audio trimmed to a multiple of 4 MFCC frames (one video frame) first, as Light-ASD's Columbia_test.py does;
+    # otherwise the last window's audio and video lengths can differ and the model raises an error
+    length = min((mfcc.shape[0] - mfcc.shape[0] % 4) / 100.0, faces25.shape[0] / 25.0)
     a = mfcc[:int(round(length * 100))]
     v = faces25[:int(round(length * 25))]
     all_scores = []
