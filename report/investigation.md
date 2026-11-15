@@ -227,11 +227,21 @@ spans 2.1 s, like stride 4 at 30 fps.
 | 320² | 20×20 | 0.5685 | −0.018 [−0.026, −0.011] | **+0.01** | effect (CC) |
 | 384² | 24×24 | 0.5379 | −0.049 [−0.062, −0.037] | −0.09 | effect |
 
-Accuracy peaks at the training size. Above it, CC falls but NSS does not at first: at 320² NSS is unchanged
-(+0.009) while CC drops by 0.018. Fixation locations are still ranked as well as before; only the shape of the
-density changes. [Hypothesis] The maps become sharper or more fragmented at a larger token grid, because the
-decoder's receptive fields and centre prior were learned on a 16×16 grid. Whether training at 384² gains accuracy is
-the question of F3 [Pending].
+Accuracy peaks at the training size. Above it, CC falls but NSS does not at first. At 320², NSS is unchanged
+(+0.009) and SIM nearly so (0.4481 vs 0.4494), while CC drops by 0.018 and KLD rises from 1.194 to 1.244. The map
+is as high at fixated pixels as before, relative to its own mean and spread, but it agrees less with the
+ground-truth density as a whole.
+
+The metrics are known to come apart in this way. The NSS-optimal map is the fixation density itself, while the CC-
+and KLD-optimal maps are that density blurred with the kernel used to build the ground truth (Kümmerer, Wallis &
+Bethge, ECCV 2018, doi:10.1007/978-3-030-01270-0_47). So a map that becomes sharper keeps NSS but loses CC and KLD.
+
+- [Hypothesis] At a larger token grid the decoder's output becomes sharper or more fragmented, because its receptive
+  fields and centre prior were learned on a 16×16 grid.
+- [Proposed] A diagnostic: re-choose the output blur on val for the 320² condition. If CC recovers to the 256²
+  level, the loss is a calibration mismatch, not a loss of information.
+- Whether training at 384² gains accuracy is the question of F3 [Pending]. A model trained at 384² learns its own
+  output sharpness under the CC and KLD loss terms, so this mismatch should not carry over to F3.
 
 ### 4.5 Training configuration and interactions (15D, 15C-V6) [Pending]
 
@@ -371,8 +381,12 @@ since the cut (≈60 scored frames per bin, so noisy):
 
 - The dip is deepest 5–9 frames after a cut, when most of the clip's ≈1 s of "past" still belongs to the previous
   shot.
-- After cuts the ground truth is more central, and it relocates 10–14 frames after them. This is consistent with
-  Tseng et al. (JOV 2009) and Carmi & Itti (Vision Research 2006).
+- After cuts the ground truth is more central, and it relocates 10–14 frames (≈330–470 ms) after them. This
+  matches the eye-movement literature:
+  - every observer re-centres on a new scene; the first saccade comes ≈356 ms after scene onset, and the centring
+    lasts about two saccades (Tseng, Carmi, Cameron, Munoz & Itti, JOV 2009);
+  - motion and flicker were particularly predictive of the saccades made right after a scene onset, which vary
+    little between observers (Carmi & Itti, Vision Research 2006).
 - DIEM, which El-Jiz et al. (WACV 2026) found to be hurt by temporal fusion, has 20.7 cuts per video; its fold-1 test
   has 231. There too, gaze is more central after cuts (centre CC 0.44–0.47 in the first 10 frames, 0.39 after 60
   frames) and less dispersed (entropy 8.57–8.80 vs 8.99).
@@ -416,8 +430,10 @@ All three are cut-free and low-motion. The common factor is target size and posi
 ### 7.5 Unexpected observations [Completed]
 - **Shuffling hurts half as much as reversal** (−0.032 against −0.064). The model is more sensitive to the direction
   of time than to its order.
-- **Larger test inputs keep NSS but lose CC** (320²: NSS +0.009, CC −0.018). The ranking of fixated locations is
-  unaffected; the density shape is.
+- **Larger test inputs keep NSS but lose CC** (320²: NSS +0.009, CC −0.018, KLD +0.05). The map is as high at
+  fixated pixels as before, but its overall shape matches the ground truth less well (section 4.4).
+- **Heavy blur costs as much as reversing time** (σ 8: −0.052 CC), while noise, JPEG compression and greyscale
+  cost at most 0.0033 (section 6.1).
 - **The default tiling is near the accuracy-efficiency knee**, although it was chosen without a sweep (thesis).
 - **Gaze after cuts is more central and more concentrated**, yet the model scores lower there.
 
@@ -484,10 +500,15 @@ with their type:*
   Neither studies a frozen video world-model encoder, positional effects inside a clip, or a remedy for cuts.
 
 **Gaze around cuts (vision science).**
-- Centre bias is strongest right after cuts (Tseng, Carmi, Cameron, Munoz & Itti, JOV 2009).
-- After MTV-style jump cuts, the first saccades are driven by new salient content (Carmi & Itti, Vision Research
-  2006).
-- Attentional synchrony is high in edited film (Mital et al., Cognitive Computation 2011; Smith & Mital, JOV 2013).
+- Every observer re-centres on a new scene. The first saccade comes ≈356 ms after scene onset, and the centring
+  lasts about two saccades (Tseng, Carmi, Cameron, Munoz & Itti, JOV 2009, doi:10.1167/9.7.4). The authors
+  recommend a centre-biased evaluation baseline for the first saccades after a scene onset and an unbiased one
+  afterwards. That is a time-since-cut centre prior, proposed for evaluation only.
+- Motion and flicker were particularly predictive of the saccades made right after a scene onset, which vary little
+  between observers (Carmi & Itti, Vision Research 2006, doi:10.1016/j.visres.2006.08.019).
+- Inter-observer congruency drops in the five frames after a cut. The authors suggest shot metadata for saliency
+  models but do not build such a model (Bruckert, Christie & Le Meur, Behavior Research Methods 2023,
+  doi:10.3758/s13428-022-01949-7).
 - No saliency model found so far treats shot boundaries explicitly. Sliding-window models (TASED-Net, ICCV 2019;
   ViNet, IROS 2021; SalFoM, ICPR 2024; SURGE-D) feed cross-shot frames as context.
 
@@ -526,6 +547,9 @@ with their type:*
 
 **Robustness and evaluation.**
 - Common corruptions: Hendrycks & Dietterich (ICLR 2019).
+- Temporal perturbations of video models (sampling rate, reversal, jumbling, freezing): Schiappa et al. (CVPR 2023)
+  found action-recognition models robust to them on most datasets but not on SSv2, where actions can be reversed.
+  No comparable study of video saliency models was found.
 - Gaze itself changes under image transformations (Che et al., IEEE TIP 2020, doi:10.1109/TIP.2019.2945857).
 - Metric behaviour: Bylinskii et al. (TPAMI 2019); Kümmerer et al. (ECCV 2018; PNAS 2015).
 

@@ -1468,6 +1468,11 @@ same frames, σ 0, every fifth frame.
   run of 15G); the post-cut dip (0–14 against ≥ 60 frames after a cut) under each condition — if it persists under
   clamping, explanation (iii) carries it.
 - Tooling: `scripts/probe_eval.py --tiling dense [--shots diem|dhf1k]`; analysis `scripts/inv_cuts.py`.
+- Added before any 15L result (descriptive, `scripts/inv_cuts_bins.py`): ΔCC (clamped − unclamped) in bins of 0–4,
+  5–9 and 10–14 frames after a cut. Reason: the first saccade after a scene onset comes ≈356 ms (≈11 frames at
+  30 fps) after it (Tseng et al., JOV 2009), so for about 10 frames the ground truth still shows where gaze went
+  during the previous shot. Clamping may then cost accuracy in 0–9 and help only in 10–14. The primary outcome is
+  unchanged.
 
 ### 15M. Dataset bias in zero-shot transfer (rule written 2026-11-15, before any zero-shot result of 15I)
 
