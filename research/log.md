@@ -1329,3 +1329,117 @@ was not run, and the maps are not adopted**. The small gain over the visual mode
 soundtrack (rotated − visual +0.0010), so it does not come from the sound.
 
 None of the components piloted in section 14 (14A/14D, 14B, 14E, 14F) has been adopted.
+
+## 15. Systematic investigation of SURGE-D ViT-g (rules written 2026-11-15, before any run)
+
+The user asked for an independent experimental investigation of the existing architecture: a verified baseline,
+component and configuration analyses, cost, robustness, generalisation, failure cases, and research gaps backed by
+evidence. The object is the final model of 14C, SURGE-D ViT-g, unchanged (reference runs `runs/vitg_s{0..5}`). No
+component is proposed here; a hypothesis that follows from these results gets its own rule before it runs.
+
+**Data use.** Diagnostics and decisions use the DHF1K holdout (60 videos): every fifth frame, σ 0, CC, NSS, SIM and
+KLD (the protocol of 12E). DHF1K val is used only to re-score the existing seed-0 checkpoint (15A) and, descriptively,
+through per-video val scores that already exist (15J); nothing is selected on it. Other datasets are scored
+zero-shot and descriptively.
+
+**Statistics.** Training variants: the rule of 12E (seeds 0–2, two-level bootstrap over seeds and videos, 10,000
+resamples, bootstrap seed 0): **effect** if the 95 % interval excludes 0 and |ΔCC| ≥ 0.003; **equivalent** if the 90 %
+interval lies within ±0.003; otherwise **inconclusive**. Test-time conditions are paired with the unperturbed scores
+of the same model and use the same rule (with one seed, the bootstrap is over videos only).
+
+### 15A. Baseline reproduction and cost
+- A1. `runs/vitg_s0/best.pt` re-scored on val with the command of 10B (all frames, six metrics, σ 8). It must
+  reproduce `runs/vitg/val_single_s0.json` (every per-video value within 1e-4).
+- A2. Seed 0 retrained with the identical configuration (`runs/inv_repro_s0`). Its per-epoch holdout CC is compared
+  with `runs/vitg_s0` (0.5658 / 0.5866 / 0.5844); the difference measures GPU non-determinism, set against the SD
+  over seeds 0–5.
+- A3. Cost: parameters per module; FLOPs of encoder and decoder (PyTorch FLOP counter); time per output frame with
+  the protocol of 13D at 192, 256 and 384 pixels and at 16 and 32 frames; training step time and peak memory.
+- The new test-time evaluator (`scripts/probe_eval.py`) must reproduce `runs/review/holdout/vitg_s0.json` per video
+  (within 1e-4) with its default settings before any of its other results is used.
+
+### 15B. What each depth of the encoder carries (linear probes)
+One frozen-encoder pass feeds 41 readouts: one per block output of ViT-g (1–40), each LayerNorm without affine →
+1×1×1 convolution to one channel on the 8×16×16 token grid → trilinear to 16×64×64 → plus its own learned centre
+prior → softmax, and one with zero logits (the centre prior alone). Main recipe otherwise (clips, 3 epochs, seed 0,
+same loss), lr 1e-3. Holdout scored after the last epoch. Descriptive.
+
+### 15C. Decoder ablations
+A multi-decoder trainer (`scripts/train_multi.py`) trains several decoders on one frozen-encoder stream: each batch is
+encoded once, and each decoder takes its own forward pass, backward pass and optimiser step. Clips, order and
+augmentation are those of `scripts/train.py` for the same seed. Each run contains the unchanged decoder R as the
+paired reference. Variants:
+- V1 linear: the four taps concatenated → LayerNorm → 1×1×1 convolution → logits at 16×16, upsampled (+ prior).
+- V2 last tap: the full decoder with tap 40 in all four pyramid branches.
+- V3 2D: the full decoder with the 3×1×1 temporal convolution of every residual block replaced by a 1×1×1
+  convolution (no temporal mixing in the decoder; the encoder is unchanged).
+- V4 coarse: no top-down path; the 1/16 stage feeds the head and the logits are upsampled ×4.
+- V5 narrow: 64 channels instead of 256.
+- V6 without centre prior and without auxiliary heads (the two components found dispensable in 12E, together).
+Seeds 0, 1 and 2; each variant against R of the same run, with the 12E rule. R is compared, descriptively, with
+`runs/vitg_s{0,1,2}`.
+
+### 15D. Training configuration (in the runs of 15C)
+Variants of R's training only: learning rate 1e-4 and 9e-4 (×1/3, ×3); no CC term in the loss; no NSS term in the
+loss (auxiliary losses changed the same way). Same rule. Seed 0 also trains R for 6 epochs (cosine schedule over 6,
+best epoch by holdout), descriptive.
+
+### 15E. Use of temporal information
+- E1 (test time, seed 0). Each window's frames reversed in time; shuffled (one fixed random permutation per window);
+  static (each scored frame repeated 16 times, its map the mean of the central eight outputs). The original order is
+  scored with the same code.
+- E2 (training, seeds 0–2). A static model: the main recipe with each training clip replaced by one of its central
+  frames, drawn at random and repeated 16 times, with that frame's map as the target on all central positions (same
+  number of clips, so the same encoder compute). It is scored on static clips. **Primary test:** the video model
+  (`runs/vitg_s{0,1,2}`, holdout) against the static model on the same frames, with the 12E rule. Equivalent → SURGE-D
+  does not measurably use temporal information on DHF1K; effect → it does, by the measured amount.
+- E3 (test time, seed 0). Temporal stride 1 and 4 (trained: 2).
+- Descriptive, per scored frame: the video − static difference against the frame's motion energy and against the
+  change of its ground truth over the previous five frames.
+
+### 15F. Spatial resolution
+The Hugging Face V-JEPA 2 port derives token positions from the `crop_size` in its configuration (16×16 for this
+checkpoint), so any other input size needs the encoder built with a matching `crop_size` (added as an option; the
+default path is unchanged).
+- F1 (CPU). Ceilings: each ground-truth map area-downsampled to 16², 32² and 64² and resized back, scored against the
+  original map and fixations (no model).
+- F2 (test time, seed 0). Input 192, 224, 320 and 384 pixels (trained: 256).
+- F3 (training). The main recipe at 384² (24×24 tokens per frame), seed 0. If its holdout CC exceeds that of
+  `runs/vitg_s0` by at least 0.003, seeds 1 and 2 follow and the 12E rule decides whether input resolution limits
+  accuracy; otherwise the single seed is reported.
+
+### 15G. Multi-frame output
+Test time, seed 0: CC per output position (all 16 positions of every window, on the frames they show); tilings: the
+default (hop 16, central 8 positions kept), all 16 positions (hop 32), central 4 (hop 8), overlap averaging (hop 8,
+central 8 averaged) and dense (one window per scored frame, which sits at position 8). Each is reported with its
+encoder passes per output frame.
+
+### 15H. Robustness (test time, seed 0)
+Perturbations at native resolution, before resizing: Gaussian noise σ 0.04 and 0.16 (pixel range 0–1); Gaussian
+blur σ 2 and 8 native pixels; JPEG quality 10; contrast ×0.5; brightness ×0.5; greyscale; duplicated frames (every
+other sampled frame repeats the one before it, halving the temporal resolution the model sees). Flip consistency: CC
+between the map of the flipped video, flipped back, and the map of the original. Reported: ΔCC to clean with 95 %
+video-bootstrap intervals. The ground truth comes from unperturbed viewing, so these measure stability, not accuracy
+under the perturbation.
+
+### 15I. Generalisation (zero-shot, seed 0)
+UCF Sports test, Hollywood-2 (Vig) test, the six STAViS datasets (all test folds), AViMoS public test (150 videos,
+mouse tracking, CC-BY-4.0) and MVVA (300 videos, eye tracking of 34 observers; prepared from the release in
+`D:/Datasets/MVVA`). Blur fixed in advance: σ = 8 × (native width / 640) pixels, the DHF1K value scaled to the frame
+width. Compared, descriptively, with the fine-tuned results where they exist.
+
+### 15J. Failure analysis (CPU, descriptive)
+Per video (holdout, and val from the existing per-video scores): motion energy, number of scene cuts (TransNet V2
+output in `D:/DHF1K/transnet_scenes`), entropy of the ground truth, its centre bias, and its change over five frames.
+Spearman ρ with per-video CC and with the gain over the prior-only readout of 15B, with bootstrap intervals. Frames in
+the 15 frames after a cut against the other frames of the same videos.
+
+### 15K. Multi-face scenes (MVVA, descriptive)
+With MVVA's face tracks and per-face talking labels: the share of ground-truth and of predicted density inside
+talking and non-talking face boxes. Two oracles, each fitted on half of the videos and tested on the other half: the
+predicted map re-weighted inside all faces, and inside talking faces only. Their difference bounds what knowing the
+speaker could add to this model.
+
+**Order.** One GPU job at a time under the safety monitor: A1, the evaluator check, E1, E3, G, F2, H (test time); B;
+C/D (seeds 0–2); E2; F3; A2; I; A3. CPU work (F1, J, the MVVA and AViMoS preparation, K) runs alongside with the GPU
+hidden.
