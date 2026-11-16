@@ -710,7 +710,16 @@ with their type:*
 
 **Faces and speakers.**
 - Gaze follows the speaker in conversations (Coutrot & Guyader, JOV 2014).
-- MVVA (Liu et al., ECCV 2020) showed that attention in multi-face videos differs with sound when turn-taking occurs.
+- In multiple-face videos, "the attention of different subjects consistently focuses on a single face in each frame"
+  (Liu, Zhang, Xu & He, CVPR 2017, doi:10.1109/CVPR.2017.343). Their model predicts the salient face and its
+  transitions across frames (CNN with a multiple-stream LSTM).
+- Speaking and head turning are "extremely attractive to visual attention in videos". A hidden Markov model over
+  faces used them, with face size, centre bias and head pose, to predict which face is looked at (Xu, Liu, Hu & He,
+  IEEE TIP 2018, doi:10.1109/TIP.2018.2837106).
+- Attention to conversational clips has also been modelled from audio and video together, with social value
+  modulating selection (Boccignone et al., ECCV Workshops 2018, doi:10.1007/978-3-030-11012-3_27).
+- MVVA (Liu et al., ECCV 2020, doi:10.1007/978-3-030-58565-5_25) showed that attention in multi-face videos differs
+  with sound when turn-taking occurs.
 - AVM-Net (Qiao et al., IJCV 2023, doi:10.1007/s11263-023-01950-3) learns saliency and sound-source localisation
   jointly on MVVA.
 - Active-speaker detectors exist: TalkNet (ACM MM 2021, doi:10.1145/3474085.3475587) and Light-ASD (CVPR 2023).
