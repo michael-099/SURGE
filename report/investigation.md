@@ -707,12 +707,16 @@ with their type:*
 - Tangemann, Kümmerer, Wallis & Bethge (ECCV 2020, doi:10.1007/978-3-030-58604-1_40): on LEDOV, at least 75 % of
   the explainable information is captured by static features. A static model (DeepGaze MR) beat the video models of
   the time.
-- El-Jiz, Kümmerer, Tangemann, Bethge, Bartels & Bannert (WACV 2026) compared a spatio-temporal model with an
+- El-Jiz, Kümmerer, Tangemann, Bethge, Bartels & Bannert (WACV 2026, doi:10.1109/WACV61042.2026.00572) compared a spatio-temporal model with an
   otherwise identical spatial model. Temporal fusion gained 0.20 bits per fixation on LEDOV and lost 0.07 bits on
   DIEM, which they attribute to hard cuts and rapid zooms that "disrupt current temporal fusion approaches". They do
   not test a remedy.
 - Together, these papers suggest that temporal integration helps on coherent footage and hurts on edited footage.
   Neither studies a frozen video world-model encoder, positional effects inside a clip, or a remedy for cuts.
+- Video saliency decoders often keep the time axis. THTD-Net (Moradi, Palazzo & Spampinato, VISAPP 2024,
+  doi:10.5220/0012422800003660) reduces "temporal features' dimensions" gradually in its decoder. It performs
+  comparably to multi-branch models on DHF1K, UCF Sports and Hollywood-2. 15C measures this design choice under
+  control, for a frozen video encoder: removing the decoder's temporal mixing costs 0.024 CC (section 3).
 - For SURGE-D the cut part does not hold: 15L shows that context from before a cut helps the frames after it
   (section 7.2). Whatever hurts El-Jiz et al.'s temporal model on DIEM, it is not, for SURGE-D, the presence of
   cross-shot frames.
@@ -727,8 +731,9 @@ with their type:*
 - Inter-observer congruency drops in the five frames after a cut. The authors suggest shot metadata for saliency
   models but do not build such a model (Bruckert, Christie & Le Meur, Behavior Research Methods 2023,
   doi:10.3758/s13428-022-01949-7).
-- No saliency model found so far treats shot boundaries explicitly. Sliding-window models (TASED-Net, ICCV 2019;
-  ViNet, IROS 2021; SalFoM, ICPR 2024; SURGE-D) feed cross-shot frames as context.
+- No saliency model found so far treats shot boundaries explicitly. Sliding-window models (TASED-Net, ICCV 2019,
+  doi:10.1109/ICCV.2019.00248; ViNet, IROS 2021, doi:10.1109/IROS51168.2021.9635989; SalFoM, ICPR 2024,
+  doi:10.1007/978-3-031-78312-8_3; SURGE-D) feed cross-shot frames as context.
 - **Gap withdrawn.** The candidate gap "reset temporal context at cuts" is refuted for SURGE-D. Resetting costs
   0.10–0.14 CC on post-cut frames, because gaze lags the cut by 2–6 frames (section 7.2). Any cut-aware design has
   to keep the previous shot for the first ≈10 frames. The time course itself (lag, then re-centring) is
@@ -737,7 +742,7 @@ with their type:*
 
 **State carried across clips.**
 - Recurrent video saliency models carry state from frame to frame on top of image backbones: ACLNet (Wang et al.,
-  CVPR 2018; TPAMI 2021), UNISAL (Droste, Jiao & Noble, ECCV 2020) and SalEMA (Linardos et al., BMVC 2019). SalEMA
+  CVPR 2018, doi:10.1109/CVPR.2018.00514; TPAMI 2021, doi:10.1109/TPAMI.2019.2924417), UNISAL (Droste, Jiao & Noble, ECCV 2020) and SalEMA (Linardos et al., BMVC 2019). SalEMA
   found that an exponential moving average of an internal state gives results and maps similar to a ConvLSTM.
 - MeMViT (Wu et al., CVPR 2022, doi:10.1109/CVPR52688.2022.01322) processes a video online as a sequence of short
   clips, attending to a cached memory of earlier clips. This gave 30× longer temporal support for 4.5 % more compute
@@ -765,12 +770,22 @@ with their type:*
   Kümmerer, Press & Bethge, ICCV 2021, doi:10.1109/ICCV48922.2021.01268) read out frozen image backbones.
 - Video Depth Anything (CVPR 2025, doi:10.1109/CVPR52734.2025.02126) replaces the head of an image depth model with
   an efficient spatio-temporal head and keeps the encoder frozen.
-- Layer-wise analyses of ViTs find mid-to-late layers best for localised tasks (Walmer et al., CVPR 2023).
+- Layer-wise analyses of ViTs find mid-to-late layers best for localised tasks (Walmer et al., CVPR 2023,
+  doi:10.1109/CVPR52729.2023.00723).
+- Dense prediction from plain ViTs.
+  - DPT (Ranftl, Bochkovskiy & Koltun, ICCV 2021, doi:10.1109/ICCV48922.2021.01196) assembles tokens from several
+    stages of the transformer into image-like representations at several resolutions. A convolutional decoder then
+    combines them.
+  - For detection, ViTDet (Li, Mao, Girshick & He, ECCV 2022, doi:10.1007/978-3-031-20077-9_17) found it "sufficient
+    to build a simple feature pyramid from a single-scale feature map".
+  - SURGE-D's decoder builds a ViTDet-style pyramid from four taps, as DPT does. 15C points the way ViTDet did, for
+    saliency from a frozen video encoder: the decoder fed only the last tap loses 0.0015 (inconclusive), and
+    without the shallower taps and the top-down path it loses 0.004 (section 3).
 - No peer-reviewed probe of a frozen video world-model encoder for saliency was found. The closest, PredJSal (NTIRE
   2026), is an arXiv preprint.
 
 **Data scale and mouse tracking.**
-- SALICON (Jiang et al., CVPR 2015) established mouse-tracking pre-training for image saliency.
+- SALICON (Jiang et al., CVPR 2015, doi:10.1109/CVPR.2015.7298710) established mouse-tracking pre-training for image saliency.
 - Mouse data agree only partly with eye tracking and are less reliable for evaluation, but acceptable for training
   (Tavakoli et al., CVPR 2017, doi:10.1109/CVPR.2017.673).
 - AViMoS (AIM 2024, ECCV Workshops, doi:10.1007/978-3-031-91856-8_11) offers 1,500 videos of crowdsourced mouse
@@ -779,7 +794,7 @@ with their type:*
   (arXiv 1907.00480) goes the other way: eye-tracking priors for a mouse model.
 
 **Faces and speakers.**
-- Gaze follows the speaker in conversations (Coutrot & Guyader, JOV 2014).
+- Gaze follows the speaker in conversations (Coutrot & Guyader, JOV 2014, doi:10.1167/14.8.5).
 - In multiple-face videos, "the attention of different subjects consistently focuses on a single face in each frame"
   (Liu, Zhang, Xu & He, CVPR 2017, doi:10.1109/CVPR.2017.343). Their model predicts the salient face and its
   transitions across frames (CNN with a multiple-stream LSTM).
@@ -792,14 +807,15 @@ with their type:*
   with sound when turn-taking occurs.
 - AVM-Net (Qiao et al., IJCV 2023, doi:10.1007/s11263-023-01950-3) learns saliency and sound-source localisation
   jointly on MVVA.
-- Active-speaker detectors exist: TalkNet (ACM MM 2021, doi:10.1145/3474085.3475587) and Light-ASD (CVPR 2023).
+- Active-speaker detectors exist: TalkNet (ACM MM 2021, doi:10.1145/3474085.3475587) and Light-ASD (CVPR 2023,
+  doi:10.1109/CVPR52729.2023.02196).
 - Explicit speaker modelling is therefore established for multi-face video. What it adds on top of a strong frozen
   visual encoder had not been measured. For SURGE-D, 15K now gives a first estimate: on MVVA, a speaker oracle adds
   +0.020 CC beyond a face oracle through re-weighting alone (section 6.2). With Light-ASD in place of the labels
   (15N), re-weighting adds +0.012–0.013 CC over all MVVA frames, with the weight fitted on MVVA.
 
 **Prediction error as attention.**
-- Bayesian surprise (Itti & Baldi, Vision Research 2009) is a change of belief, not a prediction error.
+- Bayesian surprise (Itti & Baldi, Vision Research 2009, doi:10.1016/j.visres.2008.09.007) is a change of belief, not a prediction error.
 - Prediction-error curiosity is captured by stochastic "noisy TV" content (Burda et al., ICLR 2019); ensemble
   disagreement avoids this (Pathak, Gandhi & Gupta, ICML 2019).
 - A V-JEPA prediction error detects physically impossible events (Garrido et al., 2025, arXiv preprint).
@@ -834,11 +850,13 @@ with their type:*
 
 **Robustness and evaluation.**
 - Common corruptions: Hendrycks & Dietterich (ICLR 2019).
-- Temporal perturbations of video models (sampling rate, reversal, jumbling, freezing): Schiappa et al. (CVPR 2023)
+- Temporal perturbations of video models (sampling rate, reversal, jumbling, freezing): Schiappa et al. (CVPR 2023,
+  doi:10.1109/CVPR52729.2023.01412)
   found action-recognition models robust to them on most datasets but not on SSv2, where actions can be reversed.
   No comparable study of video saliency models was found.
 - Gaze itself changes under image transformations (Che et al., IEEE TIP 2020, doi:10.1109/TIP.2019.2945857).
-- Metric behaviour: Bylinskii et al. (TPAMI 2019); Kümmerer et al. (ECCV 2018; PNAS 2015).
+- Metric behaviour: Bylinskii et al. (TPAMI 2019, doi:10.1109/TPAMI.2018.2815601); Kümmerer et al. (ECCV 2018;
+  PNAS 2015, doi:10.1073/pnas.1510393112).
 
 ## 11. Ranked potential research contributions
 *After section 10.*
