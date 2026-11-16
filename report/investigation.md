@@ -79,7 +79,8 @@ the second doubling gives 0.64 of the first doubling's gain. DHF1K has no furthe
 ## 2. Experimental methodology
 
 **Pre-registration.** Each experiment's design and decision rule were written in `research/log.md` section 15 and
-committed before the first run.
+committed before the first run. Analyses added after a related result had been seen are labelled post hoc, both in
+the log and here, and are descriptive.
 
 **Data use.**
 - *Decisions and diagnostics:* the DHF1K holdout (60 of DHF1K's 600 training videos, never trained on), every fifth
