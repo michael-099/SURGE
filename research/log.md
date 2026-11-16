@@ -1392,6 +1392,16 @@ needs seeds 0–2. Best epoch per variant, ΔCC against R of the same run [95 %,
 - V1 linear −0.0723 [−0.0891, −0.0574]; V2 last tap −0.0013 [−0.0049, +0.0019]; V3 2D −0.0245 [−0.0300, −0.0192];
   V4 coarse −0.0030 [−0.0059, +0.0001]; V5 narrow −0.0047 [−0.0084, −0.0011]; V6 −0.0012 [−0.0038, +0.0014].
 
+**Result, seeds 0–2 (2026-11-16; `runs/inv_c_s{0,1,2}`, `runs/review/inv/summary_ablation.json`).** Rule of 12E,
+best epoch per variant, ΔCC against R of the same run [95 %]; R 0.5867 (mean of seeds):
+- V1 linear −0.0720 [−0.0873, −0.0582] **effect** (per seed −0.0723, −0.0745, −0.0693; best epoch the last in all
+  three, +0.0008 to +0.0015 over the second).
+- V2 last tap −0.0015 [−0.0048, +0.0016] inconclusive (90 % [−0.0042, +0.0011]).
+- V3 2D −0.0237 [−0.0291, −0.0185] **effect** (−0.0245, −0.0252, −0.0214).
+- V4 coarse −0.0041 [−0.0066, −0.0016] **effect**; V5 narrow −0.0040 [−0.0068, −0.0013] **effect**.
+- V6 −0.0009 [−0.0040, +0.0026] inconclusive (90 % [−0.0036, +0.0019]).
+- R against `runs/vitg_s{0,1,2}`: +0.0013 [−0.0003, +0.0036], inconclusive (per seed +0.0003, +0.0029, +0.0006).
+
 ### 15D. Training configuration (in the runs of 15C)
 Variants of R's training only: learning rate 1e-4 and 9e-4 (×1/3, ×3); no CC term in the loss; no NSS term in the
 loss (auxiliary losses changed the same way). Same rule. Seed 0 also trains R for 6 epochs (cosine schedule over 6,
@@ -1401,6 +1411,11 @@ best epoch by holdout), descriptive.
 [−0.0032, +0.0033]; no CC term −0.0012 [−0.0034, +0.0009]; no NSS term +0.0009 [−0.0010, +0.0030]. R6 holdout CC by
 epoch: 0.5600, 0.5862, 0.5854, 0.5791, 0.5737, 0.5694 (training loss still falling); best epoch (1) − R −0.0007
 [−0.0044, +0.0030].
+
+**Result, seeds 0–2 (2026-11-16; same runs as 15C).** lr 1e-4 −0.0047 [−0.0075, −0.0020] **effect**; lr 9e-4
+−0.0004 [−0.0039, +0.0024] inconclusive (90 % [−0.0031, +0.0019]); no CC term −0.0006 [−0.0024, +0.0012]
+**equivalent**; no NSS term +0.0003 [−0.0022, +0.0025] **equivalent** (its NSS −0.020 [−0.034, −0.005],
+descriptive).
 
 ### 15C2. Which part of V3 carries its effect? (rule written 2026-11-16, after seeds 0–1 of 15C, before any run of 15C2)
 **Motivation.** V3 loses 0.0245 CC against R at seed 0 and 0.0252 at seed 1 (best epochs; descriptive until seed 2).
