@@ -1385,10 +1385,22 @@ paired reference. Variants:
 Seeds 0, 1 and 2; each variant against R of the same run, with the 12E rule. R is compared, descriptively, with
 `runs/vitg_s{0,1,2}`.
 
+**Seed-0 result (2026-11-16, descriptive; `runs/inv_c_s0`, `runs/review/inv/holdout/c_s0_*.json`).** The rule
+needs seeds 0–2. Best epoch per variant, ΔCC against R of the same run [95 %, video bootstrap]:
+- R 0.5869. Against the standard run `runs/vitg_s0`: +0.0003 [−0.0003, +0.0009], so the multi-decoder trainer
+  reproduces the standard trainer.
+- V1 linear −0.0723 [−0.0891, −0.0574]; V2 last tap −0.0013 [−0.0049, +0.0019]; V3 2D −0.0245 [−0.0300, −0.0192];
+  V4 coarse −0.0030 [−0.0059, +0.0001]; V5 narrow −0.0047 [−0.0084, −0.0011]; V6 −0.0012 [−0.0038, +0.0014].
+
 ### 15D. Training configuration (in the runs of 15C)
 Variants of R's training only: learning rate 1e-4 and 9e-4 (×1/3, ×3); no CC term in the loss; no NSS term in the
 loss (auxiliary losses changed the same way). Same rule. Seed 0 also trains R for 6 epochs (cosine schedule over 6,
 best epoch by holdout), descriptive.
+
+**Seed-0 result (2026-11-16, descriptive; same run as 15C).** lr 1e-4 −0.0032 [−0.0063, −0.0002]; lr 9e-4 +0.0001
+[−0.0032, +0.0033]; no CC term −0.0012 [−0.0034, +0.0009]; no NSS term +0.0009 [−0.0010, +0.0030]. R6 holdout CC by
+epoch: 0.5600, 0.5862, 0.5854, 0.5791, 0.5737, 0.5694 (training loss still falling); best epoch (1) − R −0.0007
+[−0.0044, +0.0030].
 
 ### 15E. Use of temporal information
 - E1 (test time, seed 0). Each window's frames reversed in time; shuffled (one fixed random permutation per window);

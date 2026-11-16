@@ -50,7 +50,7 @@ not forced to be deterministic, which A2 quantifies.
 and lose 0.001–0.004 in the third, while training CC keeps rising (0.640 → 0.676). The 10-epoch ViT-L run of gate G1
 peaked at epoch 2 (0.578) and fell monotonically to 0.522 at epoch 9. The decoder starts to overfit the 540 training
 videos after about two epochs; the train–holdout gap at the last epoch is ≈0.09 CC. A six-epoch run with a schedule
-fitted to six epochs is part of 15D [Pending].
+fitted to six epochs (15D, seed 0) also peaks at its second epoch and falls to 0.5694 by the sixth (section 4.5).
 
 **Learning curve [Thesis, ViT-L, 3 seeds].** 135 → 270 → 540 training videos: 0.5645 → 0.5729 → 0.5783 holdout CC;
 the second doubling gives 0.64 of the first doubling's gain. DHF1K has no further annotated training videos.
@@ -119,8 +119,8 @@ model, not of the training recipe.
 | A2 | How large is run-to-run non-determinism at a fixed seed? | Pending |
 | A3 | Cost: parameters, FLOPs, time, memory | Pending (thesis values available) |
 | B | What does each encoder depth carry (41 linear probes)? | Completed |
-| C | Decoder ablations V1–V6, 3 seeds | Pending |
-| D | Learning rate, loss terms, schedule length | Pending |
+| C | Decoder ablations V1–V6, 3 seeds | Running (seed 0 completed) |
+| D | Learning rate, loss terms, schedule length | Running (seed 0 completed) |
 | E1, E3 | Temporal order and stride at test time | Completed |
 | E2 | Video model vs a static-trained model (primary temporal test) | Pending |
 | F1, F2 | Resolution ceilings; test-time input size | Completed |
@@ -154,16 +154,32 @@ model, not of the training recipe.
 
 Two components of the thesis design are therefore already known to be dispensable within ±0.003 CC.
 
-### Decoder ablations of this investigation (15C) [Pending]
+### Decoder ablations of this investigation (15C) [Seed 0 completed, descriptive; seeds 1–2 running]
 
 Each variant is trained next to the unchanged decoder R on the same encoder stream (seeds 0–2), and compared with R
-of the same run:
-- V1 linear readout of the four taps;
-- V2 the last tap only;
-- V3 no temporal mixing in the decoder (per-frame convolutions and norms);
-- V4 no top-down path;
-- V5 64 instead of 256 channels;
-- V6 neither prior nor auxiliary heads (an interaction test of the two dispensable parts).
+of the same run, at each variant's best epoch. The rule of 12E is applied once all three seeds have run, so the
+seed-0 values below are descriptive (`runs/inv_c_s0`, `runs/review/inv/holdout/c_s0_*.json`).
+
+| Variant | Change | CC, seed 0 | ΔCC vs R [95 %] | ΔNSS |
+|---|---|---|---|---|
+| R | none (trained by the multi-decoder trainer) | 0.5869 | — | — |
+| V1 | linear readout of the four taps (LayerNorm, 1×1×1 convolution, 16×16 logits upsampled, prior) | 0.5146 | −0.0723 [−0.0891, −0.0574] | −0.44 |
+| V2 | tap 40 in all four branches | 0.5856 | −0.0013 [−0.0049, +0.0019] | −0.00 |
+| V3 | no temporal mixing in the decoder (1×1×1 instead of 3×1×1 convolutions; GroupNorm per time step) | 0.5624 | −0.0245 [−0.0300, −0.0192] | −0.17 |
+| V4 | no top-down path (1/16 stage to the head, ×4 upsampling) | 0.5839 | −0.0030 [−0.0059, +0.0001] | −0.03 |
+| V5 | 64 instead of 256 channels | 0.5822 | −0.0047 [−0.0084, −0.0011] | −0.04 |
+| V6 | neither centre prior nor auxiliary heads | 0.5857 | −0.0012 [−0.0038, +0.0014] | +0.01 |
+
+- The multi-decoder trainer reproduces the standard trainer: R − `runs/vitg_s0` = +0.0003 [−0.0003, +0.0009].
+- **The decoder's value lies in its non-linear processing, not in combining depths** (seed 0). The four-tap linear
+  readout (0.515) is barely above the best single-block probe (0.510, section 3, trained with another learning rate),
+  and the full decoder fed only the last tap loses 0.0013. Of the 0.077 between the best probe and R, combining depths
+  linearly explains about 0.005.
+- **Temporal mixing inside the decoder matters** (−0.0245), although the encoder already attends across time. V3
+  changes two things at once, the temporal convolutions and the GroupNorm statistics (per time step instead of per
+  clip), so it does not tell which of the two carries the effect.
+- Width (V5) and the top-down path (V4) matter less. Removing both dispensable parts together (V6) shows no
+  interaction at seed 0.
 
 ### What each encoder depth carries (15B) [Completed, seed 0, holdout, descriptive]
 
@@ -187,9 +203,11 @@ trained on one encoder stream (3 epochs, lr 1e-3) and scored after the last epoc
   0.006, one seed, so this is not established.
 - Block 1 already beats the prior alone by 0.041 CC, so low-level token features carry some saliency.
 - The full decoder exceeds the best single block by 0.077 CC. Two things could explain the gap: combining depths, and
-  the non-linear decoder with its finer output. The four-tap linear readout of 15C (V1) will separate them.
+  the non-linear decoder with its finer output. At seed 0, the four-tap linear readout of 15C (V1) reaches 0.515, so
+  combining depths linearly explains little of the gap and the non-linear decoder most of it (descriptive until
+  seeds 1–2 have run).
 - Two of the four taps (30, 40) lie on the plateau. Whether tap 10 adds anything to the full decoder is the question
-  of V2 (last tap only).
+  of V2 (last tap only). At seed 0, the full decoder fed only tap 40 loses 0.0013 CC (inconclusive).
 - This matches layer-wise ViT analyses in which mid-to-late layers serve localised tasks best (section 10).
 
 ---
@@ -278,9 +296,22 @@ Bethge, ECCV 2018, doi:10.1007/978-3-030-01270-0_47). So a map that becomes shar
 - Whether training at 384² gains accuracy is the question of F3 [Pending]. A model trained at 384² learns its own
   output sharpness under the CC and KLD loss terms, so this mismatch should not carry over to F3.
 
-### 4.5 Training configuration and interactions (15D, 15C-V6) [Pending]
+### 4.5 Training configuration (15D) [Seed 0 completed, descriptive; seeds 1–2 running]
 
-Learning rate ×1/3 and ×3; no CC term; no NSS term; six epochs; prior × auxiliary-head interaction.
+Variants of R's training, in the same runs as 15C (`runs/inv_c_s0`):
+
+| Variant of R's training | CC, seed 0 | ΔCC vs R [95 %] |
+|---|---|---|
+| Learning rate 1e-4 (×1/3) | 0.5837 | −0.0032 [−0.0063, −0.0002] |
+| Learning rate 9e-4 (×3) | 0.5870 | +0.0001 [−0.0032, +0.0033] |
+| No CC term in the loss | 0.5856 | −0.0012 [−0.0034, +0.0009] |
+| No NSS term in the loss | 0.5878 | +0.0009 [−0.0010, +0.0030] |
+| Six epochs, cosine schedule over six (best: second epoch) | 0.5862 | −0.0007 [−0.0044, +0.0030] |
+
+- The recipe is robust (seed 0). Tripling the learning rate, or dropping the CC or the NSS term, changes CC by at
+  most 0.0012. Only the lower learning rate costs more than 0.003, by 0.0002.
+- **A longer schedule only prolongs overfitting.** The six-epoch run scores 0.5600, 0.5862, 0.5854, 0.5791, 0.5737
+  and 0.5694 after its six epochs, while its training loss keeps falling. Its best epoch is again the second.
 
 ---
 
