@@ -1463,6 +1463,14 @@ default path is unchanged).
   `runs/vitg_s0` by at least 0.003, seeds 1 and 2 follow and the 12E rule decides whether input resolution limits
   accuracy; otherwise the single seed is reported.
 
+**F3 result (2026-11-16; `runs/inv_384_s{0,1,2}`, `runs/review/inv/summary_res384.json`).** Seed 0 holdout 0.5938
+≥ 0.5896, so seeds 1 and 2 ran. 384² − 256² (`runs/vitg_s{0,1,2}`), holdout: CC +0.0092 [+0.0030, +0.0163]
+**effect** (per seed +0.0072, +0.0083, +0.0120); 0.5946 against 0.5854; NSS +0.082 [+0.042, +0.129] effect; SIM
++0.003 inconclusive; KLD −0.024 [−0.047, −0.003] effect. Input resolution limits accuracy on DHF1K. A training epoch
+takes 2.6 times as long. Post-hoc, descriptive: 40 of 60 videos gain; Spearman ρ of the per-video gain with the GT
+attributes of 15J, all intervals including 0: 16² ceiling +0.05, entropy −0.01, centre −0.08, change5 −0.16,
+motion −0.25 [−0.49, +0.02].
+
 ### 15G. Multi-frame output
 Test time, seed 0: CC per output position (all 16 positions of every window, on the frames they show); tilings: the
 default (hop 16, central 8 positions kept), all 16 positions (hop 32), central 4 (hop 8), overlap averaging (hop 8,

@@ -2,6 +2,7 @@
 
     python scripts/inv_summary.py --part testtime   (15E1/E3, 15F2, 15G, 15H: conditions vs the unperturbed run)
     python scripts/inv_summary.py --part static     (15E2: video model vs static model, seeds 0-2, rule of 12E)
+    python scripts/inv_summary.py --part res384     (15F3: trained at 384 px vs 256 px, seeds 0-2, rule of 12E)
     python scripts/inv_summary.py --part ablation   (15C/D: variants vs R per seed, rule of 12E)
     python scripts/inv_summary.py --part v3split    (15C2: V3, V3a, V3b vs R, rule of 12E; 2x2 factorial)
     python scripts/inv_summary.py --part probes     (15B: holdout CC per encoder block)
@@ -115,6 +116,41 @@ def part_static():
         r = paired(refs, st, m)  # static - video
         res[m] = r
         print(fmt(f"static model - video ({m})", r, m))
+    return res
+
+
+def part_res384():
+    """15F3: model trained at 384 px - model trained at 256 px (runs/vitg_s0-2), seeds 0-2, rule of 12E."""
+    res = {}
+    refs = [ROOT / f"runs/review/holdout/vitg_s{s}.json" for s in range(3)]
+    var = [R / f"holdout/inv_384_s{s}.json" for s in range(3)]
+    if not all(p.exists() for p in var):
+        print("384-px runs not all scored yet: " + ", ".join(p.name for p in var if not p.exists()))
+        return res
+    for m in ("cc", "nss", "sim", "kld"):
+        r = paired(refs, var, m)  # 384 - 256
+        res[m] = r
+        print(fmt(f"384 px - 256 px ({m})", r, m) + "  per seed " + " ".join(f"{x:+.4f}" for x in r["per_seed"]))
+    # Post-hoc and descriptive (not part of the 15F3 rule): where the CC gain falls. Spearman rho between the
+    # per-video gain (mean of the three seed pairs) and the ground-truth attributes of 15J.
+    gs = json.load(open(R / "gt_stats_holdout.json"))
+    rv, vv = [pv(p)[0] for p in refs], [pv(p)[0] for p in var]
+    vids = sorted(set.intersection(*[set(x) for x in rv + vv]) & set(gs))
+    gain = [float(np.mean([b[v] - a[v] for a, b in zip(rv, vv)])) for v in vids]
+    attrs = {
+        "ceil16_cc": [np.nanmean(gs[v]["ceil16_cc"]) for v in vids],
+        "gt_entropy": [np.nanmean(gs[v]["entropy"]) for v in vids],
+        "gt_centre": [np.nanmean(gs[v]["centre"]) for v in vids],
+        "gt_change5": [np.nanmean(gs[v]["change5"]) for v in vids],
+        "motion": [np.nanmean(gs[v]["motion"]) for v in vids],
+    }
+    res["posthoc_gain_vs_attributes"] = {"videos": len(vids), "videos_gaining": int(np.sum(np.array(gain) > 0)),
+                                         **{a: boot_spearman(x, gain) for a, x in attrs.items()}}
+    print(f"post-hoc: {res['posthoc_gain_vs_attributes']['videos_gaining']} of {len(vids)} videos gain; "
+          "Spearman rho of the per-video CC gain with")
+    for a in attrs:
+        r = res["posthoc_gain_vs_attributes"][a]
+        print(f"  {a:12s} {r['rho']:+.3f} [{r['ci95'][0]:+.3f}, {r['ci95'][1]:+.3f}]")
     return res
 
 
@@ -312,7 +348,7 @@ def part_zeroshot():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", required=True,
-                    choices=["testtime", "static", "ablation", "v3split", "probes", "failure", "zeroshot"])
+                    choices=["testtime", "static", "res384", "ablation", "v3split", "probes", "failure", "zeroshot"])
     a = ap.parse_args()
     res = globals()[f"part_{a.part}"]()
     (R / f"summary_{a.part}.json").write_text(json.dumps(res, indent=1), newline="\n")

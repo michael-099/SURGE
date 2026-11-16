@@ -126,7 +126,7 @@ model, not of the training recipe.
 | E1, E3 | Temporal order and stride at test time | Completed |
 | E2 | Video model vs a static-trained model (primary temporal test) | Completed |
 | F1, F2 | Resolution ceilings; test-time input size | Completed |
-| F3 | Training at 384² | Pending |
+| F3 | Training at 384² | Completed |
 | G | Output position and tiling | Completed |
 | H | Perturbations; flip consistency | Completed |
 | I | Zero-shot on five datasets | Running (MVVA and AViMoS completed) |
@@ -332,7 +332,9 @@ The trained model is tuned to its training frame rate. In both directions the ch
 margin. This matters for datasets recorded at other frame rates: SumMe and MVVA include 15 fps videos, where stride 2
 spans 2.1 s, like stride 4 at 30 fps.
 
-### 4.4 Input size at test time (15F2) [Completed, seed 0; encoder rebuilt for each size]
+### 4.4 Input size at test time (15F2) and in training (15F3) [Completed]
+
+**At test time (15F2) [seed 0; encoder rebuilt for each size].**
 
 | Input (trained: 256²) | Tokens per frame | CC | ΔCC [95 %] | ΔNSS | Outcome |
 |---|---|---|---|---|---|
@@ -355,8 +357,34 @@ Bethge, ECCV 2018, doi:10.1007/978-3-030-01270-0_47). So a map that becomes shar
   fields and centre prior were learned on a 16×16 grid.
 - [Proposed] A diagnostic: re-choose the output blur on val for the 320² condition. If CC recovers to the 256²
   level, the loss is a calibration mismatch, not a loss of information.
-- Whether training at 384² gains accuracy is the question of F3 [Pending]. A model trained at 384² learns its own
-  output sharpness under the CC and KLD loss terms, so this mismatch should not carry over to F3.
+- F3 (below) asks whether training at 384² gains accuracy. A model trained at 384² learns its own output sharpness
+  under the CC and KLD loss terms, so this mismatch does not carry over to it.
+
+**Training at 384² (15F3) [Completed, seeds 0–2, holdout, rule of 12E].** The main recipe with a 384² input (24×24
+tokens per frame). Seed 0 passed the gate fixed in advance (holdout CC 0.5938 ≥ 0.5896), so seeds 1 and 2 followed.
+Reference: the 256² runs `runs/vitg_s{0,1,2}` on the same frames (`runs/review/inv/summary_res384.json`).
+
+| Metric | 256² | 384² | Δ [95 %] | Outcome |
+|---|---|---|---|---|
+| CC | 0.5854 | 0.5946 | **+0.0092 [+0.0030, +0.0163]** | effect |
+| NSS | 3.361 | 3.442 | +0.082 [+0.042, +0.129] | effect |
+| SIM | 0.451 | 0.454 | +0.003 [−0.004, +0.012] | inconclusive |
+| KLD (lower is better) | 1.201 | 1.178 | −0.024 [−0.047, −0.003] | effect |
+
+- Input resolution limits accuracy on DHF1K once the model is trained at that size. Per seed, CC rises by +0.0072,
+  +0.0083 and +0.0120. Seed 2's larger gain partly reflects its reference, the weakest of the six 256² seeds
+  (0.5829). Against the six-seed 256² mean (0.5861), the 384² mean is 0.0085 higher (descriptive).
+- It is the largest improvement over the reference found in this investigation, about the size of the step from
+  ViT-L to ViT-g (+0.0083, seed 0, section 3).
+- NSS gains more than SIM. This fits F1, where finer localisation mattered more for NSS than for CC (section 7.1).
+- The best epoch is the second in seeds 0 and 1 and the third in seed 2 (+0.0007 over its second).
+- Cost: a training epoch takes 2.6 times as long as at 256² (1,563 s against 595 s, same GPU). FLOPs follow in A3
+  [Pending].
+- [Post-hoc, descriptive] 40 of 60 holdout videos gain. The per-video gain (mean of the three seed pairs) shows no
+  clear association with the ground truth's fine detail (Spearman ρ with the 16² ceiling +0.05 [−0.22, +0.32]), its
+  concentration (entropy −0.01 [−0.29, +0.26]), its centrality (−0.08 [−0.34, +0.19]), gaze change (−0.16 [−0.42,
+  +0.12]) or motion (−0.25 [−0.49, +0.02]). With 60 videos these intervals are wide. They do not support the idea
+  that the gain sits on the small, off-centre targets of section 7.4, but they cannot exclude it.
 
 ### 4.5 Training configuration (15D) [Completed, seeds 0–2, rule of 12E; six epochs: seed 0, descriptive]
 
@@ -422,7 +450,8 @@ frames. A strictly causal model needs one pass per output frame.
   default, which would halve the cost. Section 9 discusses this.
 
 ### 5.3 Pending
-A3: FLOPs and measured time at 192/256/384 pixels and 16/32 frames; training step time and peak memory.
+A3: FLOPs and measured time at 192/256/384 pixels and 16/32 frames; training step time and peak memory. Measured so
+far: a training epoch at 384² takes 2.6 times as long as at 256² (F3, section 4.4).
 
 ---
 
@@ -687,6 +716,8 @@ All three are cut-free and low-motion. The common factor is target size and posi
   of time than to its order.
 - **Larger test inputs keep NSS but lose CC** (320²: NSS +0.009, CC −0.018, KLD +0.05). The map is as high at
   fixated pixels as before, but its overall shape matches the ground truth less well (section 4.4).
+- **The gain from training at 384² is spread across videos** (40 of 60 gain), with no clear concentration on the
+  small, off-centre targets among the worst videos (post-hoc, descriptive; section 4.4).
 - **Heavy blur costs as much as reversing time** (σ 8: −0.052 CC), while noise, JPEG compression and greyscale
   cost at most 0.0033 (section 6.1).
 - **The default tiling is near the accuracy-efficiency knee**, although it was chosen without a sweep (thesis).
@@ -737,7 +768,7 @@ with their type:*
 | Positions without past context are poor, so half of each window's outputs are discarded | 4.1, 5.2 | design (clip-based processing without state); efficiency cost |
 | Post-cut frames score lower in the default tiling | 7.2 | **Not a weakness of cross-shot fusion** (15L: that context helps, because gaze lags the cut). What remains is a tiling property: some post-cut frames see less of the previous shot (descriptive, one seed) |
 | Tuned to the training frame rate and input size | 4.3, 4.4 | design/training (no scale or rate augmentation) |
-| Small, off-centre, action-relevant targets | 7.3, 7.4 | open: representation or resolution (15B, F3 inform) |
+| Input resolution limits accuracy; small, off-centre, action-relevant targets are among the worst videos | 4.4 (F3), 7.3, 7.4 | input resolution: training at 384² gains +0.0092 CC [+0.0030, +0.0163] at 2.6 times the training time; the gain is spread across videos rather than concentrated on small targets (post-hoc) |
 | In multi-face scenes, faces are found but the speaker is under-weighted | 6.2 (15K, 15N) | input: no speaker information in a visual-only model at 256²; a speaker oracle adds +0.020 CC through re-weighting, and an off-the-shelf detector supplies +0.012–0.013 of it on all MVVA frames |
 | Decoder overfits after ~2 epochs; data-limited | 1, 4.5 (R peaks at the second epoch in all three seeds of 15C; six epochs only prolong overfitting; ×3 learning rate and either loss term make no established difference) | data, not optimisation settings |
 | Most per-video variance is ground-truth reliability | 7.3 | evaluation limitation, not the model |
@@ -881,13 +912,14 @@ with their type:*
 **Input size, fine detail and frame rate.**
 - Image classifiers trained with random-resized crops see objects at another apparent size at test time. A cheap
   fine-tuning at the test resolution corrects this (Touvron, Vedaldi, Douze & Jégou, NeurIPS 2019). SURGE-D loses CC
-  both below and above its training size (section 4.4). F3, training at 384², tests whether a larger input helps
-  once the model is trained at that size [Pending].
+  both below and above its training size (section 4.4). Trained at 384², it gains +0.0092 CC (F3, section 4.4). The
+  test-time losses are therefore a train–test mismatch, and a larger input helps once the model is trained for it.
 - "Fixations from lower resolution images can predict fixations on higher resolution images", and inter-observer
   consistency rises with resolution "until around 16-64 pixels (1/2 to 2 cycles per degree) after which consistency
   remains relatively constant" (Judd, Durand & Torralba, JOV 2011, doi:10.1167/11.4.14). Where people look is thus
-  largely set by coarse content. Yet SURGE-D loses 0.052 CC under blur σ 8 (section 6.1). The ground truth comes from
-  sharp video, so part of that loss is information the blurred input no longer contains.
+  largely set by coarse content. Yet SURGE-D loses 0.052 CC under blur σ 8 (section 6.1) and gains 0.009 CC from a
+  384² input (F3). The ground truth comes from sharp video, so part of the blur loss is information the blurred input
+  no longer contains.
 - SURGE-D loses 0.012–0.019 CC when its frame stride differs from training (section 4.3). Schiappa et al. (CVPR 2023,
   below) found action-recognition models mostly robust to such changes.
 - Frame rate in video saliency: Cheon & Lee (Signal Processing: Image Communication 2015,
