@@ -835,11 +835,22 @@ with their type:*
   (Tavakoli et al., CVPR 2017, doi:10.1109/CVPR.2017.673).
 - AViMoS (AIM 2024, ECCV Workshops, doi:10.1007/978-3-031-91856-8_11) offers 1,500 videos of crowdsourced mouse
   tracking, validated against eye tracking with a 300 ms lag correction.
-- No test of video mouse-tracking pre-training evaluated on eye-tracking benchmarks was found. The closest work
-  (arXiv 1907.00480) goes the other way: eye-tracking priors for a mouse model.
+- The closest video work found uses mouse data as an input, not for training (Lyudvichenko et al., GraphiCon 2019,
+  CEUR Workshop Proceedings vol. 2485; arXiv 1907.00480).
+  - A SAM-ResNet with an LSTM takes the frames plus a saliency map from a few observers as an extra prior, and
+    refines that map.
+  - It was trained on eye-tracking data (DHF1K and SAVAM), with three observers' eye-tracking maps as the prior.
+    At test time it received mouse-tracking maps of ten observers instead.
+- No test was found of pre-training a video saliency model on mouse tracking and evaluating it on eye-tracking
+  benchmarks.
 
 **Faces and speakers.**
 - Gaze follows the speaker in conversations (Coutrot & Guyader, JOV 2014, doi:10.1167/14.8.5).
+- The same authors built an audiovisual saliency model that uses speaker diarization to raise the saliency of the
+  speakers above that of the addressees. Against eye tracking, it "significantly outperforms visual attention models
+  using an equal and constant saliency value for all faces" (Coutrot & Guyader, ICIP 2014,
+  doi:10.1109/ICIP.2014.7025219). The re-weighting of 15K and 15N is this mechanism, measured on top of a frozen deep
+  video encoder.
 - In multiple-face videos, "the attention of different subjects consistently focuses on a single face in each frame"
   (Liu, Zhang, Xu & He, CVPR 2017, doi:10.1109/CVPR.2017.343). Their model predicts the salient face and its
   transitions across frames (CNN with a multiple-stream LSTM).
@@ -879,6 +890,16 @@ with their type:*
   sharp video, so part of that loss is information the blurred input no longer contains.
 - SURGE-D loses 0.012–0.019 CC when its frame stride differs from training (section 4.3). Schiappa et al. (CVPR 2023,
   below) found action-recognition models mostly robust to such changes.
+- Frame rate in video saliency: Cheon & Lee (Signal Processing: Image Communication 2015,
+  doi:10.1016/j.image.2015.05.010) analysed gaze patterns and evaluated saliency models at several temporal
+  resolutions. Its abstract could not be accessed, so only its title is used here. No study of the frame-rate
+  robustness of current deep video saliency models was found.
+- Training over several sizes or rates:
+  - FlexiViT (Beyer et al., CVPR 2023, doi:10.1109/CVPR52729.2023.01393): "simply randomizing the patch size at
+    training time leads to a single set of weights that performs well across a wide range of patch sizes".
+  - Multigrid training (Wu, Girshick, He, Feichtenhofer & Krähenbühl, CVPR 2020, doi:10.1109/CVPR42600.2020.00023)
+    uses "variable mini-batch shapes with different spatial-temporal resolutions". It trained a SlowFast network 4.5×
+    faster while improving Kinetics-400 accuracy by 0.8 points.
 
 **Dataset bias and training on several datasets.**
 - UNISAL (Droste, Jiao & Noble, ECCV 2020, doi:10.1007/978-3-030-58558-7_25) names the domain shift between image
@@ -890,8 +911,12 @@ with their type:*
   Bethge, ICCV 2025, doi:10.1109/ICCV51701.2025.02050). Fewer than 20 dataset-specific parameters (multi-scale
   structure, centre bias, fixation spread), adapted to the new data, account for more than 75 % of the gap, much of
   it with as few as 50 samples.
-- Video datasets were not part of that study. How much of SURGE-D's transfer gap is such a low-dimensional bias is
-  the question of 15M [Pending].
+- HD²S (Bellitto, Proietto Salanitri, Palazzo, Rundo, Giordano & Spampinato, IJCV 2021,
+  doi:10.1007/s11263-021-01519-y) specialises a video saliency model to each dataset through domain-specific priors,
+  smoothing and batch normalisation. For datasets without annotations, it learns general features with gradient
+  reversal at several scales, and then performs comparably to supervised state-of-the-art models.
+- Video datasets were not part of Kümmerer et al.'s study. How much of SURGE-D's transfer gap is such a
+  low-dimensional bias is the question of 15M [Pending].
 
 **Robustness and evaluation.**
 - Common corruptions: Hendrycks & Dietterich (ICLR 2019).
