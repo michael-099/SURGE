@@ -101,15 +101,15 @@ Test-time conditions have one seed, so they use the video bootstrap only. They m
 model, not of the training recipe.
 
 **Tools written for this investigation.** All are off by default, and the default paths are tested to be unchanged
-(51 tests).
+(55 tests).
 - `scripts/probe_eval.py`: test-time probes. It covers temporal order, stride, input size, tilings, perturbations,
   per-position scores, flip consistency and shot clamping. With its defaults it reproduces the thesis evaluator
   exactly.
 - `scripts/train_multi.py`: trains several decoders on one frozen-encoder stream, with the same clips, order and
   augmentation as the standard trainer. Ablations are therefore paired by construction, and the encoder runs once
   for all of them.
-- Decoder options `tap_mode`, `temporal` (per-frame norms), `topdown`, and `LinearReadout`. The default decoder is
-  tested to be identical, tensor for tensor, to the committed one.
+- Decoder options `tap_mode`, `temporal` (with per-frame norms), `norm_per_frame` (15C2), `topdown`, and
+  `LinearReadout`. The default decoder is tested to be identical, tensor for tensor, to the committed one.
 - `scripts/inv_summary.py`: applies the 12E rule. `scripts/inv_cuts.py`: the scene-cut analysis.
 
 **Experiment register.**
@@ -696,7 +696,7 @@ with their type:*
 | Tuned to the training frame rate and input size | 4.3, 4.4 | design/training (no scale or rate augmentation) |
 | Small, off-centre, action-relevant targets | 7.3, 7.4 | open: representation or resolution (15B, F3 inform) |
 | In multi-face scenes, faces are found but the speaker is under-weighted | 6.2 (15K, 15N) | input: no speaker information in a visual-only model at 256²; a speaker oracle adds +0.020 CC through re-weighting, and an off-the-shelf detector supplies +0.012–0.013 of it on all MVVA frames |
-| Decoder overfits after ~2 epochs; data-limited | 1 | optimisation/data |
+| Decoder overfits after ~2 epochs; data-limited | 1, 4.5 (R peaks at the second epoch in all three seeds of 15C; six epochs only prolong overfitting; ×3 learning rate and either loss term make no established difference) | data, not optimisation settings |
 | Most per-video variance is ground-truth reliability | 7.3 | evaluation limitation, not the model |
 
 ## 10. Literature-validated research gaps
