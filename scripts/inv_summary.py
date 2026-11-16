@@ -3,6 +3,7 @@
     python scripts/inv_summary.py --part testtime   (15E1/E3, 15F2, 15G, 15H: conditions vs the unperturbed run)
     python scripts/inv_summary.py --part static     (15E2: video model vs static model, seeds 0-2, rule of 12E)
     python scripts/inv_summary.py --part ablation   (15C/D: variants vs R per seed, rule of 12E)
+    python scripts/inv_summary.py --part v3split    (15C2: V3, V3a, V3b vs R, rule of 12E; 2x2 factorial)
     python scripts/inv_summary.py --part probes     (15B: holdout CC per encoder block)
     python scripts/inv_summary.py --part failure    (15J: attributes vs per-video CC; cuts)
     python scripts/inv_summary.py --part zeroshot   (15I)
@@ -154,6 +155,66 @@ def part_ablation():
     return res
 
 
+V3_SPLIT = ["V3", "V3a", "V3b"]
+
+
+def contrast(files: dict, weights: dict, metric="cc") -> dict:
+    """Linear contrast sum_k w_k x_k per seed and video of the variants in files (name -> per-seed paths), with the
+    bootstrap of boot()."""
+    names = list(weights)
+    vals = {n: [pv(p, metric)[0] for p in files[n]] for n in names}
+    vids = sorted(set.intersection(*[set(v) for n in names for v in vals[n]]))
+    S = len(files[names[0]])
+    d = np.array([[sum(weights[n] * vals[n][s][x] for n in names) for x in vids] for s in range(S)])
+    return boot(d)
+
+
+def part_v3split():
+    """15C2: which part of V3 carries its effect. V3, V3a, V3b against R of the same run (seeds 0-2, rule of 12E);
+    the 2x2 factorial (temporal convolutions x norm statistics) and the replication of 15C, descriptive."""
+    res = {}
+    H = R / "holdout"
+    H.mkdir(exist_ok=True)
+    seeds = [s for s in range(3) if (ROOT / f"runs/inv_c2_s{s}/DONE").exists()]
+    if not seeds:
+        print("no finished 15C2 run")
+        return res
+    for s in seeds:
+        for v in ["R"] + V3_SPLIT:
+            src = ROOT / f"runs/inv_c2_s{s}/{v}/best.json"
+            if src.exists():
+                d = json.load(open(src))
+                (H / f"c2_s{s}_{v}.json").write_text(json.dumps({"mean": d["mean"], "per_video": d["per_video"],
+                                                                  "epoch": d["epoch"]}), newline="\n")
+    print(f"seeds {seeds}")
+    files ={v: [H / f"c2_s{s}_{v}.json" for s in seeds] for v in ["R"] + V3_SPLIT}
+    for v in V3_SPLIT:
+        row = {m: paired(files["R"], files[v], m) for m in ("cc", "nss", "sim", "kld")}
+        row["best_epoch"] = [json.load(open(p))["epoch"] for p in files[v]]
+        res[v] = row
+        print(fmt(v, row["cc"]) + f"  per seed {', '.join(f'{x:+.4f}' for x in row['cc']['per_seed'])}  "
+              f"NSS {row['nss']['mean']:+.3f}  best epochs {row['best_epoch']}")
+    fac = {"conv_with_clip_norms (R - V3a)": {"R": 1, "V3a": -1},
+           "conv_with_frame_norms (V3b - V3)": {"V3b": 1, "V3": -1},
+           "clip_norms_with_conv (R - V3b)": {"R": 1, "V3b": -1},
+           "clip_norms_without_conv (V3a - V3)": {"V3a": 1, "V3": -1},
+           "interaction (R - V3a) - (V3b - V3)": {"R": 1, "V3a": -1, "V3b": -1, "V3": 1}}
+    res["factorial_descriptive"] = {}
+    for name, w in fac.items():
+        r = contrast(files, w)
+        res["factorial_descriptive"][name] = r
+        print(f"{name:38s} {r['mean']:+.4f}  95% [{r['ci95'][0]:+.4f}, {r['ci95'][1]:+.4f}]  (descriptive)")
+    res["replication_of_15C"] = {}
+    for v in ("R", "V3"):
+        old = [H / f"c_s{s}_{v}.json" for s in seeds]
+        if all(p.exists() for p in old):
+            r = paired(old, files[v])
+            res["replication_of_15C"][v] = r
+            print(f"{v} of 15C2 - {v} of 15C (same seeds, identical stream): {r['mean']:+.4f} "
+                  f"[{r['ci95'][0]:+.4f}, {r['ci95'][1]:+.4f}]  per seed {', '.join(f'{x:+.4f}' for x in r['per_seed'])}")
+    return res
+
+
 def part_probes():
     d = ROOT / "runs/inv_b_s0"
     res = {}
@@ -251,7 +312,7 @@ def part_zeroshot():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", required=True,
-                    choices=["testtime", "static", "ablation", "probes", "failure", "zeroshot"])
+                    choices=["testtime", "static", "ablation", "v3split", "probes", "failure", "zeroshot"])
     a = ap.parse_args()
     res = globals()[f"part_{a.part}"]()
     (R / f"summary_{a.part}.json").write_text(json.dumps(res, indent=1), newline="\n")

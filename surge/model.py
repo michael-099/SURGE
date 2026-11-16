@@ -30,11 +30,11 @@ def gn(c: int, per_frame: bool = False) -> nn.GroupNorm:
 class R21(nn.Module):
     """(2+1)D residual block: 1x3x3 spatial conv -> GN -> GELU -> 3x1x1 temporal conv -> GN, + skip, GELU.
     kt=1 (research/log.md section 15C, V3) makes the second conv 1x1x1 and the norms per frame: the block then
-    processes every time step independently."""
+    processes every time step independently. per_frame, if given, sets the norms separately from kt (section 15C2)."""
 
-    def __init__(self, c: int, kt: int = 3):
+    def __init__(self, c: int, kt: int = 3, per_frame: bool | None = None):
         super().__init__()
-        pf = kt == 1
+        pf = kt == 1 if per_frame is None else per_frame
         self.s = nn.Conv3d(c, c, (1, 3, 3), padding=(0, 1, 1), bias=False)
         self.n1 = gn(c, pf)
         self.t = nn.Conv3d(c, c, (kt, 1, 1), padding=(kt // 2, 0, 0), bias=False)
@@ -200,11 +200,15 @@ class Expert(nn.Module):
 
 class Decoder(nn.Module):
     """temporal, topdown and tap_mode are the decoder ablations of research/log.md section 15C (V2-V4); their
-    defaults build the unchanged SURGE-D decoder (same modules, same order, same initialisation)."""
+    defaults build the unchanged SURGE-D decoder (same modules, same order, same initialisation).
+    temporal=False makes the temporal convolutions 1x1x1 and every GroupNorm per time step (V3). norm_per_frame, if
+    given, sets the GroupNorms separately (section 15C2): temporal=False, norm_per_frame=False keeps the clip-pooled
+    norms without temporal convolutions (V3a); norm_per_frame=True keeps the temporal convolutions with per-frame
+    norms (V3b)."""
 
     def __init__(self, d: int = 1024, c: int = 256, use_scm: bool = False, prior: bool = True, aux: bool = True,
                  audio: bool = False, expert_dim: int | None = None, temporal: bool = True, topdown: bool = True,
-                 tap_mode: str = "all"):
+                 tap_mode: str = "all", norm_per_frame: bool | None = None):
         super().__init__()
         if tap_mode not in ("all", "last"):
             raise ValueError(tap_mode)
@@ -212,7 +216,8 @@ class Decoder(nn.Module):
             raise ValueError("the coarse decoder (no top-down path) supports no conditioning modules")
         self.temporal, self.topdown, self.tap_mode = temporal, topdown, tap_mode
         kt = 3 if temporal else 1
-        self.fpn = SimpleFPN3D(d, c, fine=topdown, per_frame=not temporal)
+        pf = (not temporal) if norm_per_frame is None else norm_per_frame
+        self.fpn = SimpleFPN3D(d, c, fine=topdown, per_frame=pf)
         self.expert_dim = expert_dim
         if expert_dim:
             self.fpn_e = SimpleFPN3D(expert_dim, c)
@@ -224,11 +229,11 @@ class Decoder(nn.Module):
         if use_scm:
             self.phi = SurpriseEncoder(64)
             self.scm = nn.ModuleList([SCM(64, c) for _ in range(4)])
-        self.fuse16 = nn.Sequential(nn.Conv3d(2 * c, c, 1), gn(c, not temporal), nn.GELU())
-        self.r16 = nn.Sequential(R21(c, kt), R21(c, kt))
+        self.fuse16 = nn.Sequential(nn.Conv3d(2 * c, c, 1), gn(c, pf), nn.GELU())
+        self.r16 = nn.Sequential(R21(c, kt, pf), R21(c, kt, pf))
         if topdown:
-            self.r8 = nn.Sequential(R21(c, kt), R21(c, kt))
-            self.r4 = nn.Sequential(R21(c, kt), R21(c, kt))
+            self.r8 = nn.Sequential(R21(c, kt, pf), R21(c, kt, pf))
+            self.r4 = nn.Sequential(R21(c, kt, pf), R21(c, kt, pf))
         self.head = nn.Sequential(nn.Conv3d(c, c // 2, (1, 3, 3), padding=(0, 1, 1)), nn.GELU(), nn.Conv3d(c // 2, 1, 1))
         self.aux = aux
         if aux:

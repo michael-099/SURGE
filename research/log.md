@@ -1402,6 +1402,21 @@ best epoch by holdout), descriptive.
 epoch: 0.5600, 0.5862, 0.5854, 0.5791, 0.5737, 0.5694 (training loss still falling); best epoch (1) − R −0.0007
 [−0.0044, +0.0030].
 
+### 15C2. Which part of V3 carries its effect? (rule written 2026-11-16, after seeds 0–1 of 15C, before any run of 15C2)
+**Motivation.** V3 loses 0.0245 CC against R at seed 0 and 0.0252 at seed 1 (best epochs; descriptive until seed 2).
+By the amendment of 15C it changes two things at once: the temporal convolutions become 1×1×1, and every GroupNorm
+computes its statistics per time step instead of over the clip. Clip-pooled statistics also couple the time steps,
+because each step is normalised with the mean and spread of the whole clip. Either change alone could carry the effect.
+**Design.** As 15C (`scripts/train_multi.py`, ViT-g, 3 epochs, seeds 0–2) with the variants R, V3, V3a (1×1×1
+temporal convolutions with clip-pooled GroupNorm, so time is mixed only through the normalisation statistics) and V3b
+(3×1×1 temporal convolutions with GroupNorm per time step). Runs `runs/inv_c2_s{0,1,2}`, queue `scripts/queue_15c.sh`
+after queue 15b, summary `scripts/inv_summary.py --part v3split`. V3a and V3b against R of the same run, rule of 12E.
+**Reading, fixed now.** V3b an effect and V3a equivalent: the clip-pooled statistics carry the decoder's temporal
+benefit. V3a an effect and V3b equivalent: the temporal convolutions carry it. Both effects: both contribute. Both
+equivalent while V3 is an effect: either mechanism alone provides the benefit. Anything else: inconclusive.
+Descriptive: the 2×2 factorial (convolutions × statistics, with the interaction (R − V3a) − (V3b − V3)), and R and V3
+of 15C2 against R and V3 of 15C (same seeds, clips and order, so the difference is run-to-run variation).
+
 ### 15E. Use of temporal information
 - E1 (test time, seed 0). Each window's frames reversed in time; shuffled (one fixed random permutation per window);
   static (each scored frame repeated 16 times, its map the mean of the central eight outputs). The original order is

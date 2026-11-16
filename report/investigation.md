@@ -121,6 +121,7 @@ model, not of the training recipe.
 | B | What does each encoder depth carry (41 linear probes)? | Completed |
 | C | Decoder ablations V1–V6, 3 seeds | Running (seed 0 completed) |
 | D | Learning rate, loss terms, schedule length | Running (seed 0 completed) |
+| 15C2 | Does V3's effect come from the temporal convolutions or from the clip-pooled norm statistics? | Pending (queued after queue 15b) |
 | E1, E3 | Temporal order and stride at test time | Completed |
 | E2 | Video model vs a static-trained model (primary temporal test) | Pending |
 | F1, F2 | Resolution ceilings; test-time input size | Completed |
@@ -177,7 +178,7 @@ seed-0 values below are descriptive (`runs/inv_c_s0`, `runs/review/inv/holdout/c
   linearly explains about 0.005.
 - **Temporal mixing inside the decoder matters** (−0.0245), although the encoder already attends across time. V3
   changes two things at once, the temporal convolutions and the GroupNorm statistics (per time step instead of per
-  clip), so it does not tell which of the two carries the effect.
+  clip), so it does not tell which of the two carries the effect. 15C2 changes each one alone (V3a, V3b) [Pending].
 - Width (V5) and the top-down path (V4) matter less. Removing both dispensable parts together (V6) shows no
   interaction at seed 0.
 
@@ -725,7 +726,8 @@ with their type:*
   window, and 0.0063 CC overall if all 16 positions were kept.
 
 **Frozen backbones and readouts.**
-- DeepGaze II (ICCV 2017) and DeepGaze IIE (ICCV 2021) read out frozen image backbones.
+- DeepGaze II (Kümmerer, Wallis, Gatys & Bethge, ICCV 2017, doi:10.1109/ICCV.2017.513) and DeepGaze IIE (Linardos,
+  Kümmerer, Press & Bethge, ICCV 2021, doi:10.1109/ICCV48922.2021.01268) read out frozen image backbones.
 - Video Depth Anything (CVPR 2025) pairs a frozen encoder with a light temporal head.
 - Layer-wise analyses of ViTs find mid-to-late layers best for localised tasks (Walmer et al., CVPR 2023).
 - No peer-reviewed probe of a frozen video world-model encoder for saliency was found. The closest, PredJSal (NTIRE
@@ -780,6 +782,19 @@ with their type:*
   sharp video, so part of that loss is information the blurred input no longer contains.
 - SURGE-D loses 0.012–0.019 CC when its frame stride differs from training (section 4.3). Schiappa et al. (CVPR 2023,
   below) found action-recognition models mostly robust to such changes.
+
+**Dataset bias and training on several datasets.**
+- UNISAL (Droste, Jiao & Noble, ECCV 2020, doi:10.1007/978-3-030-58558-7_25) names the domain shift between image
+  and video saliency data as the main obstacle to one model for both. It trains a light encoder–RNN–decoder on both
+  kinds of data, with domain-adaptive priors, fusion and smoothing and a "Bypass-RNN". With one set of parameters it
+  reached state-of-the-art results on DHF1K, Hollywood-2 and UCF Sports, and was competitive on SALICON and MIT300.
+- For images, models lose about 40 % of their performance when moved to another dataset, and greater training
+  diversity does not close the gap, "with close to 60 % attributed to dataset-specific biases" (Kümmerer, Khanuja &
+  Bethge, ICCV 2025, doi:10.1109/ICCV51701.2025.02050). Fewer than 20 dataset-specific parameters (multi-scale
+  structure, centre bias, fixation spread), adapted to the new data, account for more than 75 % of the gap, much of
+  it with as few as 50 samples.
+- Video datasets were not part of that study. How much of SURGE-D's transfer gap is such a low-dimensional bias is
+  the question of 15M [Pending].
 
 **Robustness and evaluation.**
 - Common corruptions: Hendrycks & Dietterich (ICLR 2019).

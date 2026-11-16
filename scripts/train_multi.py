@@ -49,6 +49,8 @@ def variant_specs(names: list[str], probes: list[int] | None):
         "V1": {"kind": "linear"},
         "V2": {"dec": {"tap_mode": "last"}},
         "V3": {"dec": {"temporal": False}},
+        "V3a": {"dec": {"temporal": False, "norm_per_frame": False}},  # section 15C2: 1x1x1 convs, clip-pooled norms
+        "V3b": {"dec": {"norm_per_frame": True}},  # section 15C2: 3x1x1 convs, per-frame norms
         "V4": {"dec": {"topdown": False}},
         "V5": {"dec": {"c": 64}},
         "V6": {"dec": {"prior": False, "aux": False}},

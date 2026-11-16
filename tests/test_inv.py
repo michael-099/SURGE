@@ -60,7 +60,8 @@ def test_default_decoder_unchanged(tmp_path):
             assert torch.equal(oa[k], ob[k]), k
 
 
-@pytest.mark.parametrize("kw", [{"tap_mode": "last"}, {"temporal": False}, {"topdown": False}, {"prior": False, "aux": False}])
+@pytest.mark.parametrize("kw", [{"tap_mode": "last"}, {"temporal": False}, {"topdown": False}, {"prior": False, "aux": False},
+                                {"temporal": False, "norm_per_frame": False}, {"norm_per_frame": True}])
 def test_decoder_variants_shapes(kw):
     m = Decoder(32, 16, **kw)
     taps = _taps()
@@ -93,6 +94,43 @@ def test_temporal_off_has_no_temporal_mixing():
     m3 = Decoder(32, 16, prior=False, aux=False).eval()  # the default decoder does mix time
     d3 = (m3(taps2)["logits"] - m3(taps)["logits"]).abs().amax(dim=(0, 2, 3)) > 1e-6
     assert d3.sum() > 1
+
+
+def test_v3_unchanged_by_norm_option():
+    """temporal=False with norm_per_frame=True is V3 exactly (same modules, initialisation and outputs)."""
+    taps = _taps()
+    torch.manual_seed(0)
+    a = Decoder(32, 16, temporal=False).eval()
+    torch.manual_seed(0)
+    b = Decoder(32, 16, temporal=False, norm_per_frame=True).eval()
+    sa, sb = a.state_dict(), b.state_dict()
+    assert list(sa) == list(sb) and all(torch.equal(sa[k], sb[k]) for k in sa)
+    assert torch.equal(a(taps)["logits"], b(taps)["logits"])
+
+
+def test_v3a_v3b_split_the_two_changes():
+    """V3a: 1x1x1 temporal convs with clip-pooled norms; V3b: 3x1x1 convs with per-frame norms (section 15C2)."""
+    from surge.model import FrameGroupNorm
+    torch.manual_seed(0)
+    v3a = Decoder(32, 16, temporal=False, norm_per_frame=False, prior=False, aux=False).eval()
+    torch.manual_seed(0)
+    v3b = Decoder(32, 16, norm_per_frame=True, prior=False, aux=False).eval()
+    torch.manual_seed(0)
+    r = Decoder(32, 16, prior=False, aux=False).eval()
+    torch.manual_seed(0)
+    v3 = Decoder(32, 16, temporal=False, prior=False, aux=False).eval()
+    shapes = lambda m: [tuple(p.shape) for p in m.state_dict().values()]  # noqa: E731
+    assert shapes(v3a) == shapes(v3) and shapes(v3b) == shapes(r)
+    norms = lambda m: {type(x) for x in m.modules() if isinstance(x, torch.nn.GroupNorm)}  # noqa: E731
+    assert norms(v3a) == {torch.nn.GroupNorm} and norms(r) == {torch.nn.GroupNorm}
+    assert norms(v3b) == {FrameGroupNorm} and norms(v3) == {FrameGroupNorm}
+    taps = _taps()
+    taps2 = [t.clone() for t in taps]
+    for t in taps2:
+        t[:, :, 2] += 5.0  # change one time step only
+    for m in (v3a, v3b):  # both still mix time: V3a through the norm statistics, V3b through the convolutions
+        d = (m(taps2)["logits"] - m(taps)["logits"]).abs().amax(dim=(0, 2, 3)) > 1e-6
+        assert d.sum() > 1
 
 
 def test_last_tap_ignores_other_taps():
