@@ -1445,6 +1445,13 @@ of 15C2 against R and V3 of 15C (same seeds, clips and order, so the difference 
 - Descriptive, per scored frame: the video − static difference against the frame's motion energy and against the
   change of its ground truth over the previous five frames.
 
+**E2 result (2026-11-16; `runs/inv_static_s{0,1,2}`, `runs/review/inv/summary_static.json`).** Static model − video
+model, holdout: CC −0.0574 [−0.0697, −0.0452] **effect** (per seed −0.0581, −0.0588, −0.0553); static 0.5280 against
+video 0.5854; NSS −0.37, SIM −0.047, KLD +0.174. SURGE-D uses temporal information on DHF1K, by 0.057 CC.
+Descriptive, per scored frame (difference averaged over seeds, `runs/review/inv/e2_per_frame.json`), by quintile:
+motion energy +0.032, +0.033, +0.038, +0.074, +0.092; GT change over five frames +0.076 (stays) … +0.045
+(relocates); GT centre bias +0.063 (off-centre) … +0.037 (central).
+
 ### 15F. Spatial resolution
 The Hugging Face V-JEPA 2 port derives token positions from the `crop_size` in its configuration (16×16 for this
 checkpoint), so any other input size needs the encoder built with a matching `crop_size` (added as an option; the

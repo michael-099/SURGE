@@ -124,7 +124,7 @@ model, not of the training recipe.
 | D | Learning rate, loss terms, schedule length | Completed (schedule length: seed 0 only, as planned) |
 | 15C2 | Does V3's effect come from the temporal convolutions or from the clip-pooled norm statistics? | Pending (queued after queue 15b) |
 | E1, E3 | Temporal order and stride at test time | Completed |
-| E2 | Video model vs a static-trained model (primary temporal test) | Pending |
+| E2 | Video model vs a static-trained model (primary temporal test) | Completed |
 | F1, F2 | Resolution ceilings; test-time input size | Completed |
 | F3 | Training at 384² | Pending |
 | G | Output position and tiling | Completed |
@@ -257,7 +257,9 @@ the same frames (video-level bootstrap, 60 videos), moving a frame 8 positions l
 
 This is the within-clip counterpart of the thesis result that causal and offline inference do not differ measurably.
 
-### 4.2 Temporal order (15E1) [Completed, seed 0, holdout; video bootstrap]
+### 4.2 Temporal order and the value of motion (15E1, 15E2) [Completed]
+
+**Test-time conditions (15E1) [seed 0, holdout; video bootstrap].**
 
 | Condition (model trained on forward video) | CC | ΔCC [95 %] | ΔNSS | Outcome |
 |---|---|---|---|---|
@@ -270,12 +272,53 @@ The trained model depends on temporal structure. Removing all motion costs 11 % 
 as much: twice the cost of shuffling. This fits the past-context result (reversal presents the future as the past).
 
 These conditions are distribution shifts for a decoder trained on real video, so they show dependence, not benefit.
-The matched control, a model trained on static clips (E2, three seeds), is [Pending].
 
-**Where the video–static gap is largest [Completed, descriptive, per scored frame].**
-- It grows with motion energy: +0.045 in the lowest quintile, +0.096 in the highest.
-- It is larger when gaze is off-centre (+0.103 vs +0.025) and when gaze stays in place over five frames (+0.083 vs
-  +0.045 when it relocates).
+**The matched control: a model trained on static clips (15E2, primary temporal test) [seeds 0–2, holdout, rule of
+12E].** The main recipe, with each training clip replaced by one of its central frames, drawn at random and repeated
+16 times. That frame's map is the target on all central positions, so the number of clips and the encoder compute are
+unchanged. The static model is scored on static clips; the video models are `runs/vitg_s{0,1,2}`
+(`runs/inv_static_s{0,1,2}`, `runs/review/inv/summary_static.json`).
+
+| Model (input at test time) | CC | NSS | SIM | KLD |
+|---|---|---|---|---|
+| Video model (video) | 0.5854 | 3.361 | 0.451 | 1.201 |
+| Static model (static clips) | 0.5280 | 2.995 | 0.404 | 1.375 |
+| Static − video [95 %] | **−0.0574 [−0.0697, −0.0452]** | −0.37 [−0.45, −0.29] | −0.047 | +0.174 |
+
+- **Outcome: effect, in every seed** (−0.058, −0.059, −0.055). By the reading fixed in advance, SURGE-D uses temporal
+  information on DHF1K, worth 0.057 CC, or 9.8 % of its CC.
+- **The test-time result was mostly not a distribution shift.** Training on static clips recovers only 0.004 of the
+  0.062 that static input costs the video model (seed 0: 0.5286 against 0.5243).
+- **Where the temporal benefit enters (descriptive, across experiments).**
+  - The video model scores 0.585, the decoder without temporal mixing (V3, section 3) 0.563, and the static model
+    0.528.
+  - About 0.035 of the benefit therefore reaches a decoder that sees one tubelet at a time, through the encoder
+    alone. Another 0.024 needs temporal mixing in the decoder, through its temporal convolutions or its clip-pooled
+    norms (15C2 [Pending]).
+- **Relation to the literature.** On LEDOV, static features capture at least 75 % of the explainable information
+  (Tangemann et al., ECCV 2020). Here the static model reaches 90 % of the video model's CC. CC is not an
+  information measure, so the agreement is qualitative: most of what is predictable is static, and the temporal part
+  is clearly measurable.
+
+**Where the video–static gap is largest [Completed, descriptive, per scored frame; `e2_per_frame.json`].** The
+video − static difference in CC, by quintile of a per-frame attribute. E2 is averaged over seeds 0–2; E1 is the
+test-time static condition of seed 0 (6,549 frames each).
+
+| Frames grouped by | Q1 | Q2 | Q3 | Q4 | Q5 |
+|---|---|---|---|---|---|
+| Motion energy, low → high: E2 | +0.032 | +0.033 | +0.038 | +0.074 | +0.092 |
+| Motion energy: E1 | +0.045 | +0.033 | +0.036 | +0.078 | +0.096 |
+| Ground-truth change over five frames, gaze stays → relocates: E2 | +0.076 | +0.054 | +0.045 | +0.048 | +0.045 |
+| Ground-truth change over five frames: E1 | +0.083 | +0.061 | +0.051 | +0.048 | +0.045 |
+| Ground-truth centre bias, off-centre → central: E2 | +0.063 | +0.064 | +0.060 | +0.045 | +0.037 |
+| Ground-truth centre bias: E1 | +0.103 | +0.072 | +0.051 | +0.036 | +0.025 |
+
+- The temporal benefit roughly triples from the stillest to the most moving frames.
+- It is largest where gaze stays in place over five frames (+0.076) and smaller, though still +0.045, where gaze
+  relocates. [Hypothesis] Much of the benefit comes from keeping track of attended content, not from anticipating
+  new gaze shifts.
+- The matched control cuts the off-centre dependence that E1 showed to a third (Q1 − Q5: +0.026 against +0.078).
+  Part of the E1 pattern was therefore the distribution shift.
 
 ### 4.3 Temporal sampling (15E3) [Completed, seed 0]
 
@@ -717,6 +760,8 @@ with their type:*
   doi:10.5220/0012422800003660) reduces "temporal features' dimensions" gradually in its decoder. It performs
   comparably to multi-branch models on DHF1K, UCF Sports and Hollywood-2. 15C measures this design choice under
   control, for a frozen video encoder: removing the decoder's temporal mixing costs 0.024 CC (section 3).
+- For SURGE-D on DHF1K, a matched model trained on static clips loses 0.057 CC (15E2, section 4.2). On edited
+  footage such as DIEM, El-Jiz et al. found temporal fusion to hurt. No matched static control has been run there.
 - For SURGE-D the cut part does not hold: 15L shows that context from before a cut helps the frames after it
   (section 7.2). Whatever hurts El-Jiz et al.'s temporal model on DIEM, it is not, for SURGE-D, the presence of
   cross-shot frames.
