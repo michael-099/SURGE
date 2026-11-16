@@ -130,6 +130,8 @@ model, not of the training recipe.
 | J | Failure analysis | Completed |
 | K | Multi-face scenes (MVVA) | Completed |
 | 15L | Scene cuts: cross-shot context or post-cut gaze? (hypothesis test) | Completed |
+| 15M | How much of the zero-shot gap is dataset bias (blur, exponent, centre)? | Pending (queued after the remaining zero-shot runs) |
+| 15N | Can an off-the-shelf active-speaker detector supply the speaker (MVVA)? | Completed |
 
 ---
 
@@ -422,6 +424,38 @@ silent. Values are per-video means, with 95 % video-bootstrap intervals for the 
   Neither global audio features (11D) nor sound-source maps (14F) helped on Coutrot2. MVVA is 1280×720 and comes with
   face tracks and talking labels, so the speaker gap can be measured there.
 
+**Speaker detection (15N)** [Completed, descriptive; `runs/review/inv/n_mvva_asd{,_posthoc,_allframes}.json`].
+Light-ASD (Liao et al., CVPR 2023), trained on AVA-ActiveSpeaker, scored MVVA's own face tracks from the video frames
+and the soundtrack. The tracks made face detection unnecessary.
+- **It ranks the faces of a frame well.** Against the talking labels, its AUC is 0.878 over 454,040 face-frames
+  (0.885 per video). In the 112,723 frames with exactly one talking face, that face scores highest 88.3 % of the time,
+  against 38.6 % by chance.
+- **Its decisions are conservative.** At its threshold of 0 it calls 19.4 % of face-frames talking; the labels mark
+  31.3 %.
+- **As the speaker in the 15K oracle** (same frames, halves, grid and bootstrap; score > 0 counts as talking), it
+  adds +0.0100 CC beyond the face oracle [+0.0076, +0.0123]. That is 0.51 [0.42, 0.60] of the label-based +0.0196.
+  The pre-registered expectation, more than one half, is not established.
+- **Post hoc, other thresholds.** At −0.5, where the detector's talking share matches the labels', it realises 0.59
+  [0.51, 0.67] (+0.0117), and both halves chose this threshold. Light-ASD's probabilities as soft weights realise 0.53.
+  Taking the top-scoring face of each frame realises 0.78. That rule presumes that someone speaks, which the 15K
+  frames guarantee by selection.
+- **Post hoc, every frame.** The 15K frames were selected with the labels, so the same re-weighting (faces called
+  talking ×2) was applied to all 28,899 scored frames (294 videos). Every one of them shows a face.
+
+| Speaker from | ΔCC, all frames | ΔNSS | ΔCC, the 5,797 frames outside 15K |
+|---|---|---|---|
+| Light-ASD, threshold 0 | +0.0121 [+0.0101, +0.0141] | +0.17 | +0.0007 [−0.0020, +0.0034] |
+| Light-ASD, threshold −0.5 | +0.0134 [+0.0113, +0.0156] | +0.21 | +0.0010 [−0.0022, +0.0042] |
+| Labels (reference) | +0.0198 [+0.0168, +0.0228] | +0.28 | −0.0010 [−0.0018, −0.0001] |
+
+- The gain carries over to the whole dataset, diluted by the 15K frames' share (80 %). The other frames lose nothing
+  measurable.
+- **Caveats.** The ×2 weight was chosen on MVVA (cross-fitted), so this is a one-parameter speaker prior fitted on half
+  of MVVA, not zero-shot transfer. MVVA is the only dataset here with face tracks and talking labels, and 80 % of its
+  scored frames show a talking and a silent face. Datasets with fewer conversations would gain less.
+- Four videos with nominal frame rates of 23.94 and 29.58–29.59 fps get almost no scores above 0 (0–3 %, against
+  42–56 % labelled talking). Their soundtracks match the video length, and the cause was not investigated.
+
 ---
 
 ## 7. Failure cases and unexpected observations
@@ -601,7 +635,7 @@ with their type:*
 | Post-cut frames score lower in the default tiling | 7.2 | **Not a weakness of cross-shot fusion** (15L: that context helps, because gaze lags the cut). What remains is a tiling property: some post-cut frames see less of the previous shot (descriptive, one seed) |
 | Tuned to the training frame rate and input size | 4.3, 4.4 | design/training (no scale or rate augmentation) |
 | Small, off-centre, action-relevant targets | 7.3, 7.4 | open: representation or resolution (15B, F3 inform) |
-| In multi-face scenes, faces are found but the speaker is under-weighted | 6.2 (15K) | input: no speaker information in a visual-only model at 256²; a speaker oracle adds +0.020 CC through re-weighting |
+| In multi-face scenes, faces are found but the speaker is under-weighted | 6.2 (15K, 15N) | input: no speaker information in a visual-only model at 256²; a speaker oracle adds +0.020 CC through re-weighting, and an off-the-shelf detector supplies +0.012–0.013 of it on all MVVA frames |
 | Decoder overfits after ~2 epochs; data-limited | 1 | optimisation/data |
 | Most per-video variance is ground-truth reliability | 7.3 | evaluation limitation, not the model |
 
@@ -682,7 +716,8 @@ with their type:*
 - Active-speaker detectors exist: TalkNet (ACM MM 2021, doi:10.1145/3474085.3475587) and Light-ASD (CVPR 2023).
 - Explicit speaker modelling is therefore established for multi-face video. What it adds on top of a strong frozen
   visual encoder had not been measured. For SURGE-D, 15K now gives a first estimate: on MVVA, a speaker oracle adds
-  +0.020 CC beyond a face oracle through re-weighting alone (section 6.2).
+  +0.020 CC beyond a face oracle through re-weighting alone (section 6.2). With Light-ASD in place of the labels
+  (15N), re-weighting adds +0.012–0.013 CC over all MVVA frames, with the weight fitted on MVVA.
 
 **Prediction error as attention.**
 - Bayesian surprise (Itti & Baldi, Vision Research 2009) is a change of belief, not a prediction error.

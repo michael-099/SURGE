@@ -1558,3 +1558,60 @@ score counts as silent. Weights are cross-fitted on the 15K grid. Reported: ΔCC
 the face oracle of 15K, with the 15K bootstrap, next to the label-based +0.0196. `scripts/inv_mvva_asd_eval.py`.
 **Reading.** Share of the label-based gain the detector realises: (detector − face) / (label − face).
 [Hypothesis] Above one half, because MVVA faces are large enough for Light-ASD.
+
+**15N post hoc (added after part 1 was seen and before part 2's result was read; descriptive).** Part 1: the
+detector ranks the faces of a frame well, but at its threshold of 0 it calls fewer face-frames talking (19.4 %) than
+the labels (31.3 %). Part 2 is repeated on the same frames, halves, grid and bootstrap with other splits of the
+faces: score > t for t in {−2, −1.5, −1, −0.5, 0, 0.5}, with t chosen together with the weights on the fit half
+("calibrated"); each face weighted by Light-ASD's speaking probability σ(score), with no threshold ("soft"); and the
+top-scoring face of each frame ("top-1"). Every 15K frame contains a talking face by selection, so top-1 uses label
+information that a deployed model would not have; it is a reference for the ranking only. t = 0 must reproduce
+part 2. `scripts/inv_mvva_asd_posthoc.py`.
+
+**Result, parts 1 and 2 (2026-11-16; `runs/review/inv/n_mvva_asd.json`).** All 300 videos were scored: 454,040
+face-frames, 31.3 % labelled talking, 19.4 % with a score above 0.
+- Part 1: AUC 0.878 pooled and 0.885 as the mean per video (290 videos with both classes; median 0.915, 10th
+  percentile 0.752). In 112,723 frames with one talking face, it has the highest score in 88.3 % of them, against
+  38.6 % by chance.
+- Part 2 (279 videos, 23,102 frames; base difference 0.0, closed form 7e-15, label masks identical): detector − face
+  +0.0100 CC [+0.0076, +0.0123], detector − base +0.0145 [+0.0122, +0.0169], label − face +0.0196 [+0.0163, +0.0229].
+  Share realised 0.51 [0.42, 0.60]. The hypothesis (above one half) is not established: the interval contains one
+  half. Both halves chose the label oracle's weights: talking faces ×2, other faces unchanged.
+- Four videos with nominal frame rates of 23.94 and 29.58–29.59 fps (022, 121, 130, 133) have almost no scores above
+  0 (0–3 %, against 42–56 % labelled talking). Their soundtracks match the video length within 0.6 s; not
+  investigated further.
+
+**Result, post hoc (`runs/review/inv/n_mvva_asd_posthoc.json`).** t = 0 reproduces part 2 (difference 1e-16). Of the
+72,344 faces in the 15K frames, 34.0 % are labelled talking; 21.6 % score above 0 and 34.4 % above −0.5. Detector −
+face, CC (share realised):
+- t = −2: +0.0031 (0.16); −1.5: +0.0056 (0.28); −1: +0.0089 (0.46); −0.5: +0.0117 [+0.0093, +0.0140] (0.59 [0.51,
+  0.67]); 0: +0.0100 (0.51); 0.5: +0.0052 (0.27).
+- Calibrated: both halves chose t = −0.5, where the detector's talking share matches the labels'.
+- Soft: +0.0105 [+0.0092, +0.0117] (0.53 [0.48, 0.60]).
+- Top-1 (uses the selection): +0.0152 [+0.0122, +0.0183] (0.78 [0.70, 0.85]).
+Calibration adds little (0.51 → 0.59). The ranking within a frame carries more (0.78), but only when it is known that
+someone in the frame speaks.
+
+**15N post hoc, all frames (added after the result above; descriptive).** The 15K frames were selected by the
+labels to show a talking and a silent face. A deployed model would re-weight every frame, including frames with no
+speaker or a single face. The re-weighting both halves chose (faces above the threshold ×2, other faces unchanged)
+is applied to every scored frame of the 15I run (294 videos), with t = 0 (registered) and t = −0.5 (calibrated), next
+to the label-based version. No weights are fitted here. Both halves made the same choice, so this equals cross-fitting;
+the 15 videos without 15K frames played no part in it. Reported: ΔCC and ΔNSS against the 15I map, per-video means
+with the video bootstrap, over all frames and by frame type (15K frames, other frames with a face, frames without a
+face). The unchanged map must reproduce the 15I per-video CC (largest difference 1e-6).
+`scripts/inv_mvva_asd_allframes.py`.
+*Amendment before any result of this check was seen.* The smoke test (4 videos) stopped at the check: largest
+difference 1.5e-6. The saved maps are float16 (`probe_eval.py --save-small`) while 15I scored float32 maps, so the
+limit is 1e-5, as in the 15M smoke test.
+
+**Result, all frames (`runs/review/inv/n_mvva_asd_allframes.json`).** Check: 2.5e-6. Every scored frame shows at least
+one usable face box. Over all 294 videos and 28,899 frames (CC 0.7261):
+- t = 0: +0.0121 CC [+0.0101, +0.0141], NSS +0.17.
+- t = −0.5: +0.0134 [+0.0113, +0.0156], NSS +0.21.
+- Labels: +0.0198 [+0.0168, +0.0228], NSS +0.28.
+In the 5,797 frames outside the 15K set (253 videos), the detector versions change CC by +0.0007 [−0.0020, +0.0034]
+(t = 0) and +0.0010 [−0.0022, +0.0042] (t = −0.5), and the label version by −0.0010 [−0.0018, −0.0001]. The gain on
+the 15K frames carries over to the whole dataset, diluted by their share (80 % of frames), and the other frames lose
+nothing measurable. The ×2 weight was chosen on MVVA, so this is a one-parameter speaker prior fitted on half of
+MVVA, not zero-shot transfer.
