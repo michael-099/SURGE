@@ -1358,6 +1358,14 @@ of the same model and use the same rule (with one seed, the bootstrap is over vi
 - The new test-time evaluator (`scripts/probe_eval.py`) must reproduce `runs/review/holdout/vitg_s0.json` per video
   (within 1e-4) with its default settings before any of its other results is used.
 
+**A2 result (2026-11-16; `runs/inv_repro_s0`).** Holdout CC per epoch 0.5655 / 0.5870 / 0.5851 against 0.5658 /
+0.5866 / 0.5844 (−0.0003, +0.0004, +0.0007); the best-epoch difference is about a quarter of the SD over seeds 0–5
+(0.0017).
+**A3 result (2026-11-17; `runs/review/inv/a3_cost.json`).** ViT-g encoder TFLOPs per clip: 2.629 (192²), 5.088
+(256²), 14.105 (384², ×2.77), 12.065 (256², 32 frames); time per output frame, batch 1 / 8: 7.5 / 3.7, 9.4 / 7.0,
+22.6 / 19.7, 9.4 / 8.4 ms. Decoder R 0.168 TFLOPs per clip; V4 0.011, V5 0.012. Training step (batch 8) 1,090 ms at
+256², 4,212 ms at 384².
+
 ### 15B. What each depth of the encoder carries (linear probes)
 One frozen-encoder pass feeds 41 readouts: one per block output of ViT-g (1–40), each LayerNorm without affine →
 1×1×1 convolution to one channel on the 8×16×16 token grid → trilinear to 16×64×64 → plus its own learned centre
@@ -1491,6 +1499,11 @@ mouse tracking, CC-BY-4.0) and MVVA (300 videos, eye tracking of 34 observers; p
 `D:/Datasets/MVVA`). Blur fixed in advance: σ = 8 × (native width / 640) pixels, the DHF1K value scaled to the frame
 width. Compared, descriptively, with the fine-tuned results where they exist.
 
+**Result (2026-11-16/17; `runs/review/inv/summary_zeroshot.json`, STAViS folds pooled).** Zero-shot CC: UCF Sports
+0.622, DIEM 0.692, Coutrot1 0.614, Coutrot2 0.662, ETMD 0.593, AVAD 0.695, SumMe 0.556, Hollywood-2 0.633, MVVA
+0.726, AViMoS 0.680. Fine-tuned ViT-g seed 0 − zero-shot (same videos, descriptive): +0.109, +0.022, +0.035, +0.158,
++0.080, +0.036, +0.030, +0.051.
+
 ### 15J. Failure analysis (CPU, descriptive)
 Per video (holdout, and val from the existing per-video scores): motion energy, number of scene cuts (TransNet V2
 output in `D:/DHF1K/transnet_scenes`), entropy of the ground truth, its centre bias, and its change over five frames.
@@ -1595,6 +1608,13 @@ MVVA videos had been printed. All 95 are 1280×720 videos, which the corrections
   while their fixations had been pooled to a portrait grid. Fixations are now mapped per axis onto the map grid
   (`scripts/prep_avimos_fix.py`), which gives identical maps for the other 148 videos (checked). In the same
   ground-truth check, all 150 videos score at least 2.31 (median 4.4), and none is left out.
+
+**Result (2026-11-17; `runs/review/inv/summary_bias.json`).** Identity check passed on every dataset (largest
+difference 2.5e-6). Adapted − zero-shot CC: +0.000 (SumMe) to +0.010 (UCF Sports, AViMoS). Share of the fine-tuning
+gain recovered: UCF Sports 0.09 [0.05, 0.14], DIEM 0.44 [−1.00, 2.15], Coutrot1 0.16, Coutrot2 0.04, ETMD 0.07, AVAD
+0.19 [0.02, 0.35], SumMe 0.02, Hollywood-2 0.14. Reading: content on seven of eight datasets; DIEM mixed, with an
+uninformative interval. The expectation held for Coutrot2 and UCF Sports, not for the free-viewing datasets. An
+earlier run on MVVA and AViMoS was a code check; the queue's run overwrote it.
 
 ### 15N. Can an off-the-shelf active-speaker detector supply the speaker? (MVVA, CPU; rule written 2026-11-16, before any run)
 

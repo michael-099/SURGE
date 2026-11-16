@@ -1,0 +1,78 @@
+{
+ "mean": {
+  "cc": 0.5431284154146294,
+  "nss": 2.957975631517905,
+  "sim": 0.4287581332096629,
+  "kld": 1.3600913143072622
+ },
+ "per_video": {
+  "Cooking": {
+   "cc": 0.5672740444360657,
+   "nss": 3.62055314405865,
+   "sim": 0.4352840372162839,
+   "kld": 1.3222787806294032
+  },
+  "Bus_in_Rock_Tunnel": {
+   "cc": 0.47434744389107547,
+   "nss": 2.117019724566646,
+   "sim": 0.3942304903159604,
+   "kld": 1.4641840999425437
+  },
+  "Uncut_Evening_Flight": {
+   "cc": 0.5314119360949433,
+   "nss": 2.2172359206033216,
+   "sim": 0.44533869119953173,
+   "kld": 1.2913725939194252
+  },
+  "playing_ball": {
+   "cc": 0.5570136679586128,
+   "nss": 3.371307910497288,
+   "sim": 0.43343381832794037,
+   "kld": 1.229986657470663
+  },
+  "Paintball": {
+   "cc": 0.4370021794991532,
+   "nss": 2.2198261046460703,
+   "sim": 0.37156809965481735,
+   "kld": 1.5639721575337775
+  },
+  "Air_Force_One": {
+   "cc": 0.6368028104250731,
+   "nss": 3.975443738328792,
+   "sim": 0.49015388055384584,
+   "kld": 1.39599735287349
+  },
+  "car_over_camera": {
+   "cc": 0.5980468255974825,
+   "nss": 3.1844428779245675,
+   "sim": 0.43129791519926075,
+   "kld": 1.2528475577815328
+  }
+ },
+ "frames": 6836,
+ "videos": 7,
+ "seconds": 423.4223310947418,
+ "args": {
+  "run": [
+   "runs/vitg_s0"
+  ],
+  "ckpt": "best.pt",
+  "maps": null,
+  "dataset": "summe_f2",
+  "root": null,
+  "split": "val",
+  "metrics": "cc,nss,sim,kld",
+  "sigma": 8.0,
+  "frame_step": 5,
+  "flip_tta": false,
+  "max_videos": null,
+  "audio_rotate": false,
+  "workers": 16,
+  "batch": 4,
+  "save_maps": null,
+  "save_small": "runs/inv/zs_small/stavis_summe_f2",
+  "pgate_control": null,
+  "ssl_rotate": false,
+  "out": "runs/review/inv/zs_stavis_summe_f2.json"
+ }
+}

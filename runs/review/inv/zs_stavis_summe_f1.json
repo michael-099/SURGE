@@ -1,0 +1,84 @@
+{
+ "mean": {
+  "cc": 0.5646825090197884,
+  "nss": 2.8631266676556595,
+  "sim": 0.44485022165750204,
+  "kld": 1.1751430996687247
+ },
+ "per_video": {
+  "Valparaiso_Downhill": {
+   "cc": 0.7042341137498447,
+   "nss": 4.422027023664714,
+   "sim": 0.5044500846839349,
+   "kld": 0.8630125167834461
+  },
+  "Car_railcrossing": {
+   "cc": 0.4901083046566331,
+   "nss": 2.3631702033367645,
+   "sim": 0.3966283192957192,
+   "kld": 1.391861428360295
+  },
+  "Bearpark_climbing": {
+   "cc": 0.6515171665915119,
+   "nss": 3.7191243087117205,
+   "sim": 0.5006655727663601,
+   "kld": 1.0351554911080592
+  },
+  "Playing_on_water_slide": {
+   "cc": 0.5103400234791163,
+   "nss": 2.4342483571249782,
+   "sim": 0.416053002512071,
+   "kld": 1.2949357678161286
+  },
+  "Fire_Domino": {
+   "cc": 0.5799999208141228,
+   "nss": 2.449703296225918,
+   "sim": 0.4759211042425574,
+   "kld": 1.050882439794039
+  },
+  "Cockpit_Landing": {
+   "cc": 0.5350656898641702,
+   "nss": 2.293401816998105,
+   "sim": 0.43038312761669895,
+   "kld": 1.2262741283870233
+  },
+  "Saving_dolphines": {
+   "cc": 0.6128251880904919,
+   "nss": 3.40070224580162,
+   "sim": 0.4684646426563055,
+   "kld": 1.0445292335888365
+  },
+  "Notre_Dame": {
+   "cc": 0.4333696649124161,
+   "nss": 1.8226360893814542,
+   "sim": 0.3662359194863694,
+   "kld": 1.4944937915119696
+  }
+ },
+ "frames": 7723,
+ "videos": 8,
+ "seconds": 476.27728629112244,
+ "args": {
+  "run": [
+   "runs/vitg_s0"
+  ],
+  "ckpt": "best.pt",
+  "maps": null,
+  "dataset": "summe_f1",
+  "root": null,
+  "split": "val",
+  "metrics": "cc,nss,sim,kld",
+  "sigma": 8.0,
+  "frame_step": 5,
+  "flip_tta": false,
+  "max_videos": null,
+  "audio_rotate": false,
+  "workers": 16,
+  "batch": 4,
+  "save_maps": null,
+  "save_small": "runs/inv/zs_small/stavis_summe_f1",
+  "pgate_control": null,
+  "ssl_rotate": false,
+  "out": "runs/review/inv/zs_stavis_summe_f1.json"
+ }
+}

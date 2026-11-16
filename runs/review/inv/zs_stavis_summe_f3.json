@@ -1,0 +1,84 @@
+{
+ "mean": {
+  "cc": 0.5586917229261005,
+  "nss": 3.089775863875889,
+  "sim": 0.433515577170213,
+  "kld": 1.2681036500507237
+ },
+ "per_video": {
+  "Base_jumping": {
+   "cc": 0.4999575352466918,
+   "nss": 2.4700879432281853,
+   "sim": 0.40128275373724914,
+   "kld": 1.4353578735154302
+  },
+  "Bike_Polo": {
+   "cc": 0.47012558524943593,
+   "nss": 2.259406450472246,
+   "sim": 0.38564357382911485,
+   "kld": 1.3845455363430204
+  },
+  "paluma_jump": {
+   "cc": 0.634091268288981,
+   "nss": 4.191321577817735,
+   "sim": 0.45457336794928715,
+   "kld": 1.2995198138825963
+  },
+  "Kids_playing_in_leaves": {
+   "cc": 0.6098945836778313,
+   "nss": 3.6883694142925676,
+   "sim": 0.47419839787458407,
+   "kld": 1.0900563837996666
+  },
+  "Eiffel_Tower": {
+   "cc": 0.5563973014607637,
+   "nss": 2.500776057398214,
+   "sim": 0.41242217093164896,
+   "kld": 1.196950340101965
+  },
+  "Statue_of_Liberty": {
+   "cc": 0.5313857585726606,
+   "nss": 2.7929730162997504,
+   "sim": 0.43306016581862644,
+   "kld": 1.4149325853658632
+  },
+  "Excavators_river_crossing": {
+   "cc": 0.5564656927372562,
+   "nss": 2.597883580367964,
+   "sim": 0.4356157876635248,
+   "kld": 1.2154347129543845
+  },
+  "Jumps": {
+   "cc": 0.6112160581751831,
+   "nss": 4.217388871130449,
+   "sim": 0.47132839955766836,
+   "kld": 1.1080319544428634
+  }
+ },
+ "frames": 6613,
+ "videos": 8,
+ "seconds": 412.0035195350647,
+ "args": {
+  "run": [
+   "runs/vitg_s0"
+  ],
+  "ckpt": "best.pt",
+  "maps": null,
+  "dataset": "summe_f3",
+  "root": null,
+  "split": "val",
+  "metrics": "cc,nss,sim,kld",
+  "sigma": 8.0,
+  "frame_step": 5,
+  "flip_tta": false,
+  "max_videos": null,
+  "audio_rotate": false,
+  "workers": 16,
+  "batch": 4,
+  "save_maps": null,
+  "save_small": "runs/inv/zs_small/stavis_summe_f3",
+  "pgate_control": null,
+  "ssl_rotate": false,
+  "out": "runs/review/inv/zs_stavis_summe_f3.json"
+ }
+}

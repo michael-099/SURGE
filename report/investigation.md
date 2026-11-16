@@ -1,6 +1,6 @@
 # Systematic investigation of SURGE-D: behaviour, limitations and research gaps
 
-**Status:** in progress (last updated 2026-11-16). Results arrive from the queues of research log section 15.
+**Status:** in progress (last updated 2026-11-17). Results arrive from the queues of research log section 15.
 **Object:** SURGE-D ViT-g, the final model of the thesis: a frozen V-JEPA 2 ViT-g/16 encoder (1,012 M parameters)
 and a 7.39 M-parameter decoder, unchanged. Reference runs `runs/vitg_s{0..5}`.
 **Rules:** every experiment was specified, with its decision rule, in `research/log.md` section 15 and committed before
@@ -39,12 +39,12 @@ it ran (rules `5e6fb30`; the scene-cut hypothesis 15L `134513c`; one amendment b
 | A1: seed-0 checkpoint re-scored on DHF1K val (all 60,273 frames, six metrics, σ 8) | **Identical** to the stored result on every video and metric (max difference 0.0). CC 0.6003, NSS 3.457, SIM 0.453, KLD 1.170, AUC-J 0.931, sAUC 0.771 | [Completed] `runs/review/inv/a1_val_s0.json` |
 | New test-time evaluator vs the thesis evaluator (holdout, 60 videos) | Identical per video (max difference 0.0), checked before any other result of it was used | [Completed] `runs/review/inv/t_orig_s0.json` |
 | Seed variability (6 seeds, holdout, best epoch) | CC 0.5861 ± 0.0017 (SD; range 0.5829–0.5881) | [Thesis] `runs/vitg_s{0..5}/log.jsonl` |
-| A2: seed 0 retrained with the identical configuration (GPU non-determinism) | — | [Pending] `runs/inv_repro_s0` |
-| A3: parameters, FLOPs, time and memory at several input sizes and clip lengths | — | [Pending]; thesis values in section 5 |
+| A2: seed 0 retrained with the identical configuration (GPU non-determinism) | Holdout CC per epoch 0.5655 / 0.5870 / 0.5851 against 0.5658 / 0.5866 / 0.5844 (differences −0.0003, +0.0004, +0.0007). The best-epoch difference (+0.0004) is about a quarter of the SD over six seeds (0.0017) | [Completed] `runs/inv_repro_s0/log.jsonl` |
+| A3: parameters, FLOPs, time and memory at several input sizes and clip lengths | Section 5.3 | [Completed] `runs/review/inv/a3_cost.json` |
 
 **Configuration.** One configuration file (`configs/main_b1.yaml`) with command-line overrides; every run directory
 stores its resolved `config.json`. Seeds fix clip sampling, order, augmentation and initialisation; cuDNN kernels are
-not forced to be deterministic, which A2 quantifies.
+not forced to be deterministic. A2 puts the resulting run-to-run difference at 0.0003–0.0007 CC per epoch.
 
 **Convergence [Thesis logs, re-read].** All six ViT-g seeds reach their best holdout CC at the second of three epochs
 and lose 0.001–0.004 in the third, while training CC keeps rising (0.640 → 0.676). The 10-epoch ViT-L run of gate G1
@@ -117,8 +117,8 @@ model, not of the training recipe.
 | ID | Question | Status |
 |---|---|---|
 | A1, evaluator check | Is the reported baseline reproducible from the stored checkpoint? | Completed |
-| A2 | How large is run-to-run non-determinism at a fixed seed? | Pending |
-| A3 | Cost: parameters, FLOPs, time, memory | Pending (thesis values available) |
+| A2 | How large is run-to-run non-determinism at a fixed seed? | Completed |
+| A3 | Cost: parameters, FLOPs, time, memory | Completed |
 | B | What does each encoder depth carry (41 linear probes)? | Completed |
 | C | Decoder ablations V1–V6, 3 seeds | Completed |
 | D | Learning rate, loss terms, schedule length | Completed (schedule length: seed 0 only, as planned) |
@@ -129,11 +129,11 @@ model, not of the training recipe.
 | F3 | Training at 384² | Completed |
 | G | Output position and tiling | Completed |
 | H | Perturbations; flip consistency | Completed |
-| I | Zero-shot on five datasets | Running (MVVA and AViMoS completed) |
+| I | Zero-shot on five datasets | Completed |
 | J | Failure analysis | Completed |
 | K | Multi-face scenes (MVVA) | Completed |
 | 15L | Scene cuts: cross-shot context or post-cut gaze? (hypothesis test) | Completed |
-| 15M | How much of the zero-shot gap is dataset bias (blur, exponent, centre)? | Pending (queued after the remaining zero-shot runs) |
+| 15M | How much of the zero-shot gap is dataset bias (blur, exponent, centre)? | Completed |
 | 15N | Can an off-the-shelf active-speaker detector supply the speaker (MVVA)? | Completed |
 
 ---
@@ -196,8 +196,10 @@ run at each variant's best epoch (seeds 0–2; `runs/inv_c_s{0,1,2}`, `runs/revi
   result is inconclusive rather than equivalent. Each was equivalent alone at ViT-L (thesis).
 - **The trainer.** R of the multi-decoder trainer against the standard runs `runs/vitg_s{0,1,2}`:
   - +0.0013 [−0.0003, +0.0036], inconclusive. Per seed: +0.0003, +0.0029, +0.0006.
-  - The clips, order and augmentation are the same, so the seed-1 difference reflects run-to-run variation; A2
-    measures it [Pending].
+  - The clips, order and augmentation are the same, but the decoder's initialisation is not: the multi-decoder
+    trainer seeds each decoder separately (seed × 1000 + its index). A2 puts GPU non-determinism at a fixed seed at
+    0.0003–0.0007 CC per epoch (section 1). [Hypothesis] The seed-1 difference (+0.0029) therefore comes mostly from
+    the different initialisation.
   - Every comparison above is within one run and is not affected.
 
 ### What each encoder depth carries (15B) [Completed, seed 0, holdout, descriptive]
@@ -378,8 +380,8 @@ Reference: the 256² runs `runs/vitg_s{0,1,2}` on the same frames (`runs/review/
   ViT-L to ViT-g (+0.0083, seed 0, section 3).
 - NSS gains more than SIM. This fits F1, where finer localisation mattered more for NSS than for CC (section 7.1).
 - The best epoch is the second in seeds 0 and 1 and the third in seed 2 (+0.0007 over its second).
-- Cost: a training epoch takes 2.6 times as long as at 256² (1,563 s against 595 s, same GPU). FLOPs follow in A3
-  [Pending].
+- Cost: a training epoch takes 2.6 times as long as at 256² (1,563 s against 595 s, same GPU). The encoder needs 2.77
+  times the FLOPs (A3, section 5.3).
 - [Post-hoc, descriptive] 40 of 60 holdout videos gain. The per-video gain (mean of the three seed pairs) shows no
   clear association with the ground truth's fine detail (Spearman ρ with the 16² ceiling +0.05 [−0.22, +0.32]), its
   concentration (entropy −0.01 [−0.29, +0.26]), its centrality (−0.08 [−0.34, +0.19]), gaze change (−0.16 [−0.42,
@@ -416,7 +418,7 @@ Variants of R's training (learning rate 3e-4; loss KLD + 1.0 × CC term + 0.1 ×
 
 ## 5. Computational efficiency analysis
 
-### 5.1 Cost of the model [Thesis, section 5 "Computational Cost"; A3 will extend it]
+### 5.1 Cost of the model [Thesis, section 5 "Computational Cost"; extended by A3 in section 5.3]
 
 | | ViT-L | ViT-g |
 |---|---|---|
@@ -449,9 +451,41 @@ frames. A strictly causal model needs one pass per output frame.
   [Hypothesis] A decoder that carried state across windows could keep all 16 positions at the accuracy of the
   default, which would halve the cost. Section 9 discusses this.
 
-### 5.3 Pending
-A3: FLOPs and measured time at 192/256/384 pixels and 16/32 frames; training step time and peak memory. Measured so
-far: a training epoch at 384² takes 2.6 times as long as at 256² (F3, section 4.4).
+### 5.3 Cost by input size, clip length and decoder (A3) [Completed; RTX A5000, bf16, protocol of 13D]
+
+Encoder only (`runs/review/inv/a3_cost.json`). One pass serves as many native frames as the clip has sampled frames
+(default tiling, stride 2).
+
+| Encoder, input, clip | TFLOPs per clip | TFLOPs per output frame | Time per output frame, batch 1 / 8 | Peak memory, batch 8 |
+|---|---|---|---|---|
+| ViT-L, 256², 16 frames | 1.656 | 0.103 | 4.5 / 2.8 ms | 3.0 GB |
+| ViT-g, 192², 16 frames | 2.629 | 0.164 | 7.5 / 3.7 ms | 7.1 GB |
+| **ViT-g, 256², 16 frames (default)** | 5.088 | 0.318 | 9.4 / 7.0 ms | 8.2 GB |
+| ViT-g, 384², 16 frames | 14.105 | 0.882 | 22.6 / 19.7 ms | 11.1 GB |
+| ViT-g, 256², 32 frames | 12.065 | 0.377 | 9.4 / 8.4 ms | 10.5 GB |
+
+Decoders on ViT-g taps (per 16-frame clip; times for a batch of 8):
+
+| Decoder | Parameters | TFLOPs per clip | Forward | Training step | ΔCC (15C) |
+|---|---|---|---|---|---|
+| R (default) | 7.39 M | 0.168 | 54.7 ms | 177 ms | — |
+| V1 linear readout | 0.006 M | < 0.001 | 7.2 ms | 12.7 ms | −0.072 |
+| V3 no temporal mixing | 6.60 M | 0.145 | 56.6 ms | 183 ms | −0.024 |
+| V4 taps 30/40 only, 1/16 | 2.72 M | 0.011 | 4.2 ms | 20.9 ms | −0.004 |
+| V5 64 channels | 0.73 M | 0.012 | 14.8 ms | 75.7 ms | −0.004 |
+
+V2 and V6 cost the same as R. A full training step (encoder forward without gradient, decoder forward and backward,
+batch 8) takes 1,090 ms at 256² (peak 10.0 GB) and 4,212 ms at 384² (17.4 GB).
+
+- A 384² input costs 2.77 times the encoder FLOPs of 256² and 2.4–2.8 times the time per output frame, for +0.0092
+  CC (F3). A training step costs 3.9 times as much. A whole epoch cost 2.6 times as much, because data loading and the
+  holdout pass do not grow with the input.
+- A 32-frame clip costs 1.19 times as much per output frame as a 16-frame clip, for +0.0036 CC (thesis, seed 0).
+- The decoder is 3 % of the FLOPs. V4 and V5 cut its FLOPs about fifteen-fold for −0.004 CC, which saves about 3 % of
+  the whole model.
+- Arithmetic, not a measurement: at 384², keeping all 16 positions of each window (half the passes, section 5.2) would
+  cost 0.44 TFLOPs per output frame, 1.39 times today's 0.318. That assumes that the all-16 deficit can be removed
+  (section 9), which is untested.
 
 ---
 
@@ -515,19 +549,67 @@ original. The model was trained with flip augmentation, yet the correlation is n
 Transfer is weakest where gaze is driven by a task (UCF Sports) or by who is speaking (Coutrot2). Those are the two
 largest fine-tuning gains, and both are factors that a free-viewing visual model cannot infer from DHF1K.
 
-**Zero-shot ViT-g (15I)** [Completed for MVVA and AViMoS; the other datasets pending]. The model is `runs/vitg_s0`,
-trained on DHF1K only. σ was fixed in advance at 8 × native width / 640, and every fifth frame is scored. Values are
-per-video means with 95 % video-bootstrap intervals.
+**Zero-shot ViT-g (15I)** [Completed]. The model is `runs/vitg_s0`, trained on DHF1K only. σ was fixed in advance at
+8 × native width / 640. Every fifth frame is scored (UCF Sports: every frame). The STAViS test folds are pooled, since
+each video lies in one fold. Values are per-video means with 95 % video-bootstrap intervals
+(`runs/review/inv/summary_zeroshot.json`). "Fine-tuned" is the thesis's ViT-g seed-0 model fine-tuned on each
+dataset, on the same videos (`runs/review/inv/summary_bias.json`). It was scored on every frame with its own tuned σ,
+so the gain from fine-tuning is descriptive.
 
-| Dataset | Videos | Gaze data | CC | NSS | SIM | KLD |
+| Dataset | Videos | Gaze data | Zero-shot CC | NSS | Fine-tuned CC | Gain from fine-tuning [95 %] |
 |---|---|---|---|---|---|---|
-| MVVA (multi-face scenes, 34 observers) | 294 | eye tracking | 0.726 [0.715, 0.737] | 3.90 [3.80, 4.00] | 0.553 | 0.855 |
-| AViMoS public test | 150 | mouse tracking | 0.680 [0.665, 0.694] | 2.84 [2.70, 2.98] | 0.483 | 0.928 |
+| UCF Sports (task-driven gaze) | 47 | eye tracking | 0.622 [0.587, 0.654] | 3.22 | 0.730 | +0.109 [+0.082, +0.136] |
+| DIEM | 17 | eye tracking | 0.692 [0.639, 0.740] | 2.79 | 0.714 | +0.022 [−0.004, +0.045] |
+| Coutrot1 | 60 | eye tracking | 0.614 [0.583, 0.644] | 3.00 | 0.648 | +0.035 [+0.019, +0.051] |
+| Coutrot2 (meetings, speech) | 15 | eye tracking | 0.662 [0.632, 0.691] | 5.03 | 0.820 | +0.158 [+0.115, +0.200] |
+| ETMD | 12 | eye tracking | 0.593 [0.576, 0.610] | 3.20 | 0.672 | +0.080 [+0.066, +0.093] |
+| AVAD | 45 | eye tracking | 0.695 [0.656, 0.732] | 3.98 | 0.731 | +0.036 [+0.019, +0.055] |
+| SumMe | 23 | eye tracking | 0.556 [0.528, 0.584] | 2.97 | 0.586 | +0.030 [+0.019, +0.040] |
+| Hollywood-2 (Vig gaze) | 884 | eye tracking | 0.633 [0.626, 0.640] | 3.66 | 0.684 | +0.051 [+0.049, +0.054] |
+| MVVA (multi-face scenes, 34 observers) | 294 | eye tracking | 0.726 [0.715, 0.737] | 3.90 | — | — |
+| AViMoS public test | 150 | mouse tracking | 0.680 [0.665, 0.694] | 2.84 | — | — |
 
-- These scores are not compared with published models. MVVA results in the literature use the authors' own split,
-  which the release does not include, and no published AViMoS result uses this zero-shot protocol.
-- CC is not comparable across datasets either, because each dataset blurs its ground truth differently (the DHF1K
-  holdout gives 0.587).
+- With ViT-g, as with ViT-L, fine-tuning gains most on Coutrot2 (+0.158) and UCF Sports (+0.109), then on ETMD
+  (+0.080) and Hollywood-2 (+0.051). Elsewhere it gains 0.02–0.04.
+- The MVVA and AViMoS scores are not compared with published models. MVVA results in the literature use the authors'
+  own split, which the release does not include, and no published AViMoS result uses this zero-shot protocol.
+- CC is not comparable across datasets, because each dataset blurs its ground truth differently (the DHF1K holdout
+  gives 0.587).
+
+**Dataset bias in transfer (15M)** [Completed, descriptive; design and reading fixed before any zero-shot result;
+`runs/review/inv/summary_bias.json`]. Three parameters are fitted per dataset: blur, an exponent γ and a centre
+factor. They are chosen on one half of the videos and scored on the other (two-fold cross-fitting). The identity
+transform reproduced the 15I per-video CC on every dataset (largest difference 2.5 × 10⁻⁶). The share is (adapted −
+zero-shot) / (fine-tuned − zero-shot) on the same videos.
+
+| Dataset | Zero-shot CC | Bias-adapted CC | Adapted − zero-shot [95 %] | Share of the fine-tuning gain [95 %] | Reading fixed in advance |
+|---|---|---|---|---|---|
+| UCF Sports | 0.622 | 0.632 | +0.010 [+0.005, +0.016] | 0.09 [0.05, 0.14] | content |
+| DIEM | 0.692 | 0.701 | +0.010 [+0.003, +0.018] | 0.44 [−1.00, 2.15] | mixed; uninformative, since the fine-tuning gain's interval includes 0 |
+| Coutrot1 | 0.614 | 0.619 | +0.006 [+0.003, +0.008] | 0.16 [0.11, 0.25] | content |
+| Coutrot2 | 0.662 | 0.668 | +0.006 [−0.004, +0.015] | 0.04 [−0.02, 0.11] | content |
+| ETMD | 0.593 | 0.598 | +0.005 [+0.000, +0.011] | 0.07 [0.00, 0.12] | content |
+| AVAD | 0.695 | 0.701 | +0.007 [+0.001, +0.013] | 0.19 [0.02, 0.35] | content |
+| SumMe | 0.556 | 0.557 | +0.000 [−0.003, +0.003] | 0.02 [−0.11, 0.11] | content |
+| Hollywood-2 | 0.633 | 0.640 | +0.007 [+0.007, +0.008] | 0.14 [0.13, 0.16] | content |
+| AViMoS | 0.680 | 0.690 | +0.010 [+0.007, +0.014] | no fine-tuned model | — |
+| MVVA | 0.726 | 0.729 | +0.003 [+0.002, +0.005] | no fine-tuned model | — |
+
+- **SURGE-D's transfer gap is mainly content, not a low-dimensional bias.** On seven of the eight datasets with a
+  fine-tuned model, three bias parameters recover at most a fifth of the fine-tuning gain (0.02–0.19). DIEM is the
+  exception in its point estimate only (0.44), and its interval is uninformative.
+- The expectation [hypothesis] held for Coutrot2 (0.04) and UCF Sports (0.09). It did not hold for the free-viewing
+  datasets, whose shares are as low (SumMe 0.02, Coutrot1 0.16, AVAD 0.19).
+- This differs from images, where fewer than 20 dataset-specific parameters closed more than 75 % of the gap (Kümmerer,
+  Khanuja & Bethge, ICCV 2025). The comparison is indicative only: three parameters here, a different reference (the
+  fine-tuning gain), and fine-tuned models scored on every frame with their own σ.
+- In absolute terms the bias fit adds 0.000–0.010 CC, about what the 384² input adds on DHF1K, against the 0.02–0.16
+  that fine-tuning adds.
+- Fitted parameters (descriptive): γ = 0.75, which flattens the maps, on UCF Sports, DIEM, ETMD, AVAD and Hollywood-2
+  in both halves. Coutrot2 chose γ = 1.5 and 1.5 times the blur in both halves, and AViMoS's mouse-tracking maps chose
+  a stronger centre (κ 4 and 8).
+- An earlier run of the same script on MVVA and AViMoS served as a code check. The queue's run overwrote its files and
+  is the one reported.
 
 **Multi-face scenes (15K)** [Completed, descriptive; `runs/review/inv/k_mvva_faces.json`]. The frames are the MVVA
 frames of the zero-shot run that show at least one talking and one silent face: 279 videos, 23,102 frames. Face boxes
@@ -718,6 +800,9 @@ All three are cut-free and low-motion. The common factor is target size and posi
   fixated pixels as before, but its overall shape matches the ground truth less well (section 4.4).
 - **The gain from training at 384² is spread across videos** (40 of 60 gain), with no clear concentration on the
   small, off-centre targets among the worst videos (post-hoc, descriptive; section 4.4).
+- **The transfer gap is content, not dataset bias.** Three bias parameters recover 0.02–0.19 of the fine-tuning gain
+  on seven of eight video datasets (15M). For images, fewer than 20 such parameters closed more than 75 % of the gap
+  (section 6.2).
 - **Heavy blur costs as much as reversing time** (σ 8: −0.052 CC), while noise, JPEG compression and greyscale
   cost at most 0.0033 (section 6.1).
 - **The default tiling is near the accuracy-efficiency knee**, although it was chosen without a sweep (thesis).
@@ -771,6 +856,7 @@ with their type:*
 | Input resolution limits accuracy; small, off-centre, action-relevant targets are among the worst videos | 4.4 (F3), 7.3, 7.4 | input resolution: training at 384² gains +0.0092 CC [+0.0030, +0.0163] at 2.6 times the training time; the gain is spread across videos rather than concentrated on small targets (post-hoc) |
 | In multi-face scenes, faces are found but the speaker is under-weighted | 6.2 (15K, 15N) | input: no speaker information in a visual-only model at 256²; a speaker oracle adds +0.020 CC through re-weighting, and an off-the-shelf detector supplies +0.012–0.013 of it on all MVVA frames |
 | Decoder overfits after ~2 epochs; data-limited | 1, 4.5 (R peaks at the second epoch in all three seeds of 15C; six epochs only prolong overfitting; ×3 learning rate and either loss term make no established difference) | data, not optimisation settings |
+| Transfer to other datasets: fine-tuning adds 0.02–0.16 CC | 6.2 (15I, 15M) | content, not a low-dimensional bias: three bias parameters recover 0.02–0.19 of the fine-tuning gain on seven of eight datasets |
 | Most per-video variance is ground-truth reliability | 7.3 | evaluation limitation, not the model |
 
 ## 10. Literature-validated research gaps
@@ -947,8 +1033,8 @@ with their type:*
   doi:10.1007/s11263-021-01519-y) specialises a video saliency model to each dataset through domain-specific priors,
   smoothing and batch normalisation. For datasets without annotations, it learns general features with gradient
   reversal at several scales, and then performs comparably to supervised state-of-the-art models.
-- Video datasets were not part of Kümmerer et al.'s study. How much of SURGE-D's transfer gap is such a
-  low-dimensional bias is the question of 15M [Pending].
+- Video datasets were not part of Kümmerer et al.'s study. For SURGE-D, three such parameters recover only 0.02–0.19
+  of the fine-tuning gain on seven of eight video datasets (15M, section 6.2). Its transfer gap is mainly content.
 
 **Robustness and evaluation.**
 - Common corruptions: Hendrycks & Dietterich (ICLR 2019).

@@ -1,0 +1,60 @@
+{
+ "mean": {
+  "cc": 0.5776654008710418,
+  "nss": 3.024719246072161,
+  "sim": 0.4478609926109332,
+  "kld": 1.1688500925487473
+ },
+ "per_video": {
+  "CHI_1_color": {
+   "cc": 0.5788905432983134,
+   "nss": 2.990969738093555,
+   "sim": 0.46491207986086996,
+   "kld": 1.2180155405203696
+  },
+  "CHI_2_color": {
+   "cc": 0.6052158520517213,
+   "nss": 3.196775459121716,
+   "sim": 0.47531512834338446,
+   "kld": 1.057047659778287
+  },
+  "GLA_1_color": {
+   "cc": 0.5709417303041516,
+   "nss": 3.113902798644299,
+   "sim": 0.4380657486782174,
+   "kld": 1.216253139993046
+  },
+  "GLA_2_color": {
+   "cc": 0.5556134778299808,
+   "nss": 2.797228988429074,
+   "sim": 0.4131510135612611,
+   "kld": 1.1840840299032862
+  }
+ },
+ "frames": 4123,
+ "videos": 4,
+ "seconds": 258.7318694591522,
+ "args": {
+  "run": [
+   "runs/vitg_s0"
+  ],
+  "ckpt": "best.pt",
+  "maps": null,
+  "dataset": "etmd_f1",
+  "root": null,
+  "split": "val",
+  "metrics": "cc,nss,sim,kld",
+  "sigma": 8.0,
+  "frame_step": 5,
+  "flip_tta": false,
+  "max_videos": null,
+  "audio_rotate": false,
+  "workers": 16,
+  "batch": 4,
+  "save_maps": null,
+  "save_small": "runs/inv/zs_small/stavis_etmd_f1",
+  "pgate_control": null,
+  "ssl_rotate": false,
+  "out": "runs/review/inv/zs_stavis_etmd_f1.json"
+ }
+}

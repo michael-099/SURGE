@@ -338,10 +338,26 @@ def part_failure():
 
 def part_zeroshot():
     res = {}
+    pooled = {}  # dataset -> {video: scores}; STAViS test folds pooled (each video is in one test fold)
     for p in sorted(R.glob("zs_*.json")):
         d = json.load(open(p))
         res[p.stem] = {**d["mean"], "videos": d["videos"], "frames": d["frames"], "sigma": d["args"]["sigma"]}
         print(f"{p.stem:22s} " + " ".join(f"{k}={v:.4f}" for k, v in d["mean"].items()) + f"  ({d['videos']} videos)")
+        name = p.stem[3:].replace("stavis_", "").rsplit("_f", 1)[0] if "stavis_" in p.stem else p.stem[3:]
+        for v, s in d["per_video"].items():
+            assert v not in pooled.setdefault(name, {}), (name, v)
+            pooled[name][v] = s
+    res["pooled"] = {}
+    print("pooled per dataset (per-video means, 95 % video bootstrap):")
+    for name, pvs in sorted(pooled.items()):
+        out = {"videos": len(pvs)}
+        for m in ("cc", "nss", "sim", "kld"):
+            x = np.array([s[m] for s in pvs.values()], float)
+            b = boot(x[None, :])
+            out[m] = {"mean": b["mean"], "ci95": b["ci95"]}
+        res["pooled"][name] = out
+        print(f"  {name:10s} {out['videos']:4d} videos  " + "  ".join(
+            f"{m} {out[m]['mean']:.4f} [{out[m]['ci95'][0]:.4f}, {out[m]['ci95'][1]:.4f}]" for m in ("cc", "nss")))
     return res
 
 

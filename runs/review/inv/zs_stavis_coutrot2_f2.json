@@ -1,0 +1,66 @@
+{
+ "mean": {
+  "cc": 0.6425254564294544,
+  "nss": 4.805867029542239,
+  "sim": 0.422521118963865,
+  "kld": 1.0650235556024874
+ },
+ "per_video": {
+  "clip12": {
+   "cc": 0.6100377138284064,
+   "nss": 4.501267147450901,
+   "sim": 0.4057342270896943,
+   "kld": 1.100843674371464
+  },
+  "clip13": {
+   "cc": 0.6745638940820682,
+   "nss": 5.524529252772549,
+   "sim": 0.4081010333464709,
+   "kld": 1.064142067976752
+  },
+  "clip10": {
+   "cc": 0.5967473972627098,
+   "nss": 4.476462540118923,
+   "sim": 0.4226559174404946,
+   "kld": 1.0533631141589526
+  },
+  "clip7": {
+   "cc": 0.680502245449077,
+   "nss": 4.651147552157423,
+   "sim": 0.44792065090690203,
+   "kld": 1.0044028800640208
+  },
+  "clip5": {
+   "cc": 0.6507760315250101,
+   "nss": 4.875928655211402,
+   "sim": 0.4281937660357637,
+   "kld": 1.102366041441248
+  }
+ },
+ "frames": 1089,
+ "videos": 5,
+ "seconds": 74.89416217803955,
+ "args": {
+  "run": [
+   "runs/vitg_s0"
+  ],
+  "ckpt": "best.pt",
+  "maps": null,
+  "dataset": "coutrot2_f2",
+  "root": null,
+  "split": "val",
+  "metrics": "cc,nss,sim,kld",
+  "sigma": 8.0,
+  "frame_step": 5,
+  "flip_tta": false,
+  "max_videos": null,
+  "audio_rotate": false,
+  "workers": 16,
+  "batch": 4,
+  "save_maps": null,
+  "save_small": "runs/inv/zs_small/stavis_coutrot2_f2",
+  "pgate_control": null,
+  "ssl_rotate": false,
+  "out": "runs/review/inv/zs_stavis_coutrot2_f2.json"
+ }
+}
