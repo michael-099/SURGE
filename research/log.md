@@ -1746,3 +1746,50 @@ at the 1/16 level, through which positions 0–7 attend to the previous window's
 positions. Its rule is written before any run.
 **Stop rule (report section 12).** If neither P1a nor P1b brings the all-16 tiling to equivalence at 256², the state is
 dropped, and 384² is reported as a resolution result with its cost.
+
+### 16 results (queue 16p1; `runs/p1_s{0,1,2}`, `runs/review/p1/`, `runs/review/inv/summary_p1.json`)
+
+**Step 0 (`runs/vitg_s0`, test time, descriptive; video bootstrap).** Holdout CC: default tiling 0.5866, all-16 tiling
+0.5803 without the buffer and 0.5880 with it.
+- Without − default: −0.0063 [−0.0090, −0.0038]. With − default: +0.0014 [−0.0010, +0.0039], 90 % [−0.0006,
+  +0.0035]. With − without: +0.0077 [+0.0049, +0.0106].
+- Mean CC at positions 0–1 against 8–9: 0.5284 against 0.6014 without the buffer (deficit 0.073), 0.5837 against
+  0.6009 with it (0.017).
+
+**P1a.** Holdout CC at each decoder's best epoch (0-based best epochs: R 2, 1, 2; Rall 2, 1, 1; S 2, 2, 1). Gate:
+S of seed 0 0.5943 ≥ 0.5836, passed.
+
+| Seed | `runs/vitg_s*`, default tiling | R, default tiling | Rall, all-16 | S, all-16 + buffer |
+|---|---|---|---|---|
+| 0 | 0.5866 | 0.5893 | 0.5826 | 0.5943 |
+| 1 | 0.5867 | 0.5828 | 0.5801 | 0.5880 |
+| 2 | 0.5829 | 0.5819 | 0.5799 | 0.5871 |
+| Mean | 0.5854 | 0.5847 | 0.5809 | 0.5898 |
+
+**Primary (rule of 12E).** S − default tiling of `runs/vitg_s{0,1,2}`: ΔCC +0.0044, 95 % [−0.0009, +0.0098], 90 %
+[+0.0001, +0.0089]; per seed +0.0076, +0.0012, +0.0043; NSS +0.041. **Inconclusive, so by the rule P1a does not
+suffice.**
+
+**Secondary (rule of 12E).**
+- S − R (same run): +0.0051 [+0.0022, +0.0083], effect; per seed +0.0050, +0.0051, +0.0052.
+- S − Rall: +0.0089 [+0.0052, +0.0127], effect: the buffer adds to the all-position loss.
+- Rall − R (same run): −0.0038 [−0.0078, +0.0008], inconclusive.
+
+**Descriptive.**
+- R − default tiling of `runs/vitg_s*`: −0.0007 [−0.0060, +0.0046]. Encoder passes per output frame: 0.032 (all-16)
+  against 0.063 (default).
+- S with the buffer removed at test time: −0.0084 [−0.0108, −0.0060]. R on the all-16 tiling against its default
+  tiling: −0.0067 [−0.0094, −0.0040].
+- Mean CC at positions 0–1 against 8–9 on the all-16 tiling (three seeds; unpaired): S 0.5833 against 0.6017
+  (deficit 0.018); S without the buffer 0.5448 against 0.6010 (0.056); Rall 0.5457 against 0.5995 (0.054); R 0.5250
+  against 0.5990 (0.074). The mechanism check of report section 13.2 (deficit below 0.01) is not met.
+- Post hoc (added after the per-position results): the same deficits without each video's first window, which has
+  no previous window to read (`scripts/p1_first_window.py`, `runs/review/p1/posthoc_first_window.json`). S 0.5960
+  against 0.5992 (deficit 0.003; per seed 0.003, 0.003, 0.004); S without the buffer 0.043; Rall 0.041; R 0.066. In
+  the 60 first windows alone the deficit is 0.21–0.27 for every decoder.
+
+Reading: within one training stream, the all-16 tiling with the buffer beats the default tiling by 0.005 CC at half
+the encoder passes. Against the separately trained `runs/vitg_s*`, the +0.004 lies neither clearly above zero nor
+within ±0.003. Both cross-run comparisons have 90 % intervals about ±0.0044 wide, so this test could not have
+returned "equivalent". The residual early-position deficit of S lies in each video's first window (post hoc). P1b,
+registered as conditional on this outcome, has not run.

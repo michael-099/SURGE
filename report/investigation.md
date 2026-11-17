@@ -1,7 +1,7 @@
 # Systematic investigation of SURGE-D: behaviour, limitations and research gaps
 
 **Status:** complete (2026-11-17). Every experiment registered in research log section 15 has run. Sections 11–13
-propose further work, none of which has run.
+propose further work; of it, step 0 and P1a of 13.2 have run (research log section 16; outcome in 13.2).
 **Object:** SURGE-D ViT-g, the final model of the thesis: a frozen V-JEPA 2 ViT-g/16 encoder (1,012 M parameters)
 and a 7.39 M-parameter decoder, unchanged. Reference runs `runs/vitg_s{0..5}`.
 **Rules:** every experiment was specified, with its decision rule, in `research/log.md` section 15 and committed before
@@ -135,6 +135,7 @@ model, not of the training recipe.
 | 15L | Scene cuts: cross-shot context or post-cut gaze? (hypothesis test) | Completed |
 | 15M | How much of the zero-shot gap is dataset bias (blur, exponent, centre)? | Completed |
 | 15N | Can an off-the-shelf active-speaker detector supply the speaker (MVVA)? | Completed |
+| 16, P1 | Can a stream buffer in the decoder make non-overlapping windows as accurate as the default tiling (13.2)? | Step 0 and P1a completed; P1b not run |
 
 ---
 
@@ -1245,6 +1246,8 @@ to test; the risk. GPU times are estimates from the measured epoch times (single
 | 4 | Speaker-aware weighting (G6) | none (few conversations in DHF1K) | MVVA +0.012–0.013 with a detector | low | done for MVVA | needs resolvable faces |
 | 5 | Analysis: where SURGE-D's accuracy comes from (sections 3–7), and a video transfer gap that is content, not bias (15M) | — | — | moderate | done | 15M uses three parameters and one encoder |
 
+Since this ranking, step 0 and P1a of 13.2 have run; the outcome is at the end of 13.2.
+
 ## 12. Recommended research direction
 
 **Recommendation: a stateful, higher-resolution decoder for a frozen video encoder (rank 1), with more diverse
@@ -1264,6 +1267,8 @@ training content (rank 2) as the second line.**
   mode with a latency of one window. The novelty lies in the state mechanism; the resolution result is a measurement.
 - **Stop rule.** If the state does not bring the all-16 tiling to equivalence with the default at 256² (13.2), drop
   it and report 384² as a resolution result with its cost.
+- **Status (2026-11-17).** P1a missed its registered criterion (inconclusive; 13.2). P1b has not run, and the
+  registered stop rule (research log section 16) applies only after it.
 - The second line addresses the largest measured gaps (transfer, 0.02–0.16), with an uncertain outcome. It changes the
   training content, not the model, so it combines with the first.
 
@@ -1276,7 +1281,8 @@ test-server result, and recent models whose results could not be verified were n
 
 ## 13. Proposed experiments for validating the improvement
 
-Sections 13.2–13.7 are [Proposed]. Each decision rule is to be written into the research log and committed before
+Sections 13.2–13.7 are [Proposed], except step 0 and P1a of 13.2, which have run (outcome at the end of 13.2).
+Each decision rule is to be written into the research log and committed before
 the first run. Suggested order: the test-time steps first (13.2 step 0, 13.4, 13.6), then the
 trained parts of 13.2, 13.3, 13.5 and 13.7. The test-time steps take from under an hour (13.2 step 0) to
 several hours (13.6).
@@ -1304,7 +1310,7 @@ the same in both conditions.
 - **Reading:** an effect with ΔCC > 0 supports (i), so shot-aware windows would be a remedy. Equivalence, or a
   negative effect, refutes (i) in favour of (ii) or (iii).
 
-### 13.2 P1. Cross-window state at 256² (G1)
+### 13.2 P1. Cross-window state at 256² (G1) [step 0 and P1a Completed; P1b Proposed]
 - **Step 0 (test time, seed 0, descriptive).** The existing checkpoint with a stream buffer in its six temporal
   convolutions, under the all-16 tiling: at a window's first time step, each convolution reads the previous window's
   last time step instead of zeros. Against the same tiling without the buffer, per position as in 4.1. It shows
@@ -1321,6 +1327,36 @@ the same in both conditions.
 - **Mechanism check.** Per-position CC as in 4.1: the 0→8 deficit should fall below 0.01.
 - **Gate.** Seeds 1 and 2 run only if seed 0's all-16 CC is at least 0.5836 (the default minus 0.003).
 - **Cost.** About 80 minutes per seed for P1a (estimate).
+
+**Outcome [Completed: step 0 and P1a; research log section 16].**
+- **Step 0 (seed 0, test time).** The buffer alone, on a checkpoint never trained with it, lifts the all-16 tiling by
+  +0.0077 [+0.0049, +0.0106], to 0.5880. Against the default tiling (0.5866) that is +0.0014 [−0.0010, +0.0039],
+  inconclusive. The deficit of positions 0–1 against 8–9 falls from 0.073 to 0.017.
+- **P1a (seeds 0–2).** S (per-step GroupNorm, the stream buffer, loss on all 16 positions), scored on the all-16
+  tiling with the buffer carried through each video: CC 0.5898. The default tiling of `runs/vitg_s{0,1,2}`: 0.5854.
+  - **Primary, against `runs/vitg_s{0,1,2}`:** +0.0044, 95 % [−0.0009, +0.0098], 90 % [+0.0001, +0.0089]:
+    inconclusive. **By the registered rule, P1a does not suffice.**
+  - Against R of the same runs (default tiling, central loss): +0.0051 [+0.0022, +0.0083], an effect; +0.0050,
+    +0.0051 and +0.0052 per seed.
+  - Against Rall (all-position loss, all-16 tiling, no buffer): +0.0089 [+0.0052, +0.0127], an effect. S differs from
+    Rall by the buffer and by per-step GroupNorm, which was neutral in 15C2. Rall against R: −0.0038 [−0.0078,
+    +0.0008], inconclusive.
+  - R of these runs against `runs/vitg_s{0,1,2}` (descriptive): −0.0007 [−0.0060, +0.0046].
+  - **Mechanism check (descriptive).** Positions 0–1 against 8–9 on the all-16 tiling: a deficit of 0.018 for S
+    (0.054 for Rall, 0.074 for R), so the check (below 0.01) is not met. **Post hoc**, without each video's first
+    window, which has no previous window: 0.003 for S, against 0.041 for Rall and 0.066 for R. In the 60 first
+    windows alone the deficit is 0.21–0.27 for every decoder. The residual deficit lies at the start of each video,
+    where no cross-window state can help.
+  - **Cost.** 0.032 encoder passes per output frame on the all-16 tiling, against 0.063 on the default. Training and
+    holdout scoring took about 70 minutes per seed for the three decoders together.
+- **Unexpected: the primary test could not return "equivalent".** Both cross-run comparisons of P1a (S and R against
+  `runs/vitg_s*`) have 90 % intervals about ±0.0044 wide, wider than the ±0.003 margin. At this between-run spread
+  (+0.001 to +0.008 per seed for S), the test could return "effect" or "inconclusive", but not "equivalent". Within
+  one run the spread nearly vanishes (S − R: +0.0050 to +0.0052 per seed). That comparison was registered as
+  secondary, so it does not decide P1a.
+- **P1b has not run.** It is the registered next step after this outcome, and the stop rule applies only after it.
+  By the post hoc analysis above, P1b would have little to fix: at the boundaries inside a video the deficit is
+  already 0.003.
 
 ### 13.3 P2. State with a 384² input (G1 + G2; only if 13.2 succeeds)
 - The successful P1 model at 384², seeds 0–2. Against the 256² default an effect is expected (at least 0.003);
