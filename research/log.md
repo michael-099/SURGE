@@ -1440,6 +1440,15 @@ equivalent while V3 is an effect: either mechanism alone provides the benefit. A
 Descriptive: the 2×2 factorial (convolutions × statistics, with the interaction (R − V3a) − (V3b − V3)), and R and V3
 of 15C2 against R and V3 of 15C (same seeds, clips and order, so the difference is run-to-run variation).
 
+**Result, seeds 0–2 (2026-11-17; `runs/inv_c2_s{0,1,2}`, `runs/review/inv/summary_v3split.json`).** Against R of the
+same run: V3a −0.0229 [−0.0287, −0.0173] **effect** (per seed −0.0229, −0.0259, −0.0199); V3b −0.0002 [−0.0019,
++0.0014] **equivalent** (90 % [−0.0016, +0.0011]; per seed +0.0001, +0.0002, −0.0010); V3 −0.0247 [−0.0304, −0.0189]
+effect. By the reading above, the temporal convolutions carry the effect. Descriptive: convolutions +0.0229 with
+clip-pooled norms and +0.0245 with per-step norms; clip-pooled norms +0.0002 [−0.0014, +0.0019] with convolutions and
++0.0018 [−0.0011, +0.0045] without; interaction −0.0016 [−0.0049, +0.0018]. R of 15C2 − R of 15C −0.0002 [−0.0009,
++0.0004]. V3 of 15C2 − V3 of 15C −0.0013 [−0.0036, +0.0015]; unlike R, V3 also differs in initialisation between the
+two runs (decoder index 3 in 15C, 1 in 15C2, seeded seed × 1000 + index).
+
 ### 15E. Use of temporal information
 - E1 (test time, seed 0). Each window's frames reversed in time; shuffled (one fixed random permutation per window);
   static (each scored frame repeated 16 times, its map the mean of the central eight outputs). The original order is

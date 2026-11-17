@@ -1,6 +1,7 @@
 # Systematic investigation of SURGE-D: behaviour, limitations and research gaps
 
-**Status:** in progress (last updated 2026-11-17). Results arrive from the queues of research log section 15.
+**Status:** complete (2026-11-17). Every experiment registered in research log section 15 has run. Sections 11–13
+propose further work, none of which has run.
 **Object:** SURGE-D ViT-g, the final model of the thesis: a frozen V-JEPA 2 ViT-g/16 encoder (1,012 M parameters)
 and a 7.39 M-parameter decoder, unchanged. Reference runs `runs/vitg_s{0..5}`.
 **Rules:** every experiment was specified, with its decision rule, in `research/log.md` section 15 and committed before
@@ -9,7 +10,6 @@ it ran (rules `5e6fb30`; the scene-cut hypothesis 15L `134513c`; one amendment b
 **Labels used throughout.**
 - **[Completed]**: run and analysed in this investigation; numbers come from the files cited.
 - **[Thesis]**: completed earlier for the thesis (research log sections 1–14); cited, not re-run.
-- **[Pending]**: pre-registered and queued; no result exists yet. Nothing in this report depends on its outcome.
 - **[Proposed]**: designed here, not queued, no result.
 - **[Hypothesis]**: an explanation that the cited evidence suggests but does not establish.
 
@@ -73,7 +73,7 @@ the second doubling gives 0.64 of the first doubling's gain. DHF1K has no furthe
   and no earlier run used such an override (implementation bug, no result affected).
 - GroupNorm in the decoder pools statistics over the whole clip, so the decoder mixes time steps even where it has no
   temporal convolution. This is a property of the design, found by a CPU test; it changed the design of ablation V3
-  (section 3), not any earlier result.
+  (section 3), not any earlier result. 15C2 later found that this coupling adds nothing measurable to accuracy.
 
 ---
 
@@ -122,7 +122,7 @@ model, not of the training recipe.
 | B | What does each encoder depth carry (41 linear probes)? | Completed |
 | C | Decoder ablations V1–V6, 3 seeds | Completed |
 | D | Learning rate, loss terms, schedule length | Completed (schedule length: seed 0 only, as planned) |
-| 15C2 | Does V3's effect come from the temporal convolutions or from the clip-pooled norm statistics? | Pending (queued after queue 15b) |
+| 15C2 | Does V3's effect come from the temporal convolutions or from the clip-pooled norm statistics? | Completed |
 | E1, E3 | Temporal order and stride at test time | Completed |
 | E2 | Video model vs a static-trained model (primary temporal test) | Completed |
 | F1, F2 | Resolution ceilings; test-time input size | Completed |
@@ -187,8 +187,7 @@ run at each variant's best epoch (seeds 0–2; `runs/inv_c_s{0,1,2}`, `runs/revi
   - This is not a capacity effect. V3 has 0.79 M fewer parameters and loses 0.024, while V5 has 6.65 M fewer and
     loses 0.004.
   - V3 changes two things at once, the temporal convolutions and the GroupNorm statistics (per time step instead of
-    per clip), so it does not tell which of the two carries the effect. 15C2 changes each one alone (V3a, V3b)
-    [Pending].
+    per clip). 15C2 changes each one alone and finds that the temporal convolutions carry the effect (below).
 - **Width and the top-down path have small, established effects.** V5 needs a tenth of the parameters and loses
   0.004. Because the decoder costs 0.168 of 5.26 TFLOPs per clip (section 5), neither saves meaningful compute.
 - **The thesis's dispensable pair is not shown dispensable at ViT-g.** Removing the centre prior and the auxiliary
@@ -201,6 +200,39 @@ run at each variant's best epoch (seeds 0–2; `runs/inv_c_s{0,1,2}`, `runs/revi
     0.0003–0.0007 CC per epoch (section 1). [Hypothesis] The seed-1 difference (+0.0029) therefore comes mostly from
     the different initialisation.
   - Every comparison above is within one run and is not affected.
+
+### Which part of V3 carries its effect (15C2) [Completed, seeds 0–2, rule of 12E]
+
+V3a and V3b each change one of V3's two components. They were trained next to R and V3 on one encoder stream, as in
+15C (`runs/inv_c2_s{0,1,2}`, `runs/review/inv/holdout/c2_s*_*.json`, `runs/review/inv/summary_v3split.json`). CC is
+the mean over the three seeds.
+
+| Variant | Temporal convolutions | GroupNorm statistics | CC | ΔCC vs R [95 %] | ΔCC per seed | Outcome |
+|---|---|---|---|---|---|---|
+| R | 3×1×1 | over the clip | 0.5864 | — | — | — |
+| V3a | 1×1×1 | over the clip | 0.5635 | −0.0229 [−0.0287, −0.0173] | −0.023, −0.026, −0.020 | effect |
+| V3b | 3×1×1 | per time step | 0.5862 | −0.0002 [−0.0019, +0.0014] | +0.000, +0.000, −0.001 | equivalent |
+| V3 | 1×1×1 | per time step | 0.5617 | −0.0247 [−0.0304, −0.0189] | −0.027, −0.026, −0.021 | effect |
+
+- **The temporal convolutions carry the effect**, by the reading fixed in advance: V3a is an effect, and V3b is
+  equivalent (90 % [−0.0016, +0.0011]).
+- **Clip-pooled statistics add nothing measurable** (2×2 factorial, descriptive).
+  - The convolutions add +0.023 with clip-pooled statistics and +0.024 with per-step statistics.
+  - Clip-pooled statistics add +0.0002 [−0.0014, +0.0019] with the convolutions and +0.0018 [−0.0011, +0.0045]
+    without them. The interaction is −0.0016 [−0.0049, +0.0018].
+  - The norms do couple time steps (section 1), but this does not matter for accuracy.
+- **Where the decoder mixes time.**
+  - The decoder's six 3×1×1 convolutions carry its 0.024 CC of temporal mixing. There are two at each of the 1/16,
+    1/8 and 1/4 levels, and they act on the eight time steps of a window, with zero padding at its edges.
+  - Per-time-step normalisation costs nothing measurable. A decoder that carries features from one window into the
+    next can therefore use it, so that carried and new features are normalised alike (section 10.1).
+- **Other metrics (descriptive).**
+  - V3a: NSS −0.170, SIM −0.020, KLD +0.055.
+  - V3b: NSS −0.001 [−0.011, +0.008], SIM +0.0004, KLD −0.0004 [−0.005, +0.004].
+- **Run-to-run check (descriptive).**
+  - R of 15C2 against R of 15C: −0.0002 [−0.0009, +0.0004]. Seeds, clips, order and initialisation are the same.
+  - V3 of 15C2 against V3 of 15C: −0.0013 [−0.0036, +0.0015]. V3's initialisation differs between the two runs: it is
+    decoder 3 in 15C and decoder 1 in 15C2.
 
 ### What each encoder depth carries (15B) [Completed, seed 0, holdout, descriptive]
 
@@ -295,8 +327,8 @@ unchanged. The static model is scored on static clips; the video models are `run
   - The video model scores 0.585, the decoder without temporal mixing (V3, section 3) 0.563, and the static model
     0.528.
   - About 0.035 of the benefit therefore reaches a decoder that sees one tubelet at a time, through the encoder
-    alone. Another 0.024 needs temporal mixing in the decoder, through its temporal convolutions or its clip-pooled
-    norms (15C2 [Pending]).
+    alone. Another 0.024 needs temporal mixing in the decoder. 15C2 places it in the decoder's temporal
+    convolutions, not in its clip-pooled norms (section 3).
 - **Relation to the literature.** On LEDOV, static features capture at least 75 % of the explainable information
   (Tangemann et al., ECCV 2020). Here the static model reaches 90 % of the video model's CC. CC is not an
   information measure, so the agreement is qualitative: most of what is predictable is static, and the temporal part
@@ -845,23 +877,164 @@ be accessed are not included.
 
 ## 9. Experimentally identified architectural limitations
 
-*To be completed once the pending experiments of sections 3–6 have run. Candidates from the completed experiments,
-with their type:*
+Every row rests on completed experiments (DHF1K holdout unless stated). Types: **architecture** (a property of the
+design), **training** (of the recipe), **input** (information the model does not receive), **data**, **evaluation**.
 
-| Candidate | Evidence (completed) | Type (provisional) |
-|---|---|---|
-| Positions without past context are poor, so half of each window's outputs are discarded | 4.1, 5.2 | design (clip-based processing without state); efficiency cost |
-| Post-cut frames score lower in the default tiling | 7.2 | **Not a weakness of cross-shot fusion** (15L: that context helps, because gaze lags the cut). What remains is a tiling property: some post-cut frames see less of the previous shot (descriptive, one seed) |
-| Tuned to the training frame rate and input size | 4.3, 4.4 | design/training (no scale or rate augmentation) |
-| Input resolution limits accuracy; small, off-centre, action-relevant targets are among the worst videos | 4.4 (F3), 7.3, 7.4 | input resolution: training at 384² gains +0.0092 CC [+0.0030, +0.0163] at 2.6 times the training time; the gain is spread across videos rather than concentrated on small targets (post-hoc) |
-| In multi-face scenes, faces are found but the speaker is under-weighted | 6.2 (15K, 15N) | input: no speaker information in a visual-only model at 256²; a speaker oracle adds +0.020 CC through re-weighting, and an off-the-shelf detector supplies +0.012–0.013 of it on all MVVA frames |
-| Decoder overfits after ~2 epochs; data-limited | 1, 4.5 (R peaks at the second epoch in all three seeds of 15C; six epochs only prolong overfitting; ×3 learning rate and either loss term make no established difference) | data, not optimisation settings |
-| Transfer to other datasets: fine-tuning adds 0.02–0.16 CC | 6.2 (15I, 15M) | content, not a low-dimensional bias: three bias parameters recover 0.02–0.19 of the fine-tuning gain on seven of eight datasets |
-| Most per-video variance is ground-truth reliability | 7.3 | evaluation limitation, not the model |
+| # | Limitation | Evidence | Size | Type |
+|---|---|---|---|---|
+| L1 | No state across windows. Positions without past frames are poor, so the default tiling discards half of each window's outputs | 4.1, 5.2 | position 0: −0.077 CC against position 8; all 16 positions kept: −0.0063 at half the encoder passes | architecture; doubles the encoder cost |
+| L2 | Input resolution limits accuracy | 4.4 (F3), 6.1 | 384²: +0.0092 [+0.0030, +0.0163], spread across videos; blur σ 8: −0.052 | input; the gain costs 2.77 times the encoder FLOPs |
+| L3 | Tuned to one frame rate and one input size | 4.3, 4.4 | at test time, stride 1 / 4: −0.012 / −0.019; 224² / 320²: −0.014 / −0.018 | training (one rate, one size) |
+| L4 | The speaker is under-weighted in multi-face scenes | 6.2 (15K, 15N) | talking faces get 54.6 % of the predicted face mass against 66.8 % of gaze; a speaker oracle adds +0.020 CC, a detector +0.012–0.013 (MVVA) | input (no speaker cue) |
+| L5 | The decoder is data-limited | 1, 4.5 | best epoch the second in 27 of the 30 seed–variant pairs of 15C/15D (V1 excluded); 135 → 270 → 540 videos: 0.5645 → 0.5729 → 0.5783 (ViT-L) | data |
+| L6 | Transfer to other datasets is limited by content | 6.2 (15I, 15M) | fine-tuning adds 0.02–0.16 CC; three bias parameters recover 0.02–0.19 of it on seven of eight datasets | data (content), not a low-dimensional bias |
+
+**What a successor must keep (measured).**
+- A non-linear decoder on the token grid: +0.072 CC over a linear readout (V1).
+- Temporal convolutions in the decoder: +0.023 (V3a, 15C2). With them, clip-pooled norm statistics add nothing
+  measurable (V3b equivalent), so each time step can be normalised on its own.
+- Temporal input: +0.057 over a matched static model (E2). The benefit is three times larger in the most moving fifth
+  of frames than in the stillest.
+- A frozen encoder: LoRA adaptation lost in all three seeds (thesis).
+
+**Checked and ruled out.**
+- Cross-shot context after cuts: it helps (+0.10–0.14 CC on post-cut frames, 15L).
+- Output resolution: a 64² output allows CC 0.999, and even the 16² token grid allows 0.91 (F1).
+- Combining depths: the last tap alone −0.0015 (inconclusive); taps 30 and 40 at 1/16 only −0.004 (V2, V4).
+- Loss design: without the CC term or the NSS term, equivalent (15D). A three times higher learning rate: −0.0004,
+  inconclusive.
+- Photometric robustness: noise, JPEG, contrast and greyscale change CC by at most 0.0033 (15H).
+- A low-dimensional dataset bias: it explains little of the transfer gap (15M).
+- Clip-pooled normalisation as a route for temporal information: equivalent to per-step normalisation (15C2).
+- Reproducibility: A1 identical; A2 at most 0.0007 CC per epoch.
+- Per-video variance: 74 % follows the ground truth's reliability and entropy, a property of the evaluation (7.3).
+
+**Headroom on DHF1K.** Every single improvement measured or bounded so far raises holdout CC by at most about 0.01:
+384² +0.009 (F3); ViT-L → ViT-g +0.008 (seed 0, thesis); 32 frames +0.004 (seed 0, thesis); a second frozen encoder
++0.004 (not established); a three-seed ensemble +0.003 (val); denser tilings at most +0.0025 (5.2). The large
+measured gaps lie elsewhere: transfer to other datasets (0.02–0.16) and speakers in multi-face scenes (0.012–0.020).
 
 ## 10. Literature-validated research gaps
 
-*Drafted after the pending experiments; the literature checked so far is listed below.*
+Each gap follows from a limitation of section 9. Section 10.7 lists the literature by topic, and novelty is judged
+against it. Sources are peer-reviewed unless a preprint is named as such.
+
+### 10.1 G1. State across windows of a frozen clip-level video encoder (L1)
+- **Evidence.** A frame at the start of a window loses 0.077 CC. The loss halves with each past frame and is gone
+  after ≈0.35–0.4 s (4.1). Keeping all 16 positions costs 0.0063 at half the encoder passes, while two or three times
+  the passes gain at most 0.0025 (5.2). The decoder's temporal benefit comes from six 3×1×1 convolutions, which see
+  zero padding at a window's first time step (15C2).
+- **Motivation.** The encoder is 97 % of the FLOPs (5.1). Keeping all 16 positions halves the passes per output frame
+  (0.063 → 0.032). It would also allow streaming with a latency of one window.
+- **Related work.** Recurrent saliency models carry state on image backbones (ACLNet, CVPR 2018 and TPAMI 2021;
+  UNISAL, ECCV 2020; SalEMA, BMVC 2019). MeMViT (CVPR 2022) caches memory inside the encoder. MoViNets (Kondratyuk et
+  al., CVPR 2021) introduce a stream buffer, "a mechanism to cache feature activations on the boundaries of subclips",
+  which replaces the causal padding of a convolution with "the last few frames from a previous subclip". Video Depth
+  Anything (CVPR 2025) keeps its encoder frozen and carries content across windows, and an online variant (3DV 2026)
+  caches latent features. XMem (ECCV 2022) keeps feature memory for segmentation.
+- **Unresolved.** A light decoder that gives a window's first positions the past they lack, for a frozen clip-level
+  encoder, without re-encoding frames. None was found for saliency.
+- **Potential solutions [Proposed].**
+  - (a) A stream buffer in the decoder's six temporal convolutions. At a window's first time step, each convolution
+    reads the previous window's last time step instead of zeros. This adds no parameters. Through the six
+    convolutions it reaches six time steps (12 positions) back, beyond the 5–6 positions after which the deficit is
+    gone [Hypothesis: enough, if past decoder features can make up for the encoder's missing past]. GroupNorm per
+    time step (V3b, equivalent) normalises carried and new features alike.
+  - (b) If (a) is not enough, a zero-initialised cross-attention block through which a window's first positions
+    attend to the previous window's features at its last positions.
+  - Both are trained on pairs of consecutive windows.
+- **Novelty.** Moderate. Caching across windows exists for recognition (MoViNets), depth and segmentation. For
+  saliency from a frozen clip-level encoder, motivated by a measured positional deficit, it is new.
+- **Validation [Proposed].** First (a) at test time on an existing checkpoint (under an hour). Then the trained all-16
+  tiling with state against the default tiling without state, rule of 12E, three seeds. Equivalence (±0.003) at half
+  the passes is success; a position-0 deficit below 0.01 shows that the mechanism works (13.2).
+- **Expected.** Accuracy within ±0.003 of the default, at half the encoder passes.
+
+### 10.2 G2. Resolution at an affordable cost (L2)
+- **Evidence.** Training at 384² gains +0.0092 CC [+0.0030, +0.0163], spread across videos (4.4). Blur σ 8 costs
+  0.052 (6.1). The 384² encoder needs 2.77 times the FLOPs (5.3).
+- **Motivation.** It is the largest improvement found in this investigation, at almost three times the encoder cost.
+- **Related work.** SALICON (Huang, Shen, Boix & Zhao, ICCV 2015, doi:10.1109/ICCV.2015.38) integrates information
+  at several image scales for image saliency. In the AIM 2024 challenge (ECCV Workshops), the second-ranked team added
+  "a spatial detail encoding branch based on a single high-resolution video frame" to low-resolution video context;
+  the challenge report does not isolate its effect. FixRes (NeurIPS 2019) explains the train–test resolution
+  discrepancy, and gaze is largely set by coarse content (Judd et al., JOV 2011).
+- **Unresolved.** No controlled measurement of input resolution for video saliency from a frozen video encoder was
+  found before F3, nor a design that obtains the gain below its cost.
+- **Potential solutions [Proposed].**
+  - (a) Combine with G1. Keeping all 16 positions halves the passes, so 384² would cost 1.39 times today's encoder
+    FLOPs per output frame instead of 2.77.
+  - (b) A single-frame high-resolution detail branch beside the 256² video encoder, as in the AIM 2024 entry. Its
+    cost depends on the image encoder.
+- **Novelty.** Low for resolution alone; moderate in combination with G1.
+- **Validation [Proposed].** 384² with state against the 256² default (an effect of at least 0.003 expected) and
+  against F3's 384² default (equivalence expected), with the cost per output frame measured by the A3 protocol (13.3).
+
+### 10.3 G3. Rate- and size-robust decoding (L3)
+- **Evidence.** At test time, other strides cost 0.012–0.019 CC and other sizes 0.014–0.018 (4.3, 4.4). SumMe and
+  MVVA include 15 fps videos, where stride 2 spans 2.1 s.
+- **Related work.** FixRes; FlexiViT (CVPR 2023), where random patch sizes give one set of weights that works across
+  them; Multigrid training (CVPR 2020); action-recognition models are mostly robust to rate changes (Schiappa et al.,
+  CVPR 2023). Cheon & Lee (2015) studied frame rate and saliency (title only).
+- **Unresolved.** No study of the frame-rate robustness of deep video saliency models was found.
+- **Potential solution [Proposed].** First, at no cost, choose the stride from the native frame rate (stride 1 at
+  15 fps). Then train the decoder over random strides and sizes.
+- **Novelty.** Low to moderate.
+- **Validation [Proposed].** The zero-cost check on the 15 fps videos (13.4), then matched-condition comparisons at
+  strides 1, 2 and 4 and sizes 224–384.
+- **Expected.** Up to 0.012–0.019 off the training condition, nothing at it.
+
+### 10.4 G4. Content in cross-dataset transfer (L6)
+- **Evidence.** Fine-tuning adds 0.02–0.16 CC, and three bias parameters recover 0.02–0.19 of that on seven of eight
+  datasets (15I, 15M).
+- **Motivation.** These are the largest measured gaps. For images the opposite holds: bias dominates (Kümmerer,
+  Khanuja & Bethge, ICCV 2025).
+- **Related work.** UNISAL (ECCV 2020) and HD²S (IJCV 2021) train one model across datasets, with dataset-specific
+  priors, smoothing and normalisation.
+- **Unresolved.** Which content a DHF1K-trained model misses on each dataset, and whether more diverse training
+  content narrows a gap that bias does not explain.
+- **Potential solution [Proposed].** More diverse training content for the decoder: AViMoS's 1,000 training videos
+  (G5), or several eye-tracking datasets with the frozen encoder. Where the gap is largest, content-specific cues: the
+  speaker (Coutrot2, G6) and the viewing task (UCF Sports).
+- **Novelty.** The finding that bias explains little of video transfer is new, and stands as an analysis result. The
+  remedies are known in kind.
+- **Validation [Proposed].** Zero-shot CC on the eight eye-tracking datasets with the 15I protocol, and the 15M share
+  as a second outcome (13.5).
+
+### 10.5 G5. Training data for the decoder (L5)
+- **Evidence.** The best epoch is the second in 27 of the 30 seed–variant pairs of 15C/15D (V1 excluded), and loss
+  or learning-rate changes do not help (4.5). The second doubling of DHF1K data gives 0.64 of the first doubling's
+  gain (section 1).
+- **Related work.** SALICON (CVPR 2015) collected mouse tracking for image saliency, and mouse data are acceptable for
+  training (Tavakoli et al., CVPR 2017). AViMoS (AIM 2024, ECCV Workshops) has 1,500 videos under CC-BY-4.0, 1,000 of
+  them for training. Lyudvichenko et al. (GraphiCon 2019) used mouse maps as an input, not for training.
+- **Unresolved.** No test was found of pre-training a video saliency model on mouse tracking and evaluating it on eye
+  tracking.
+- **Potential solution [Proposed].** Train the decoder on DHF1K and AViMoS together, or pre-train on AViMoS and
+  fine-tune on DHF1K.
+- **Novelty.** Moderate.
+- **Validation [Proposed].** DHF1K holdout (rule of 12E) and zero-shot transfer (descriptive) (13.5).
+- **Expected.** Small on DHF1K: the learning curve suggests at most about +0.0035 per doubling of eye-tracking data,
+  and less for mouse data. Unknown for transfer [Hypothesis: larger where the gap is content].
+
+### 10.6 G6. Speaker-aware weighting in social scenes (L4)
+- **Evidence.** A speaker oracle adds +0.020 CC on MVVA and Light-ASD +0.012–0.013 over all frames; frames without a
+  talking face lose nothing measurable (15K, 15N). Coutrot2 has the largest fine-tuning gain (+0.158), of which bias
+  recovers 0.04 (15M).
+- **Related work.** Coutrot & Guyader (JOV 2014; ICIP 2014, where speaker diarization raises speakers above
+  addressees); Liu et al. (CVPR 2017); Xu et al. (TIP 2018); MVVA (ECCV 2020); AVM-Net (IJCV 2023); TalkNet;
+  Light-ASD.
+- **Unresolved.** The speaker effect on a strong frozen encoder beyond MVVA. In the STAViS frames, faces are 12–15
+  pixels wide, which rules out speaker detection on Coutrot2.
+- **Novelty.** Low: the mechanism has been known since 2014. Its measurement on a frozen deep encoder is new.
+- **Validation.** Done on MVVA, cross-fitted. Coutrot2 only with native-resolution frames.
+
+**Not pursued, and why.** Shot-aware context resets (refuted, 15L). Dataset-bias calibration (15M). Decoder
+redesigns of depth fusion, priors and loss terms (15C, 15D: at most 0.004). Audio features, sound-source maps, a
+predictability gate, a second encoder and LoRA (thesis: none adopted). An epistemic (disagreement) readout of the
+predictor remains untested; the thesis's prediction-error result was negative.
+
+### 10.7 Literature checked, by topic
 
 **Temporal information in video saliency.**
 - Tangemann, Kümmerer, Wallis & Bethge (ECCV 2020, doi:10.1007/978-3-030-58604-1_40): on LEDOV, at least 75 % of
@@ -909,6 +1082,11 @@ with their type:*
 - MeMViT (Wu et al., CVPR 2022, doi:10.1109/CVPR52688.2022.01322) processes a video online as a sequence of short
   clips, attending to a cached memory of earlier clips. This gave 30× longer temporal support for 4.5 % more compute
   in action recognition. The memory sits inside the encoder, so it does not apply directly to a frozen encoder.
+- MoViNets (Kondratyuk et al., CVPR 2021, doi:10.1109/CVPR46437.2021.01576) introduce a stream buffer, "a mechanism
+  to cache feature activations on the boundaries of subclips". For causal convolutions it replaces the padding with
+  "the last few frames from a previous subclip", so that 3D CNNs process streams of any length with constant memory.
+  In SURGE-D the decoder's temporal benefit comes from its six temporal convolutions (15C2), so a buffer there
+  would need no change to the encoder.
 - LSTD-Net (Moradi et al., CVIU 2026, doi:10.1016/j.cviu.2026.104740) adds long- and short-term temporal modelling
   to a UMT foundation encoder. Its full text could not be accessed, so whether it carries state across clips is
   unverified.
@@ -922,7 +1100,7 @@ with their type:*
   training (Feiden et al., 3DV 2026, doi:10.1109/3DV69130.2026.00167).
 - In video object segmentation, XMem (Cheng & Schwing, ECCV 2022, doi:10.1007/978-3-031-19815-1_37) keeps feature
   memory stores across long videos, inspired by the Atkinson–Shiffrin model of human memory.
-- These designs carry content across windows for depth and segmentation, where consistency is the goal. No
+- These designs carry content across windows for recognition, depth and segmentation. No
   peer-reviewed study was found of a light decoder that carries state across clips of a frozen clip-level video
   encoder for saliency. Sections 4.1 and 5.2 quantify what such a state would have to recover: up to 0.077 CC at the
   start of a window, and 0.0063 CC overall if all 16 positions were kept.
@@ -1006,6 +1184,14 @@ with their type:*
   largely set by coarse content. Yet SURGE-D loses 0.052 CC under blur σ 8 (section 6.1) and gains 0.009 CC from a
   384² input (F3). The ground truth comes from sharp video, so part of the blur loss is information the blurred input
   no longer contains.
+- Multi-scale input in saliency models:
+  - SALICON (Huang, Shen, Boix & Zhao, ICCV 2015, doi:10.1109/ICCV.2015.38) fine-tunes object-recognition networks
+    for image saliency and integrates "information at different image scales".
+  - In the AIM 2024 video saliency challenge (Moskalenko et al., ECCV Workshops, doi:10.1007/978-3-031-91856-8_11),
+    the second-ranked team added "a spatial detail encoding branch based on a single high-resolution video frame" to
+    low-resolution video context. The challenge report does not isolate the effect of that branch.
+  - No controlled measurement of input resolution for video saliency from a frozen video encoder was found before
+    F3.
 - SURGE-D loses 0.012–0.019 CC when its frame stride differs from training (section 4.3). Schiappa et al. (CVPR 2023,
   below) found action-recognition models mostly robust to such changes.
 - Frame rate in video saliency: Cheon & Lee (Signal Processing: Image Communication 2015,
@@ -1047,12 +1233,53 @@ with their type:*
   PNAS 2015, doi:10.1073/pnas.1510393112).
 
 ## 11. Ranked potential research contributions
-*After section 10.*
+
+Criteria, in order: the measured or bounded gain on DHF1K; the gain elsewhere; novelty against section 10; the cost
+to test; the risk. GPU times are estimates from the measured epoch times (single RTX A5000).
+
+| Rank | Contribution | DHF1K | Elsewhere | Novelty | Cost to test | Main risk |
+|---|---|---|---|---|---|---|
+| 1 | Stateful decoder with a 384² input (G1 + G2) | +0.009 measured for 384² (F3); the state bounded to ±0.003 | untested (13.6 checks whether 384² transfers) | moderate | under an hour for the test-time check; ≈ 4 h (three seeds at 256²), then ≈ 10 h at 384² | the state may not close the positional deficit, if the deficit lies in the encoder's features |
+| 2 | More diverse training content: mouse tracking and other datasets (G5 + G4) | small: at most ≈ +0.0035 per doubling | the transfer gap of 0.02–0.16 is content, so possibly large | moderate | ≈ 9 h | mouse maps differ from gaze (AViMoS chose a stronger centre in 15M); for images, more diverse data did not close the gap |
+| 3 | Rate- and size-robust decoding (G3) | none at the training condition | up to 0.012–0.019 off it | low to moderate | hours for the zero-cost check | datasets may lie close to the training rate |
+| 4 | Speaker-aware weighting (G6) | none (few conversations in DHF1K) | MVVA +0.012–0.013 with a detector | low | done for MVVA | needs resolvable faces |
+| 5 | Analysis: where SURGE-D's accuracy comes from (sections 3–7), and a video transfer gap that is content, not bias (15M) | — | — | moderate | done | 15M uses three parameters and one encoder |
 
 ## 12. Recommended research direction
-*After section 11.*
+
+**Recommendation: a stateful, higher-resolution decoder for a frozen video encoder (rank 1), with more diverse
+training content (rank 2) as the second line.**
+
+- SURGE-D's accuracy comes from the frozen encoder's spatio-temporal features, read by a non-linear decoder with
+  temporal convolutions (V1, V3, 15C2, E2). Decoder details move CC by at most 0.004 (15C, 15D). Further gains must
+  come from what the encoder sees and from how much of its output is used.
+- Both are measured. At 256² the encoder sees too little detail (L2: +0.009 at 384²). The default tiling throws away
+  half of the encoder's outputs, because they lack a past (L1).
+- The two fit together. A state that makes all 16 positions usable halves the encoder passes, which pays for half the
+  cost of the larger input: 1.39 times today's encoder FLOPs per output frame instead of 2.77.
+- The state has a parameter-free first form. 15C2 shows that the decoder's temporal benefit comes from its six
+  temporal convolutions, and that per-step normalisation costs nothing. A stream buffer in those convolutions (as in
+  MoViNets) can be tried on an existing checkpoint within an hour, before anything is trained.
+- **Expected outcome [Hypothesis].** About +0.009 CC on DHF1K at about 1.4 times today's encoder cost, and a streaming
+  mode with a latency of one window. The novelty lies in the state mechanism; the resolution result is a measurement.
+- **Stop rule.** If the state does not bring the all-16 tiling to equivalence with the default at 256² (13.2), drop
+  it and report 384² as a resolution result with its cost.
+- The second line addresses the largest measured gaps (transfer, 0.02–0.16), with an uncertain outcome. It changes the
+  training content, not the model, so it combines with the first.
+
+**What the evidence advises against.** Further decoder variants, loss tweaks, audio features, surprise signals, a
+second encoder and dataset-bias calibration: each was tested, and none gave an established gain.
+
+**On beating the state of the art.** SURGE-D already exceeds SalFoM on DHF1K val under an identical protocol (+0.036
+CC, section 8). The proposed direction would add about 0.009 on the holdout. An official claim still needs the DHF1K
+test-server result, and recent models whose results could not be verified were not compared.
 
 ## 13. Proposed experiments for validating the improvement
+
+Sections 13.2–13.7 are [Proposed]. Each decision rule is to be written into the research log and committed before
+the first run. Suggested order: the test-time steps first (13.2 step 0, 13.4, 13.6), then the
+trained parts of 13.2, 13.3, 13.5 and 13.7. The test-time steps take from under an hour (13.2 step 0) to
+several hours (13.6).
 
 ### 13.1 Scene cuts (15L) [Completed; result in section 7.2]
 
@@ -1077,4 +1304,47 @@ the same in both conditions.
 - **Reading:** an effect with ΔCC > 0 supports (i), so shot-aware windows would be a remedy. Equivalence, or a
   negative effect, refutes (i) in favour of (ii) or (iii).
 
-*Further hypotheses are formulated after the pending diagnostics.*
+### 13.2 P1. Cross-window state at 256² (G1)
+- **Step 0 (test time, seed 0, descriptive).** The existing checkpoint with a stream buffer in its six temporal
+  convolutions, under the all-16 tiling: at a window's first time step, each convolution reads the previous window's
+  last time step instead of zeros. Against the same tiling without the buffer, per position as in 4.1. It shows
+  within an hour whether past decoder features help at all.
+- **P1a (trained).** Decoder R with GroupNorm per time step (V3b, equivalent to R in 15C2) and the stream buffer.
+  The main recipe, with each sample a pair of consecutive windows (hop 16 positions), the loss on both and gradients
+  through the buffer within the pair. Seeds 0–2.
+- **P1b (only if P1a misses equivalence).** P1a plus a zero-initialised cross-attention block at the 1/16 level,
+  through which positions 0–7 attend to the previous window's features at its last eight positions. At
+  initialisation it equals P1a.
+- **Test.** The all-16 tiling, with the state carried through the whole video.
+- **Primary comparison.** Against the default tiling of `runs/vitg_s{0,1,2}`, rule of 12E. Equivalence means the
+  state removes the need for overlapping windows, at half the passes. An effect below 0 means it does not suffice.
+- **Mechanism check.** Per-position CC as in 4.1: the 0→8 deficit should fall below 0.01.
+- **Gate.** Seeds 1 and 2 run only if seed 0's all-16 CC is at least 0.5836 (the default minus 0.003).
+- **Cost.** About 80 minutes per seed for P1a (estimate).
+
+### 13.3 P2. State with a 384² input (G1 + G2; only if 13.2 succeeds)
+- The successful P1 model at 384², seeds 0–2. Against the 256² default an effect is expected (at least 0.003);
+  against F3's 384² default tiling, equivalence. Cost per output frame with the A3 protocol.
+- A second arm, if the cost has to fall further: a single-frame high-resolution detail branch beside the 256²
+  encoder, compared with F3's result.
+- **Cost.** About 3.3 hours per seed (estimate).
+
+### 13.4 P3. Stride from the native frame rate (G3; test time)
+- On the 15 fps videos of SumMe and MVVA, stride 1 against stride 2: the fine-tuned SumMe fold models, and the
+  zero-shot `runs/vitg_s0` on MVVA. Rule of 12E per dataset, on those videos.
+
+### 13.5 P4. More diverse training content (G4, G5)
+- The decoder trained on DHF1K and AViMoS training videos together (mouse maps; AViMoS is CC-BY-4.0, so attribution is
+  required), seeds 0–2. A second arm pre-trains on AViMoS and fine-tunes on DHF1K.
+- Outcomes: DHF1K holdout (rule of 12E); zero-shot CC on the eight eye-tracking datasets with the 15I protocol, and the
+  15M share (descriptive).
+- [Hypothesis] Transfer improves most where the missing content is general (ETMD, Hollywood-2), less where it needs a
+  task or a speaker (UCF Sports, Coutrot2).
+
+### 13.6 P5. Does the 384² gain transfer? (G2; test time)
+- The three F3 models zero-shot on the eight eye-tracking datasets with the 15I protocol, against the 256² models of
+  the same seeds. Rule of 12E per dataset.
+
+### 13.7 P6. A matched static control on DIEM
+- Tests, for SURGE-D, El-Jiz et al.'s finding that temporal fusion hurts on DIEM (WACV 2026): the fine-tuned video
+  model against a static model fine-tuned the same way (the E2 recipe), DIEM fold 1, three seeds, rule of 12E.
