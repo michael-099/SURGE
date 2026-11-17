@@ -8,6 +8,7 @@
     python scripts/inv_summary.py --part probes     (15B: holdout CC per encoder block)
     python scripts/inv_summary.py --part failure    (15J: attributes vs per-video CC; cuts)
     python scripts/inv_summary.py --part zeroshot   (15I)
+    python scripts/inv_summary.py --part p1         (section 16, P1: decoder state across windows)
 Each part writes runs/review/inv/summary_<part>.json and prints a table.
 
 Rule of 12E (fixed in advance): effect if the 95 % interval excludes 0 and |mean| >= 0.003; equivalent if the 90 %
@@ -361,10 +362,88 @@ def part_zeroshot():
     return res
 
 
+P1 = ROOT / "runs/review/p1"
+P1_METRICS = ("cc", "nss", "sim", "kld")
+
+
+def _positions(path):
+    """Per-position CC of a probe_eval --positions run; positions 0-1 against 8-9 (unpaired, descriptive)."""
+    d = json.load(open(path))
+    bp = d["positions"]["by_position"]
+    cc = [bp[str(k)]["cc"] for k in range(len(bp))]
+    return {"by_position": cc, "pos01": float(np.mean(cc[0:2])), "pos89": float(np.mean(cc[8:10])),
+            "deficit_89_minus_01": float(np.mean(cc[8:10]) - np.mean(cc[0:2])),
+            "passes_per_frame": d["passes_per_video_frame"]}
+
+
+def part_p1():
+    """Section 16 (P1): step 0 (seed 0, test time, descriptive); P1a: S (all-16 tiling with the stream buffer) against
+    the default tiling of runs/vitg_s{0,1,2} (primary, rule of 12E) and against R and Rall of the same runs
+    (secondary); per-position CC (descriptive)."""
+    res = {}
+    ref = [ROOT / f"runs/review/holdout/vitg_s{s}.json" for s in range(3)]
+    a, b = P1 / "step0_all16.json", P1 / "step0_all16_stream.json"
+    if a.exists() and b.exists():
+        st0 = {"stream_minus_plain": {m: paired([a], [b], m) for m in P1_METRICS},
+               "plain_minus_default": paired([ref[0]], [a]), "stream_minus_default": paired([ref[0]], [b]),
+               "positions_plain": _positions(a), "positions_stream": _positions(b)}
+        res["step0"] = st0
+        print("step 0 (runs/vitg_s0, test time, descriptive)")
+        print(fmt("  all16 - default", st0["plain_minus_default"]))
+        print(fmt("  all16+stream - default", st0["stream_minus_default"]))
+        print(fmt("  all16+stream - all16", st0["stream_minus_plain"]["cc"]))
+        for k in ("positions_plain", "positions_stream"):
+            p = st0[k]
+            print(f"  {k}: pos 0-1 {p['pos01']:.4f}, pos 8-9 {p['pos89']:.4f}, deficit {p['deficit_89_minus_01']:+.4f}")
+    seeds = [s for s in range(3) if (ROOT / f"runs/p1_s{s}/DONE").exists()]
+    if not seeds:
+        print("no finished P1a run")
+        return res
+    H = P1 / "holdout"
+    H.mkdir(parents=True, exist_ok=True)
+    names = ("R", "Rall", "S")
+    for s in seeds:
+        for v in names:
+            d = json.load(open(ROOT / f"runs/p1_s{s}/{v}/best.json"))
+            (H / f"p1_s{s}_{v}.json").write_text(json.dumps({"mean": d["mean"], "per_video": d["per_video"],
+                                                              "epoch": d["epoch"]}), newline="\n")
+    files = {v: [H / f"p1_s{s}_{v}.json" for s in seeds] for v in names}
+    refs = [ref[s] for s in seeds]
+    res["seeds"] = seeds
+    res["gate_S_seed0_cc"] = json.load(open(files["S"][0]))["mean"]["cc"] if seeds[0] == 0 else None
+    res["best_epoch"] = {v: [json.load(open(p))["epoch"] for p in files[v]] for v in names}
+    tests = {"primary: S - default tiling of runs/vitg_s*": (refs, files["S"]),
+             "S - R (same run)": (files["R"], files["S"]),
+             "S - Rall": (files["Rall"], files["S"]),
+             "Rall - R (same run)": (files["R"], files["Rall"]),
+             "R - default tiling of runs/vitg_s* (descriptive)": (refs, files["R"])}
+    print(f"P1a seeds {seeds}; best epochs {res['best_epoch']}")
+    for name, (r, v) in tests.items():
+        row = {m: paired(r, v, m) for m in P1_METRICS}
+        res[name] = row
+        print(fmt(name[:28], row["cc"]) + f"  per seed {', '.join(f'{x:+.4f}' for x in row['cc']['per_seed'])}  "
+              f"NSS {row['nss']['mean']:+.3f}")
+    tags = ("S_stream", "S_nostream", "Rall", "R_all16")
+    probes = {t: [P1 / "probe" / f"p1_s{s}_{t}.json" for s in seeds] for t in tags}
+    if all(p.exists() for t in tags for p in probes[t]):
+        desc = {"S_stream - S_nostream": paired(probes["S_nostream"], probes["S_stream"]),
+                "R_all16 - R_default": paired(files["R"], probes["R_all16"]),
+                "positions": {t: [_positions(p) for p in probes[t]] for t in tags}}
+        res["descriptive"] = desc
+        print(fmt("S: buffer on - off (desc.)", desc["S_stream - S_nostream"]))
+        print(fmt("R: all16 - default (desc.)", desc["R_all16 - R_default"]))
+        for t in tags:
+            ps = desc["positions"][t]
+            print(f"  {t}: pos 0-1 {np.mean([p['pos01'] for p in ps]):.4f}, pos 8-9 "
+                  f"{np.mean([p['pos89'] for p in ps]):.4f}, passes/frame {ps[0]['passes_per_frame']:.4f}")
+    return res
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", required=True,
-                    choices=["testtime", "static", "res384", "ablation", "v3split", "probes", "failure", "zeroshot"])
+                    choices=["testtime", "static", "res384", "ablation", "v3split", "probes", "failure", "zeroshot",
+                             "p1"])
     a = ap.parse_args()
     res = globals()[f"part_{a.part}"]()
     (R / f"summary_{a.part}.json").write_text(json.dumps(res, indent=1), newline="\n")

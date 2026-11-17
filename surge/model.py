@@ -40,10 +40,24 @@ class R21(nn.Module):
         self.t = nn.Conv3d(c, c, (kt, 1, 1), padding=(kt // 2, 0, 0), bias=False)
         self.n2 = gn(c, pf)
 
-    def forward(self, x):
+    def forward(self, x, stream: dict | None = None, key: str = ""):
         y = F.gelu(self.n1(self.s(x)))
-        y = self.n2(self.t(y))
+        y = self.n2(self.t(y) if stream is None else self._t_stream(y, stream, key))
         return F.gelu(x + y)
+
+    def _t_stream(self, y, stream: dict, key: str):
+        """The temporal convolution with a stream buffer (research/log.md section 16; MoViNets, Kondratyuk et al.,
+        CVPR 2021): the last kt//2 time steps of this convolution's input in the previous window replace the zero
+        padding at the start of the window; the end keeps zero padding. stream["in"].get(key) is that buffer (absent:
+        zeros, as without a stream); the buffer for the next window is written to stream["out"][key]."""
+        p = self.t.kernel_size[0] // 2
+        if p == 0:
+            return self.t(y)
+        zeros = y.new_zeros(*y.shape[:2], p, *y.shape[3:])
+        prev = stream["in"].get(key)
+        stream["out"][key] = y[:, :, -p:]
+        left = zeros if prev is None else prev.to(y.dtype)
+        return F.conv3d(torch.cat([left, y, zeros], 2), self.t.weight, self.t.bias)
 
 
 class Up2(nn.Module):
@@ -242,12 +256,25 @@ class Decoder(nn.Module):
                 self.aux8 = nn.Conv3d(c, 1, 1)
         self.prior = CenterPrior() if prior else None
 
-    def forward(self, taps, surprise=None, T_out: int | None = None, audio=None, expert_taps=None):
+    @staticmethod
+    def _blocks(blocks: nn.Sequential, x, stream: dict | None, name: str):
+        """Run R21 blocks; with a stream (section 16), each temporal convolution reads and writes its buffer."""
+        if stream is None:
+            return blocks(x)
+        for i, b in enumerate(blocks):
+            x = b(x, stream, f"{name}.{i}")
+        return x
+
+    def forward(self, taps, surprise=None, T_out: int | None = None, audio=None, expert_taps=None,
+                stream: dict | None = None):
+        """stream (research/log.md section 16): None (default) processes the window alone. A dict {"in": buffers of
+        the previous window of the same video ({} for its first window), "out": {}} carries the decoder's temporal
+        context across consecutive, non-overlapping windows; "out" receives the buffers for the next window."""
         if self.tap_mode == "last":  # section 15C, V2: the deepest tap feeds every pyramid branch
             taps = [taps[-1]] * 4
         p4, p8, p16a, p16b = self.fpn(taps)
         if not self.topdown:  # section 15C, V4: decode at 1/16 only, logits upsampled x4
-            d16 = self.r16(self.fuse16(torch.cat([p16a, p16b], 1)))
+            d16 = self._blocks(self.r16, self.fuse16(torch.cat([p16a, p16b], 1)), stream, "r16")
             lg = self.head(d16)[:, 0]
             out = {"logits": F.interpolate(lg[:, None], scale_factor=(1, 4, 4), mode="trilinear",
                                            align_corners=False)[:, 0]}
@@ -270,9 +297,9 @@ class Decoder(nn.Module):
                 raise ValueError("SCM enabled but no surprise given")
             u = self.phi(surprise)
             p4, p8, p16a, p16b = [m(f, u) for m, f in zip(self.scm, (p4, p8, p16a, p16b))]
-        d16 = self.r16(self.fuse16(torch.cat([p16a, p16b], 1)))
-        d8 = self.r8(p8 + F.interpolate(d16, size=p8.shape[2:], mode="nearest"))
-        d4 = self.r4(p4 + F.interpolate(d8, size=p4.shape[2:], mode="nearest"))
+        d16 = self._blocks(self.r16, self.fuse16(torch.cat([p16a, p16b], 1)), stream, "r16")
+        d8 = self._blocks(self.r8, p8 + F.interpolate(d16, size=p8.shape[2:], mode="nearest"), stream, "r8")
+        d4 = self._blocks(self.r4, p4 + F.interpolate(d8, size=p4.shape[2:], mode="nearest"), stream, "r4")
         out = {"logits": self.head(d4)[:, 0]}  # B,T',H4,W4
         if self.aux and self.training:
             out["aux16"] = self.aux16(d16)[:, 0]

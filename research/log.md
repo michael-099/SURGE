@@ -1701,3 +1701,48 @@ In the 5,797 frames outside the 15K set (253 videos), the detector versions chan
 the 15K frames carries over to the whole dataset, diluted by their share (80 % of frames), and the other frames lose
 nothing measurable. The ×2 weight was chosen on MVVA, so this is a one-parameter speaker prior fitted on half of
 MVVA, not zero-shot transfer.
+
+## 16. P1: decoder state across windows (rules written 2026-11-17, before any run of section 16)
+**Question.** Can a decoder that carries its temporal context from one window to the next make the all-16 tiling
+(every output position kept, non-overlapping windows: 0.032 encoder passes per output frame against 0.063) as
+accurate as the default tiling? Motivation: report sections 9–13 (L1, G1, proposed experiment P1).
+**Mechanism (stream buffer; Kondratyuk et al., MoViNets, CVPR 2021).** At a window's first time step, each of the
+decoder's six 3×1×1 temporal convolutions reads the previous window's last time step of its input instead of zero
+padding; the end of the window keeps zero padding. No new parameters. `Decoder(..., stream=...)` in `surge/model.py`,
+off by default (the default decoder is unchanged; tests in `tests/test_p1.py`).
+A smoke test on two holdout videos (a code check of `probe_eval.py --stream`) ran before this rule was written; its
+numbers are not used. The training code was smoke-tested with ViT-L.
+
+**Step 0 (test time, seed 0, descriptive).** `runs/vitg_s0`, holdout with the protocol of 15A, all-16 tiling without
+and with the buffer, with CC per output position (`probe_eval.py --tiling all16 [--stream] --positions`). Reported:
+with − without (video bootstrap), both against the default tiling (0.5866), and the per-position profiles. The model
+never trained with the buffer, so no gain would not refute P1a.
+
+**P1a (trained, seeds 0–2).** One run per seed of `scripts/train_multi.py --pairs` (ViT-g, 256², 3 epochs, the main
+recipe). Each training item is two adjacent windows (window B starts one stride after window A ends), 4 pairs per
+video and 4 pairs per step, so the windows per step and per epoch are those of the default run. Three decoders on the
+same encoder stream:
+- R: the default decoder; loss on the central 8 positions of both windows; scored on the default tiling.
+- Rall: the default decoder; loss on all 16 positions of both windows; scored on the all-16 tiling.
+- S: GroupNorm per time step (V3b, equivalent to R in 15C2) and the stream buffer; window B uses window A's buffers,
+  with gradients through them; loss on all 16 positions of both windows; scored on the all-16 tiling with the buffer
+  carried through each video (none before its first window).
+Each decoder's best epoch is chosen by holdout CC on its own tiling, as in 15C. Queue `scripts/queue_16p1.sh`,
+summary `scripts/inv_summary.py --part p1`.
+**Gate.** Seeds 1 and 2 run only if S of seed 0 reaches holdout CC ≥ 0.5836 (the default tiling of `runs/vitg_s0`,
+0.5866, minus 0.003).
+**Primary test (rule of 12E).** S against the default tiling of `runs/vitg_s{0,1,2}`
+(`runs/review/holdout/vitg_s{0,1,2}.json`). Equivalent, or an effect above 0: the state removes the need for
+overlapping windows, at half the encoder passes per output frame (P1 succeeds). An effect below 0, or inconclusive:
+P1a does not suffice.
+**Secondary (rule of 12E, same seeds).** S − R of the same run (the primary question within one training stream).
+S − Rall: does the buffer add to the all-position loss? (Effect above 0: it does. Equivalent: the all-position loss
+alone explains S.) Rall − R of the same run: does training on all positions alone close the gap of the all-16 tiling?
+**Descriptive.** Per-position CC on the all-16 tiling for S with and without the buffer, Rall, and R (best epochs,
+`probe_eval.py --variant`); mean CC at positions 0–1 against 8–9. R of these runs against `runs/vitg_s{0,1,2}` (the
+effect of the pair stream itself).
+**P1b (conditional; design only).** If P1a fails the primary test: P1a plus a zero-initialised cross-attention block
+at the 1/16 level, through which positions 0–7 attend to the previous window's 1/16 features at its last eight
+positions. Its rule is written before any run.
+**Stop rule (report section 12).** If neither P1a nor P1b brings the all-16 tiling to equivalence at 256², the state is
+dropped, and 384² is reported as a resolution result with its cost.

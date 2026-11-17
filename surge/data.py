@@ -312,9 +312,15 @@ class ClipDataset(Dataset):
 
     def __init__(self, videos: list[Video], T: int = 16, stride: int = 2, size=(256, 256), out_size=(64, 64),
                  clips_per_video: int = 8, hflip: bool = True, seed: int = 0, audio: bool = False,
-                 target: str = "central", ssl: bool = False, static: bool = False):
+                 target: str = "central", ssl: bool = False, static: bool = False, pair: bool = False):
         if target not in ("central", "last"):
             raise ValueError(target)
+        # research/log.md section 16 (P1): each item is two adjacent windows, 2T sampled frames inside the video
+        # (window B starts one stride after window A ends), with targets on all 2T positions and one flip for both.
+        # Off by default; the draws of the default items are unchanged.
+        self.pair = pair
+        if pair and (target != "central" or static or audio or ssl):
+            raise ValueError("pairs of windows are defined for the visual model with the default target")
         self.videos = [v for v in videos if len(v) >= 1]
         self.audio = audio
         # research/log.md section 15E (E2): each clip becomes one of its target frames, drawn at random and repeated
@@ -338,6 +344,8 @@ class ClipDataset(Dataset):
         v = self.videos[i // self.cpv]
         rng = random.Random((self.seed, self.epoch, i).__hash__())
         n = len(v)
+        if self.pair:
+            return self._pair_item(v, rng)
         span = (self.T - 1) * self.stride
         if self.target == "last":  # causal: the window ends at a uniformly drawn target frame
             start = rng.randint(0, n - 1) - span
@@ -372,6 +380,23 @@ class ClipDataset(Dataset):
             hw = (self.size[0] // 16, self.size[1] // 16)  # the encoder's token grid (patch 16)
             item["cond"] = torch.from_numpy(ssl_condition(ssl_maps(v, n), idx, hw, flip))
         return item
+
+    def _pair_item(self, v: Video, rng: random.Random):
+        """Two adjacent windows (section 16): frames (2T,3,H,W), density and fixations on all 2T positions."""
+        n, L = len(v), 2 * self.T
+        start = rng.randint(0, max(n - 1 - (L - 1) * self.stride, 0))
+        idx = window_indices(n, start, L, self.stride)
+        flip = self.hflip and rng.random() < 0.5
+        frames = np.stack([load_rgb(v.frames[j], self.size) for j in idx])
+        dens = np.stack([density_small(load_gray(v.maps[j]), self.out_size) for j in idx])
+        fixs = np.stack([fixations_small(load_gray(v.fixations[j]), self.out_size) for j in idx])
+        if flip:
+            frames, dens, fixs = frames[:, :, ::-1], dens[:, :, ::-1], fixs[:, :, ::-1]
+        return {
+            "frames": torch.from_numpy(np.ascontiguousarray(frames)).permute(0, 3, 1, 2),
+            "density": torch.from_numpy(np.ascontiguousarray(dens)),
+            "fixations": torch.from_numpy(np.ascontiguousarray(fixs)),
+        }
 
 
 class SaliconDataset(Dataset):

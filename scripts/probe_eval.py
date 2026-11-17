@@ -9,6 +9,7 @@ other result of it is used (section 15A).
         [--tiling default|all16|central4|overlap|dense]
         [--perturb none|noop|noise:S|blur:S|jpeg:Q|contrast:F|bright:F|gray|dup]
         [--positions] [--flip-consistency] [--per-frame]
+        [--stream] [--variant NAME]     (section 16: the decoder's stream buffer; a scripts/train_multi.py decoder)
 
 Only frames on the scoring grid (every --frame-step-th frame) are predicted and scored. `noop` runs the float
 perturbation path without changing the frame (it measures that path's own effect against `none`).
@@ -40,15 +41,26 @@ METRICS = ("cc", "nss", "sim", "kld")
 
 
 # ------------------------------------------------------------------------------------------------ model
-def load_model(run: Path, ckpt: str, device, img: int | None):
+def load_model(run: Path, ckpt: str, device, img: int | None, variant: str | None = None):
+    """variant (section 16): load <run>/<variant>/best.pt of a scripts/train_multi.py run, with its decoder options."""
     from surge.backbones import build_backbone
-    from surge.model import SurgeD
+    from surge.model import Decoder, SurgeD
     cfg = json.loads((run / "config.json").read_text())
     md = cfg["model"]
     if md.get("expert") or md.get("audio") or md.get("pgate") or md.get("ssl") or md.get("scm"):
         raise ValueError("probe_eval supports the visual SURGE-D models only")
     size = img or cfg["data"]["size"][0]
     bb = build_backbone(md["backbone"], img=size)
+    if variant:
+        st = torch.load(run / variant / "best.pt", map_location="cpu", weights_only=False)
+        if st["spec"]["kind"] != "decoder":
+            raise ValueError("only decoder variants are supported")
+        kw = {"c": 256, "prior": True, "aux": True, **st["spec"]["dec"]}
+        c = kw.pop("c")
+        m = SurgeD(bb, prior=kw["prior"], aux=kw["aux"], c=c)
+        m.decoder = Decoder(bb.embed_dim, c, **kw)
+        m.decoder.load_state_dict(st["module"])
+        return m.to(device).eval(), cfg, size
     st = torch.load(run / ckpt, map_location="cpu", weights_only=False)
     if "lora" in st:
         raise ValueError("LoRA checkpoints are not supported here")
@@ -191,6 +203,7 @@ def run_video(model, v, T, stride, size, device, a, loader, rng_tag: str):
     acc, cnt, accf = {}, {}, {}
     positions = []
     cache = {}
+    state = {}  # --stream (section 16): the decoder's buffers from the previous window of this video
     for b0 in range(0, len(wins), a.batch):
         chunk = wins[b0:b0 + a.batch]
         idxs = []
@@ -220,7 +233,17 @@ def run_video(model, v, T, stride, size, device, a, loader, rng_tag: str):
         x = torch.from_numpy(np.stack(xs)).permute(0, 1, 4, 2, 3).to(device, non_blocking=True)
         outs = []
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=device.type == "cuda"):
-            outs.append(model(x)["logits"])
+            if a.stream:  # windows in order, one at a time, each with the previous window's buffers
+                taps = model.backbone(x)
+                taps = [t.float() if t.dtype != torch.bfloat16 else t for t in taps]
+                lgs = []
+                for bi in range(x.shape[0]):
+                    st = {"in": state, "out": {}}
+                    lgs.append(model.decoder([t[bi:bi + 1] for t in taps], T_out=T, stream=st)["logits"])
+                    state = st["out"]
+                outs.append(torch.cat(lgs))
+            else:
+                outs.append(model(x)["logits"])
             if a.flip_consistency:
                 outs.append(model(x.flip(-1))["logits"].flip(-1))
         ps = [log_softmax2d(o.float()).exp().cpu().numpy() for o in outs]  # B,T,h,w
@@ -276,16 +299,22 @@ def main():
     ap.add_argument("--max-videos", type=int, default=None)
     ap.add_argument("--batch", type=int, default=4)
     ap.add_argument("--workers", type=int, default=16)
+    ap.add_argument("--stream", action="store_true",
+                    help="section 16: all16 tiling only; the decoder carries its stream buffers from window to window")
+    ap.add_argument("--variant", default=None,
+                    help="section 16: score <run>/<variant>/best.pt of a scripts/train_multi.py run")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     if a.temporal == "static" and (a.tiling != "default" or a.positions or a.flip_consistency):
         raise ValueError("static clips have their own windows")
-    if a.positions and a.tiling != "default":
-        raise ValueError("--positions is defined for the default tiling")
+    if a.positions and a.tiling not in ("default", "all16"):
+        raise ValueError("--positions is defined for the default and all16 tilings")
+    if a.stream and (a.tiling != "all16" or a.temporal != "orig" or a.flip_consistency or a.perturb == "dup"):
+        raise ValueError("--stream is defined for the all16 tiling in the original order")
     from scripts.evaluate import get_videos
     videos = get_videos(a.dataset, a.split, a.root)[: a.max_videos]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model, cfg, size = load_model(ROOT / a.run, a.ckpt, device, a.size)
+    model, cfg, size = load_model(ROOT / a.run, a.ckpt, device, a.size, a.variant)
     T = cfg["data"]["T"]
     stride = a.stride or cfg["data"]["stride"]
     loader = make_loader(a.perturb, size)

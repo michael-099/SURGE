@@ -9,6 +9,14 @@ of train.py (every eval.frame_step-th frame, sigma eval.sigma), sharing the enco
         model.backbone=vjepa2_g train.epochs=3 train.warmup_epochs=0.25 train.seed=0 \
         --variants R,V1,V2,V3,V4,V5,V6,lr1e-4,lr9e-4,nocc,nonss,R6
     python -u scripts/train_multi.py ... --probes 1-40      (section 15B: a linear readout per block, plus P0)
+    python -u scripts/train_multi.py ... --pairs --variants R,Rall,S   (section 16, P1: pairs of adjacent windows)
+
+With --pairs (section 16), each item is two adjacent windows (clips_per_video/2 pairs per video, batch/2 pairs per
+step, so the windows per step and per epoch are those of the default run). Both windows are encoded; a variant with a
+stream carries its decoder buffers from window A to window B (gradients flow through them within the pair). The loss
+is on the central positions of both windows (default) or on all positions ("all"). Each variant is scored with its
+own tiling: the default tiling, or all 16 positions of non-overlapping windows ("all16"), with the stream carried
+through each video for stream variants.
 
 Outputs per variant in <run_dir>/<variant>/: best.pt, log.jsonl, holdout_e<k>.json (per-video scores) and DONE.
 Stops cleanly (saving every variant's state) if SAFETY_STOP.txt (repo root) or <run_dir>/STOP exists; resumes.
@@ -59,6 +67,10 @@ def variant_specs(names: list[str], probes: list[int] | None):
         "nocc": {"train": {"w_cc": 0.0}},
         "nonss": {"train": {"w_nss": 0.0}},
         "R6": {"train": {"epochs": 6}},
+        # section 16 (P1; with --pairs): R with the loss on all positions, scored on the all-16 tiling; S adds
+        # per-frame norms (V3b) and the stream buffer, with the stream carried through each video at test time
+        "Rall": {"loss": "all", "tiling": "all16"},
+        "S": {"dec": {"norm_per_frame": True}, "loss": "all", "stream": True, "tiling": "all16"},
     }
     specs = {}
     for n in names:
@@ -95,6 +107,11 @@ class Variant:
         else:
             raise ValueError(kind)
         self.module.to(device)
+        self.loss_pos = spec.get("loss", "central")  # section 16: "central" (default) or "all" positions
+        self.stream = spec.get("stream", False)
+        self.tiling = spec.get("tiling", "default")
+        if self.stream and kind != "decoder":
+            raise ValueError("the stream buffer is defined for the decoder")
         t = {**tr, **spec["train"]}
         self.epochs, self.lr, self.w_cc, self.w_nss = t["epochs"], t["lr"], t["w_cc"], t["w_nss"]
         self.w_aux, self.warmup = t["w_aux"], t["warmup_epochs"]
@@ -175,6 +192,75 @@ def evaluate_multi(backbone, variants, videos, T, stride, size, device, frame_st
     return out
 
 
+@torch.no_grad()
+def evaluate_all16(backbone, variants, videos, T, stride, size, device, frame_step, sigma, workers, batch=4):
+    """Holdout scores on the all-16 tiling (section 16): non-overlapping windows that keep all T positions, exactly
+    the tiling "all16" of scripts/probe_eval.py (section 15G). A stream variant decodes the windows of each video in
+    order, one at a time, carrying its buffers from window to window (none before a video's first window)."""
+    from scripts.probe_eval import windows as tiling_windows
+    for v in variants:
+        v.module.eval()
+    per_video = {v.name: {} for v in variants}
+    with ProcessPoolExecutor(workers) as ex:
+        for vid in videos:
+            n = len(vid)
+            wins = list(tiling_windows(n, T, stride, "all16", list(range(0, n, frame_step))))
+            cache, maps = {}, {v.name: {} for v in variants}
+            state = {v.name: {} for v in variants}
+            for b0 in range(0, len(wins), batch):
+                chunk = wins[b0:b0 + batch]
+                need = sorted({j for idx, _, _ in chunk for j in idx if j not in cache})
+                for j, im in zip(need, _IO_POOL.map(lambda j: load_rgb(vid.frames[j], size), need)):
+                    cache[j] = im
+                x = torch.from_numpy(np.stack([np.stack([cache[j] for j in idx]) for idx, _, _ in chunk]))
+                x = x.permute(0, 1, 4, 2, 3).to(device, non_blocking=True)
+                lo = min(min(i) for i, _, _ in chunk)
+                for k in [k for k in cache if k < lo]:
+                    del cache[k]
+                with torch.autocast("cuda", dtype=torch.bfloat16):
+                    taps = backbone(x)
+                    taps = [t.float() if t.dtype != torch.bfloat16 else t for t in taps]
+                    for v in variants:
+                        if v.stream:
+                            lgs = []
+                            for bi in range(x.shape[0]):
+                                st = {"in": state[v.name], "out": {}}
+                                lgs.append(v.module([t[bi:bi + 1] for t in v.sel(taps)], T_out=T, stream=st)["logits"])
+                                state[v.name] = st["out"]
+                            lg = torch.cat(lgs)
+                        else:
+                            lg = v.module(v.sel(taps), T_out=T)["logits"]
+                        p = log_softmax2d(lg.float()).exp().cpu().numpy()
+                        for bi, (_, _, assign) in enumerate(chunk):
+                            for f, q in assign:
+                                a = int(np.floor(q))
+                                w = q - a
+                                maps[v.name][f] = p[bi, a] if w == 0 else (1 - w) * p[bi, a] + w * p[bi, min(a + 1, T - 1)]
+            frames = sorted(maps[variants[0].name])
+            jobs = [([maps[v.name][f] for v in variants], vid.maps[f], vid.fixations[f], sigma, vid.skip_empty)
+                    for f in frames]
+            res = list(ex.map(_score_many, jobs, chunksize=4))
+            for vi, v in enumerate(variants):
+                per_video[v.name][vid.name] = {k: float(np.nanmean([r[vi][k] for r in res])) for k in METRICS}
+    out = {}
+    for v in variants:
+        pv = per_video[v.name]
+        out[v.name] = ({k: float(np.mean([x[k] for x in pv.values()])) for k in METRICS}, pv)
+        v.module.train()
+    return out
+
+
+def pair_forward(v, taps, T, Bp):
+    """Section 16: decoder outputs for a batch of Bp pairs whose taps hold windows A (first Bp) then B (last Bp).
+    A stream variant decodes A, then B with A's buffers; any other variant decodes the 2Bp windows independently."""
+    if not v.stream:
+        return v.module(v.sel(taps), T_out=T)
+    st = {"in": {}, "out": {}}
+    oa = v.module([t[:Bp] for t in v.sel(taps)], T_out=T, stream=st)
+    ob = v.module([t[Bp:] for t in v.sel(taps)], T_out=T, stream={"in": st["out"], "out": {}})
+    return {k: torch.cat([oa[k], ob[k]]) for k in oa}
+
+
 def parse_probes(s: str | None):
     if not s:
         return None
@@ -188,13 +274,15 @@ def main():
     ap.add_argument("--set", nargs="*", default=[])
     ap.add_argument("--variants", default="")
     ap.add_argument("--probes", default=None, help="e.g. 1-40: one linear readout per block output, plus P0")
+    ap.add_argument("--pairs", action="store_true", help="section 16: train on pairs of adjacent windows")
     args = ap.parse_args()
     cfg = load_config(args.config, args.set)
     tr, md, d = cfg["train"], cfg["model"], cfg["data"]
     run_dir = ROOT / cfg["run_dir"]
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "config.json").write_text(json.dumps({**cfg, "variants": args.variants, "probes": args.probes},
-                                                     indent=1), newline="\n")
+    (run_dir / "config.json").write_text(json.dumps({**cfg, "variants": args.variants, "probes": args.probes,
+                                                     **({"pairs": True} if args.pairs else {})},
+                                                    indent=1), newline="\n")
     logf = open(run_dir / "log.txt", "a")
 
     def log(msg):
@@ -226,14 +314,22 @@ def main():
     for v in variants:
         (run_dir / v.name).mkdir(exist_ok=True)
         log(f"variant {v.name}: {v.spec} params {v.n_params / 1e6:.3f}M epochs {v.epochs} lr {v.lr}")
+    if not args.pairs and any(v.stream or v.loss_pos != "central" for v in variants):
+        raise ValueError("the stream and the all-position loss need --pairs")
 
     size = tuple(d["size"])
     g = (size[0] // 16 * 4, size[1] // 16 * 4)
     from scripts.train import videos_for
+    if args.pairs:
+        if tr["batch"] % 2 or tr["clips_per_video"] % 2:
+            raise ValueError("--pairs needs an even batch and an even clips_per_video")
+        cpv, bs = tr["clips_per_video"] // 2, tr["batch"] // 2
+    else:
+        cpv, bs = tr["clips_per_video"], tr["batch"]
     train_ds = ClipDataset(videos_for(cfg, "train"), T=d["T"], stride=d["stride"], size=size, out_size=g,
-                           clips_per_video=tr["clips_per_video"], hflip=d["hflip"], seed=seed)
+                           clips_per_video=cpv, hflip=d["hflip"], seed=seed, pair=args.pairs)
     val_videos = videos_for(cfg, "holdout")
-    loader = DataLoader(train_ds, batch_size=tr["batch"], shuffle=True, num_workers=tr["workers"], pin_memory=True,
+    loader = DataLoader(train_ds, batch_size=bs, shuffle=True, num_workers=tr["workers"], pin_memory=True,
                         drop_last=True, persistent_workers=True, prefetch_factor=4,
                         generator=torch.Generator().manual_seed(seed))
     spe = len(loader)
@@ -286,17 +382,32 @@ def main():
             x = batch["frames"].to(device, non_blocking=True)
             y = batch["density"].to(device, non_blocking=True)
             fx = batch["fixations"].to(device, non_blocking=True)
+            Bp = x.shape[0]
+            if args.pairs:  # windows A (first Bp) then B (last Bp); targets on all positions in the same order
+                x = torch.cat([x[:, :T], x[:, T:]])
+                y = torch.cat([y[:, :T], y[:, T:]])
+                fx = torch.cat([fx[:, :T], fx[:, T:]])
             with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
                 taps = bb(x)
             taps = [t.float() if t.dtype != torch.bfloat16 else t for t in taps]
             for v in active:
                 v.set_lr(step, spe)
-                with torch.autocast("cuda", dtype=torch.bfloat16):
-                    out = v.module(v.sel(taps), T_out=T)
-                loss, _ = saliency_loss(central(out["logits"], T), y, fx, v.w_cc, v.w_nss)
-                for k in [k for k in out if k.startswith("aux")]:
-                    la, _ = saliency_loss(central(out[k], T), y, fx, v.w_cc, 0.0)
-                    loss = loss + v.w_aux * la
+                if not args.pairs:
+                    with torch.autocast("cuda", dtype=torch.bfloat16):
+                        out = v.module(v.sel(taps), T_out=T)
+                    loss, _ = saliency_loss(central(out["logits"], T), y, fx, v.w_cc, v.w_nss)
+                    for k in [k for k in out if k.startswith("aux")]:
+                        la, _ = saliency_loss(central(out[k], T), y, fx, v.w_cc, 0.0)
+                        loss = loss + v.w_aux * la
+                else:
+                    with torch.autocast("cuda", dtype=torch.bfloat16):
+                        out = pair_forward(v, taps, T, Bp)
+                    pos = (lambda z: z) if v.loss_pos == "all" else (lambda z: central(z, T))
+                    yy, ff = pos(y), pos(fx)
+                    loss, _ = saliency_loss(pos(out["logits"]), yy, ff, v.w_cc, v.w_nss)
+                    for k in [k for k in out if k.startswith("aux")]:
+                        la, _ = saliency_loss(pos(out[k]), yy, ff, v.w_cc, 0.0)
+                        loss = loss + v.w_aux * la
                 v.opt.zero_grad(set_to_none=True)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(v.params, 1.0)
@@ -312,8 +423,13 @@ def main():
                 save_state(epoch, step)
         log(f"epoch {epoch} trained in {(time.time() - t0) / 60:.1f} min ({len(active)} decoders)")
         t1 = time.time()
-        res = evaluate_multi(bb, active, val_videos, T, d["stride"], size, device, cfg["eval"]["frame_step"],
-                             cfg["eval"]["sigma"], cfg["eval"]["workers"])
+        res = {}
+        ev = (val_videos, T, d["stride"], size, device, cfg["eval"]["frame_step"], cfg["eval"]["sigma"],
+              cfg["eval"]["workers"])
+        if any(v.tiling == "default" for v in active):
+            res.update(evaluate_multi(bb, [v for v in active if v.tiling == "default"], *ev))
+        if any(v.tiling == "all16" for v in active):
+            res.update(evaluate_all16(bb, [v for v in active if v.tiling == "all16"], *ev))
         for v in active:
             mean, pv = res[v.name]
             rec = {"epoch": epoch, "mean": mean, "per_video": pv, "train_loss": sums[v.name] / max(nb, 1)}
