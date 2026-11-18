@@ -204,9 +204,10 @@ model is visual; the soundtrack is examined in separate experiments. The
 encoders are frozen \acrshort{V-JEPA}~2 models in two sizes; \acrshort{V-JEPA}~2.1 and \acrshort{UMT}-L are
 included in the encoder comparison. Evaluation covers nine test sets: DHF1K,
 UCF Sports, Hollywood-2 with the Vig gaze data, and six audio-visual datasets.
-After the main evaluation, four extensions of the model were tested: a second
+After the main evaluation, five extensions of the model were tested: a second
 frozen encoder, maps of the active speaker, the predictor's error as an input
-to the decoder, and sound-source localisation maps.
+to the decoder, sound-source localisation maps, and a decoder state carried
+from one window to the next.
 
 \paragraph{Limitations.} The DHF1K test-set annotations are withheld by the
 dataset authors; predictions for the test set were prepared, but their scores
@@ -260,7 +261,11 @@ The main contributions of this thesis are:
     raised holdout \acrshort{CC} in all six seeds, by 0.0038 on average, without an
     established gain; a decoder given the predictor's error ignored it;
     sound-source maps hardly depended on the sound; and maps of the active
-    speaker could not be built from the released frames.
+    speaker could not be built from the released frames. A fifth, a decoder
+    state carried from one window to the next, halves the encoder computation
+    per output frame and is more accurate than overlapping windows within the
+    same training runs, but its gain over the separately trained model could
+    not be established.
   \item \textbf{A transparent evaluation} across nine test sets with a validated
     evaluator, decision rules written in advance in a dated log, paired
     statistics and a new,

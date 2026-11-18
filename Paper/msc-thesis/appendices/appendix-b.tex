@@ -15,14 +15,14 @@ result with the folder it was read from.
 \begin{table}[htbp]
   \centering
   \caption{Main files of the implementation}\label{tab:code}
-  \small
+  \footnotesize
   \begin{tabularx}{\textwidth}{@{}>{\ttfamily\raggedright}p{6.2cm}>{\raggedright\arraybackslash}X@{}}
     \toprule
     \textrm{\textbf{File}} & \textbf{Content} \\
     \midrule
     surge/backbones.py & frozen encoders (\acrshort{V-JEPA}~2 \acrshort{ViT}-L and \acrshort{ViT}-g, \acrshort{V-JEPA}~2.1, \acrshort{UMT}-L, DINOv2-L) and their taps; predictor error for gate G2 and the batched masked-tube readout of the predictability gate \\
-    surge/model.py & feature pyramid, (2+1)D decoder, auxiliary heads, centre prior, surprise and audio modules, second-encoder fusion \\
-    surge/data.py & dataset readers, clip sampling, targets, inference windows \\
+    surge/model.py & feature pyramid, (2+1)D decoder, auxiliary heads, centre prior, surprise and audio modules, second-encoder fusion, stream buffer of the decoder state \\
+    surge/data.py & dataset readers, clip sampling, pairs of adjacent windows, targets, inference windows \\
     surge/losses.py & training loss (\cref{eq:loss}) \\
     surge/metrics.py & \acrshort{CC}, \acrshort{NSS}, \acrshort{SIM}, \acrshort{KLD}, \acrshort{AUC-J} and \acrshort{sAUC} \\
     surge/infer.py & whole-video inference (\cref{alg:inference}) and scoring \\
@@ -48,6 +48,10 @@ result with the folder it was read from.
     scripts/ssl\_maps.py & sound-source localisation maps and the choice of the audio sampling rate (\cref{sec:ssl-maps}) \\
     scripts/summarize\_ssl.py & outcome of the sound-source maps under their rule \\
     scripts/queue\_14a.sh, \_14a2.sh, \_14d.sh, \_14e.sh, \_14f.sh & the runs of the extensions (\cref{sec:extensions}), in order \\
+    scripts/train\_multi.py & several decoders trained together on one stream of encoder features; pairs of adjacent windows for the decoder state (\cref{sec:state}) \\
+    scripts/probe\_eval.py & inference with windows that do not overlap, with or without the buffer, and accuracy by position in the window (\cref{fig:state}) \\
+    scripts/inv\_summary.py, scripts/p1\_first\_window.py & tests of the decoder state under its rule; the analysis without the first window of each video \\
+    scripts/queue\_16p1.sh & the runs of the decoder state, in order \\
     configs/ & configurations and all split and holdout lists \\
     research/log.md & dated decision rules and results \\
     \bottomrule
@@ -118,6 +122,14 @@ those runs, it was also noted that the lower bound of the first look for
 and the second look was therefore fixed at 100,000 resamples with
 \acrshort{UMT}-L as its only candidate. The outcome of the first look as
 computed was kept, and both looks are reported (\cref{sec:extensions}).
+
+\paragraph{The decoder state.} Before its rule was written, the buffer was run
+at test time on two holdout videos to check the code; those scores were not
+used. The analysis of the remaining gap without the first window of each video
+(\cref{sec:extensions}) was added after the scores by position had been seen,
+and it is descriptive. That the primary comparison, with separately trained
+models, could not have found equivalence at the spread between seeds was
+noticed only after the result; the rule was applied unchanged.
 
 \paragraph{Extensions that were not completed.} The predictability gate and
 the sound-source maps stopped at the first stage of their rules, an outcome
@@ -190,8 +202,8 @@ not part of the repository of the thesis.
 
 The extensions of \cref{sec:extensions} are run, in the order of the research
 log, with the queues below; each writes the per-video holdout scores that the
-tests read. The second-encoder tests and the decision on the sound-source maps
-then follow from:
+tests read. The second-encoder tests, the decision on the sound-source maps and
+the tests of the decoder state then follow from:
 
 \begin{small}
 \begin{verbatim}
@@ -200,6 +212,7 @@ bash scripts/queue_14d.sh                                 # seeds 3-5
 bash scripts/queue_14e.sh                                 # gate
 python -I scripts/ssl_maps.py --ckpt <EZ-VSL checkpoint> --rate 44100
 bash scripts/queue_14f.sh                                 # sound maps
+bash scripts/queue_16p1.sh                                # decoder state
 python scripts/ablation_seeds.py --ref vitg_s0,vitg_s1,vitg_s2 \
     --variant dinov2_l=xp_dinov2_l_s0,xp_dinov2_l_s1,xp_dinov2_l_s2 \
     --variant umt_l=xp_umt_l_s0,xp_umt_l_s1,xp_umt_l_s2 \
@@ -210,6 +223,8 @@ U=$U,xp_umt_l_s3,xp_umt_l_s4,xp_umt_l_s5
 python scripts/ablation_seeds.py --ref $R --variant umt_l=$U \
     --level 97.5 --n 100000 --seed 0 --out runs/review/expert_seeds_14d.json
 python scripts/summarize_ssl.py --stage 1
+python scripts/inv_summary.py --part p1
+python -I scripts/p1_first_window.py .
 \end{verbatim}
 \end{small}
 

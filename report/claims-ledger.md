@@ -3,7 +3,9 @@
 **Purpose.** A single list of every claim the research can make, sorted by the strength of its evidence, with
 wording that can be reused in the thesis, the defence and any paper.
 **Sources.**
-- The thesis: `Paper/msc-thesis/main.pdf` at `14d3caf`; table and page numbers refer to it.
+- The thesis: `Paper/msc-thesis/main.pdf` at `14d3caf`; table and page numbers refer to it. The decoder-state update
+  (2026-11-18) added about four pages from §4.5.9 on, so later pages are now one to four higher; Q19, W15 and X26
+  cite tables and figures of the updated thesis.
 - The run outputs in `runs/`.
 - `report/critical-review.md` (codes M, D, m) and `report/sota-advantage-analysis.md`.
 
@@ -110,6 +112,7 @@ DHF1K validation set, the thesis's test set.
 | Q16 | A second frozen encoder (UMT-L) raised holdout CC in all six seeds, by +0.0038 on average, but the gain could not be established; it was not adopted. | Six seeds: +0.0040, +0.0070, +0.0033, +0.0038, +0.0017, +0.0032; 97.5 % interval [−0.0009, +0.0093] (second look, T5.17–5.18). First look: DINOv2-L +0.0041 [−0.0007, +0.0094], UMT-L +0.0047 [−0.0001, +0.0103], both inconclusive. | Say "consistent in sign but not established"; report both looks. |
 | Q17 | A decoder given the predictor's error for every clip learned to ignore it. | Seed 0: holdout CC 0.5857 with matched, 0.5856 with 180°-rotated and 0.5856 with zero error maps; best epoch 0.5857 < screen 0.5896 and 0.0009 below SURGE-D (T5.17). | One seed; "learned to ignore it on DHF1K". |
 | Q18 | Sound-source maps (EZ-VSL) did not help on Coutrot2 and hardly depended on the sound. | Fold-mean CC 0.8203 visual, 0.8220 matched, 0.8213 rotated soundtrack; maps − visual +0.0017 [+0.0001, +0.0036], matched − rotated +0.0007 [−0.0002, +0.0021] (T5.19). Matched and rotated maps correlate 0.96 per frame. | One seed, 15 videos, one dataset; other datasets not run. |
+| Q19 | A decoder that carries its state across windows (a stream buffer in its temporal convolutions) halves the encoder computation per output frame and, within the same training runs, was more accurate than the standard decoder with overlapping windows. | Holdout, seeds 0–2: +0.0051 [+0.0022, +0.0083] against the standard decoder of the same runs (+0.0050, +0.0051, +0.0052 per seed); 0.032 against 0.063 encoder passes per output frame (T5.20, Fig. 5.6). Against the separately trained SURGE-D: +0.0044 [−0.0009, +0.0098], inconclusive; not adopted. | Say "within the same training runs"; the registered primary comparison, with separately trained models, was inconclusive. |
 
 ---
 
@@ -131,6 +134,7 @@ DHF1K validation set, the thesis's test set.
 | W12 | SURGE-D's maps are qualitatively similar to SalFoM's on single frames. The gain shows over whole videos. | Five frames chosen by a fixed rule; on four of them SalFoM is marginally closer (Fig. 5.3). | Descriptive only |
 | W13 | The decoder ignores the predictor's error because its information is already in the encoder's features. | Equally consistent with too little training (3 epochs, 540 videos) for the zero-initialised modulation to learn it. | "One reading is …; another is …" |
 | W14 | Sound-source maps fail on conversations because at 7×7 they mark people rather than the speaker. | Matched and rotated maps correlate 0.96, and the peak moves in about half the frames; whether the moved peak is the speaker was not measured. | "in these scenes they marked the people more than the speaker" |
+| W15 | The decoder state closes the positional gap at the boundaries between windows; what remains lies in each video's first window. | Post hoc and descriptive: without each video's first window, positions 0–1 trail 8–9 by 0.003 (0.041 and 0.066 for the standard decoders); with it, by 0.018 (Fig. 5.6). | "An analysis added after the result suggests …" |
 
 ---
 
@@ -162,7 +166,8 @@ DHF1K validation set, the thesis's test set.
 | X22 | "Exceeded" published audio-visual results while also saying "by margins within the spread of published evaluations" (the current abstract). | The second half undercuts the first. | Q2 wording |
 | X23 | "A second encoder improves SURGE-D" or "an ensemble of encoders is better". | Six seeds positive, but the 97.5 % interval includes zero; not adopted. | Q16 wording |
 | X24 | "Speaker-aware" or "audio-aware" SURGE-D. | The speaker maps were dropped before training (faces 12–15 px); neither audio module helped. | "Neither a global audio embedding nor sound-source maps improved the visual model; speaker maps could not be built from the released frames." |
-| X25 | "A novel architecture" for SURGE-D or its extensions. | The novelty assessment rates SURGE-D incremental, and none of the four extensions was adopted. | Describe the frozen-encoder model, its controlled evaluation and the pre-registered negative results. |
+| X25 | "A novel architecture" for SURGE-D or its extensions. | The novelty assessment rates SURGE-D incremental, and none of the five extensions was adopted. | Describe the frozen-encoder model, its controlled evaluation and the pre-registered negative results. |
+| X26 | "The decoder state improves SURGE-D" or "the same accuracy at half the cost". | Its registered comparison with the separately trained SURGE-D was inconclusive (+0.0044 [−0.0009, +0.0098]), and at this spread between seeds equivalence could not be shown. | Q19 wording |
 
 ---
 

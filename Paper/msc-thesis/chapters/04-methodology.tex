@@ -12,7 +12,7 @@ decision rule before the experiment that it governs
 (\cref{sec:formulation}). It then describes the eye-tracking data and their
 preparation (\cref{sec:dataset}), the proposed model, SURGE-D, as it is
 implemented (\cref{sec:architecture}), the components that were implemented
-and tested but not retained, among them four extensions tested after the main
+and tested but not retained, among them five extensions tested after the main
 evaluation (\cref{sec:optional}), the training and inference
 procedures (\cref{sec:training,sec:inference}), and the evaluation metrics
 and statistical analysis (\cref{sec:evaluation-metrics}). The chapter closes
@@ -64,7 +64,9 @@ the frozen encoder might lack would improve it further: a second frozen
 encoder with different pre-training, the speaking status of the people in
 view, the predictor's error as an input to the decoder, and maps of where the
 sound comes from
-(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps}). Each
+(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps}). A fifth
+extension let the decoder carry its temporal context from one window to the
+next, so that windows need not overlap (\cref{sec:state}). Each
 was planned as a candidate component of the final model, and its rule
 (\cref{tab:rules-ext}) fixed before its runs what would make it one.
 The extensions tested on DHF1K were first screened with one seed against the
@@ -170,6 +172,11 @@ final model includes an extension only if its rule was met
       alone; the other datasets are run only if it is met there, and the maps are
       adopted if, in addition, no other dataset loses more than $0.005$ fold-mean
       \acrshort{CC} \\
+    Decoder state & Seeds 1 and 2 only if the seed-0 holdout \acrshort{CC} without
+      overlapping windows is at least $0.5836$ (the \acrshort{ViT}-g model of seed 0
+      minus $0.003$); succeeds, so that the state can replace overlapping windows,
+      if the three-seed rule finds equivalence with SURGE-D or an effect above
+      zero; comparisons with decoders trained in the same runs are secondary \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -555,9 +562,9 @@ frames (\cref{sec:inference}). The measured cost is reported in
 The components of this section were implemented, tested under the rules of
 \cref{tab:rules,tab:rules-ext}, and not retained. The first four belong to the original
 proposal and the first round of experiments
-(\cref{sec:surprise,sec:lora,sec:audio-fusion,sec:static}); the last four are
+(\cref{sec:surprise,sec:lora,sec:audio-fusion,sec:static}); the last five are
 the extensions tested after the main evaluation
-(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps}). They are
+(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps,sec:state}). They are
 described here because their negative results are part of the contribution of
 the thesis.
 
@@ -806,6 +813,39 @@ frames of each tubelet, and it enters the decoder through the modulation of
 sound. The control is that of the audio fusion: each test video is also scored
 with maps computed from the soundtrack of the next test video of its fold.
 
+\subsection{Decoder State Across Windows}\label{sec:state}
+
+Under the inference of \cref{sec:inference}, each window serves only its
+central eight sampled positions, and consecutive windows overlap by half. The
+outer positions are discarded because they lack context on one side: neither
+the encoder nor the decoder sees frames beyond the window, and the decoder's
+temporal convolutions read zeros there. Every output frame therefore costs one
+sixteenth of a forward pass rather than one thirty-second. The fifth extension
+gives the decoder a memory of the previous window, so that all sixteen
+positions can be used and windows need not overlap. It follows the stream
+buffer of MoViNets~\cite{kondratyuk2021movinets}: at a window's first time
+step, each of the six temporal convolutions of the decoder (\cref{eq:r21})
+reads the last time step of its input in the previous window instead of zero
+padding. The end of the window keeps the zero padding, the first window of a
+video starts from zeros, and the buffer adds no parameters. Group
+normalisation is computed for each time step rather than over the whole
+window, so the buffer changes only the first time steps of a window rather
+than, through the statistics, all of them.
+
+The decoder is trained on pairs of adjacent windows. The second window
+continues where the first ends and is decoded with the buffer of the first,
+gradients flow through the buffer, and the loss covers all sixteen positions
+of both windows. Four pairs are drawn per training video and epoch, and four
+pairs make a batch, so that a run sees as many windows as the standard recipe.
+At inference, windows advance by $T\,s=32$ original frames, every position is
+kept and the buffer is carried through the video. Two control decoders were
+trained in the same runs on the same windows: the standard decoder, with the
+loss on the central positions and scored with overlapping windows, and the
+standard decoder with the loss on all sixteen positions, scored without
+overlapping windows and without a buffer. The three decoders read one stream
+of encoder features, with the same clips, order and augmentation but their own
+initialisation, so their comparisons are paired by construction.
+
 %----------------------------------------------------------------------------
 \section{Training Procedure}\label{sec:training}
 
@@ -1012,9 +1052,11 @@ reference model of the same seed. The per-video differences are averaged over
 videos and seeds, and the intervals come from a two-level bootstrap that first
 resamples the three seeds and then the videos, drawing the same videos for
 every seed because the comparison is paired. The learning curve over the number
-of training videos (\cref{sec:learning-curve}) is analysed in the same way.
-There, the training subsets are drawn separately for each seed, so the
-resampling of seeds also covers the choice of subset. With three seeds, the
+of training videos (\cref{sec:learning-curve}) is analysed in the same way;
+its training subsets are drawn separately for each seed, so the resampling of
+seeds also covers the choice of subset. The decoders of the decoder state
+(\cref{sec:state}) are compared in the same way, both with SURGE-D of the same
+seed and with one another within a run. With three seeds, the
 seed level of this bootstrap is coarse, and its intervals are approximate.
 The second look at the second encoder (\cref{tab:rules-ext}) pools six seeds in the
 same bootstrap, with 100,000 resamples and a 97.5\,\% interval, so that the two

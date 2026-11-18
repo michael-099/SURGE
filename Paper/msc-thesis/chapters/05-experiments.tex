@@ -12,7 +12,7 @@ the setup (\cref{sec:setup}) and the validation of the evaluation code
 choice of the video encoder (\cref{sec:g1}) and the test of predictive surprise
 as a fixation cue (\cref{sec:g2}). The main results on DHF1K, the transfer to
 eight further test sets, qualitative examples and the computational cost follow
-in \cref{sec:results}, the ablations in \cref{sec:ablation}, and the four
+in \cref{sec:results}, the ablations in \cref{sec:ablation}, and the five
 extensions tested after the main evaluation in \cref{sec:extensions}. The chapter
 ends with a discussion organised by research question (\cref{sec:discussion})
 and an assessment of the threats to validity (\cref{sec:threats}). Unless stated
@@ -53,14 +53,15 @@ three-epoch DHF1K model took about 15 minutes of training time with the
 \acrshort{ViT}-L encoder (4.7 minutes per epoch of 4,320 clips) and about 31 minutes with
 \acrshort{ViT}-g (9.9 minutes per epoch), plus the holdout evaluation after each epoch.
 \acrshort{ViT}-g fitted in 10\,GB of \acrshort{GPU} memory at a batch size of eight. In total, the
-experiments of this chapter comprise 53 DHF1K training runs and 128
+experiments of this chapter comprise 56 DHF1K training runs and 128
 fine-tuning runs on the other datasets (including the 16 runs with audio
 features and the 3 with sound-source maps).
 The DHF1K runs are 13 for the gates, the main program and its first
 ablations, 7 for the \acrshort{ViT}-g, 600-video and 32-frame experiments, 14
 for the first follow-up (eight further ablation seeds and six causal models),
-6 for the learning curve over the number of training videos and 13 for the
-extensions (\cref{sec:extensions}). Holdout
+6 for the learning curve over the number of training videos and 16 for the
+extensions (\cref{sec:extensions}), the last three of which each trained three
+decoders on one stream of encoder features. Holdout
 lists, configuration files and the log of every decision are part of the
 code accompanying the thesis.
 
@@ -1139,9 +1140,11 @@ test videos per fold, this observation is suggestive rather than conclusive.
 %----------------------------------------------------------------------------
 \section{Extensions of SURGE-D}\label{sec:extensions}
 
-After the main evaluation, four extensions of SURGE-D were tested, each
+After the main evaluation, five extensions of SURGE-D were tested. Four were
 designed to add information that the frozen encoder might lack
-(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps}). Each was
+(\cref{sec:second-encoder,sec:speaker-maps,sec:pgate,sec:ssl-maps}); the fifth
+lets the decoder carry its temporal context from one window to the next, so
+that windows need not overlap (\cref{sec:state}). Each was
 a candidate component of the final model under a rule written before its runs
 (\cref{tab:rules-ext}). \Cref{tab:extensions} summarises the outcomes. None met its
 rule, so the final model remains SURGE-D as described in
@@ -1169,7 +1172,9 @@ rule, so the final model remains SURGE-D as described in
     Predictability gate & DHF1K holdout, seed 0
       & $-0.0009$ & screen not passed (0.5857 against 0.5896) \\[4pt]
     Sound-source maps & Coutrot2, three folds, seed 0
-      & \dci{$+0.0017$}{+0.0001, +0.0036} & not adopted; other datasets not run \\
+      & \dci{$+0.0017$}{+0.0001, +0.0036} & not adopted; other datasets not run \\[4pt]
+    Decoder state & DHF1K holdout, seeds 0--2, windows not overlapping
+      & \dci{$+0.0044$}{$-$0.0009, +0.0098} & inconclusive; not adopted \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -1281,7 +1286,81 @@ soundtrack (\cref{tab:audio}), this model hardly depended on the sound at all.
   \end{tabular}
 \end{table}
 
-\paragraph{What the extensions show.} The four extensions supplied
+\paragraph{Decoder state across windows.} Without overlapping windows, the
+first positions of each window lose accuracy. Scored on windows that do not
+overlap and keep all sixteen positions, SURGE-D of seed 0 lost 0.0063
+\acrshort{CC} against its standard inference ($-0.0090$ to $-0.0038$), and its
+first two positions scored 0.073 below positions 8 and 9. Given the buffer at
+test time only, without retraining, the same model regained 0.0077 ($+0.0049$
+to $+0.0106$) and reached 0.5880, against 0.5866 with overlapping windows; the
+gap of its first two positions fell to 0.017. \Cref{tab:state} gives the
+trained decoders. The decoder with the state reached a mean holdout
+\acrshort{CC} of 0.5898 without overlapping windows, against 0.5854 for SURGE-D
+with them, a difference of $+0.0044$ (95\,\% interval $-0.0009$ to $+0.0098$,
+90\,\% interval $+0.0001$ to $+0.0089$). Under the rule this is inconclusive,
+so the extension was not adopted. Against the standard decoder trained in the
+same runs and scored with overlapping windows, the difference was $+0.0051$
+($+0.0022$ to $+0.0083$), an effect, and nearly the same in every seed
+($+0.0050$, $+0.0051$ and $+0.0052$). The loss on all positions does not
+explain the gain: the standard decoder trained with it stayed below the
+standard one ($-0.0038$, $-0.0078$ to $+0.0008$, inconclusive), and the
+decoder with the state exceeded it by $+0.0089$ ($+0.0052$ to $+0.0127$), an
+effect. Removing the buffer from the trained decoder at test time cost it
+0.0084.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Decoder state across windows: holdout \acrshort{CC} per seed (DHF1K
+  holdout, every fifth frame, no blur). Overlapping windows keep the central
+  eight of sixteen positions; windows that do not overlap keep all sixteen and
+  need half the forward passes per output frame. The three decoders below the
+  line were trained together, in one run per seed}\label{tab:state}
+  \footnotesize
+  \begin{tabular}{@{}lllcccc@{}}
+    \toprule
+    & & & \multicolumn{3}{c}{\textbf{Seed}} & \\
+    \cmidrule(lr){4-6}
+    \textbf{Decoder} & \textbf{Loss on} & \textbf{Windows} & 0 & 1 & 2 & \textbf{Mean} \\
+    \midrule
+    SURGE-D (\cref{sec:main-results}) & central 8 & overlapping & 0.5866 & 0.5867 & 0.5829 & 0.5854 \\
+    \midrule
+    Standard   & central 8 & overlapping     & 0.5893 & 0.5828 & 0.5819 & 0.5847 \\
+    Standard   & all 16    & not overlapping & 0.5826 & 0.5801 & 0.5799 & 0.5809 \\
+    With state & all 16    & not overlapping & 0.5943 & 0.5880 & 0.5871 & 0.5898 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\Cref{fig:state} shows where the state acts. Without it, accuracy rises over
+the first five positions of a window. With it, the first two positions remain
+0.018 below positions 8 and 9, short of the gap below 0.01 that the plan of the
+experiment expected. An analysis added after this result locates the remainder
+in the first window of each video, which has no previous window to remember.
+Without these 60 windows, the gap is 0.003 with the state, against 0.041 and
+0.066 for the two standard decoders. Without overlapping windows, an output
+frame costs one thirty-second of a forward pass instead of one sixteenth, about
+0.16 \acrshort{TFLOPs} with \acrshort{ViT}-g instead of 0.33 (\cref{tab:cost}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{state_positions.pdf}
+  \caption{Holdout \acrshort{CC} by position in the window, for windows that do
+  not overlap (means of seeds 0--2, over every sampled frame of the 60 holdout
+  videos). Overlapping windows keep only the shaded positions. The dashed curve
+  leaves out the first window of each video, which has no previous window; this
+  analysis was added after the result}\label{fig:state}
+\end{figure}
+
+The test against SURGE-D could not have found equivalence. It compares
+separately trained models, and the spread between their seeds (per-seed
+differences from $+0.001$ to $+0.008$) gave a 90\,\% interval about
+$\pm0.0044$ wide, wider than the margin of $\pm0.003$. The standard decoder of
+these runs, compared with SURGE-D in the same way, gave an interval of the same
+width ($-0.0007$; 90\,\% interval $-0.0051$ to $+0.0036$). Within a run, the
+spread between seeds nearly vanished, but the comparison within the runs had
+been specified as secondary, so it did not decide the outcome.
+
+\paragraph{What the extensions show.} The first four extensions supplied
 information that the frozen encoder was thought to lack: a different
 pre-training, the speaking status of people, the encoder's own prediction error
 and the location of the sound. One could not be built from the released data,
@@ -1289,7 +1368,12 @@ two were not used by the trained decoder, and one gave a gain that was
 consistent in sign over six seeds but could not be told apart from zero.
 Together with the ablations of \cref{sec:ablation}, they show that, with the
 data available for training and evaluation, SURGE-D is hard to improve by
-changing what its decoder receives.
+changing what its decoder receives. The fifth changed how the decoder uses
+time rather than what it receives. It was the only extension with an effect in
+a comparison fixed in advance: within the same runs, the decoder with the state
+was more accurate than the standard decoder, at half the encoder computation
+per output frame. Its rule, which compared it with the separately trained
+SURGE-D, was not met.
 
 %----------------------------------------------------------------------------
 \section{Discussion}\label{sec:discussion}
@@ -1365,12 +1449,17 @@ the margin. Of the extensions tested after the main evaluation, a second frozen
 encoder came closest to a gain: with \acrshort{UMT}-L it raised holdout \acrshort{CC} in
 all six seeds, by $+0.0038$ on average, but the gain could not be told apart
 from zero on the 60-video holdout, and the predictor's error as a decoder input
-brought nothing. One explanation is that, with a strong frozen encoder, the small
+brought nothing. How the decoder uses time across windows mattered within the
+same training runs: a decoder
+that carries its state from one window to the next was 0.005 more accurate than
+the standard decoder of the same runs, at half the encoder computation per
+output frame, but its gain over the separately trained SURGE-D could not be
+established. One explanation for the rest is that, with a strong frozen encoder, the small
 number of training videos limits further progress: the decoder overfits within
 three epochs (\cref{fig:g1}), and the additions that would increase its
-effective capacity do not help, whereas better features do; the one extension
-that moved accuracy consistently was the one that added the features of
-another encoder. The learning curve
+effective capacity do not help, whereas better features do; the one addition of
+information that moved accuracy consistently was the one that added the
+features of another encoder. The learning curve
 of \cref{sec:learning-curve} tested this explanation and left it open. Holdout
 \acrshort{CC} rose with each doubling of the training set in every seed, by
 0.008 from 135 to 270 videos, which is an effect under the rule, and by 0.005
@@ -1418,7 +1507,7 @@ which the branch was premised, and a decoder given the error as an input
 learned to ignore it. The
 proposal's ranking of what drives performance, which placed the encoder first,
 was confirmed. Its expectation that \acrshort{LoRA} would help, based on results with much
-larger training sets, was not. Finally, the four extensions tested after the
+larger training sets, was not. Finally, the five extensions tested after the
 main evaluation, aimed at improving the model beyond the proposal, left it
 unchanged, because none met the rule written for it.
 
@@ -1440,11 +1529,17 @@ fixed only after the first such comparison had been seen. Many design choices
 were fixed without a test (\cref{sec:design}). On the audio-visual datasets, the
 best epoch and the output blur were selected on one to six holdout videos per
 fold. The extensions were screened with one seed against a threshold 0.003
-above the model of the same seed, and the sound-source maps were tested first
+above the model of the same seed (0.003 below it for the decoder state, whose
+aim was equivalence), and the sound-source maps were tested first
 on the 15 videos of one dataset; screens of this kind can discard a real gain
 smaller than the differences between seeds. The second look at the second
 encoder was decided after an inconclusive first look; its stricter level bounds
-the combined rate of false positives, and both looks are reported. Finally, the SalFoM baseline was run by a program that is not part of the
+the combined rate of false positives, and both looks are reported. The rule of
+the decoder state compared it with separately trained models, whose spread over
+three seeds made an outcome of equivalence unreachable; the comparison within
+the same runs, which found an effect, had been specified as secondary, and the
+analysis that locates the remaining gap in the first window of each video was
+added after the result. Finally, the SalFoM baseline was run by a program that is not part of the
 code of this thesis, and how its released weights were selected is not
 documented; if they were selected on the DHF1K validation set, the baseline's
 scores on that set are optimistic, which would make the reported differences

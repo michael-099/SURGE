@@ -19,7 +19,8 @@ under a rule written in a dated log before the corresponding experiment, all
 models were scored once on their test sets by a single evaluator validated
 against reference code, and differences were assessed with paired statistics.
 After the main evaluation, four extensions that could supply information the
-frozen encoder might lack were tested in the same way. None was adopted, so
+frozen encoder might lack, and a fifth that lets the decoder carry its state
+from one window to the next, were tested in the same way. None was adopted, so
 the final model is the SURGE-D evaluated throughout the thesis. The answers to
 the research questions are as follows.
 
@@ -70,7 +71,12 @@ stride, which halves the cost per output frame, improved with every seed
 without reaching the margin. A second frozen encoder raised holdout \acrshort{CC}
 in all six seeds, by 0.0038 on average with \acrshort{UMT}-L, but the gain
 could not be told apart from zero on the 60-video holdout, so it was not
-adopted. Whether the amount of training data, rather than
+adopted. A decoder that carries its temporal context from one window to the
+next made windows that do not overlap usable, at half the encoder computation
+per output frame: within the same training runs it was 0.005 more accurate than
+the standard decoder with overlapping windows, an effect, but its gain of 0.004
+over the separately trained SURGE-D could not be established under its rule.
+Whether the amount of training data, rather than
 the capacity of the decoder, limits further progress was tested with a learning
 curve and remains open: holdout \acrshort{CC} rose with every doubling of the
 training set between 135 and 540 videos, but the last doubling, a gain of
@@ -118,7 +124,10 @@ three were tested under rules written in advance (a second frozen encoder, the
 predictor's error as a decoder input and sound-source maps) and none could be
 adopted, while the fourth, maps of the active speaker, could not be built from
 the released data; with the data available, the frozen-encoder model is hard
-to improve. Fourth, it
+to improve. A fifth extension, a decoder state carried from one window to the
+next, halves the encoder computation per output frame and was more accurate
+than overlapping windows within the same training runs, although its rule
+against the separately trained model was not met. Fourth, it
 contributes an evaluation methodology, with a validated evaluator, decision
 rules fixed in advance, paired statistics and a reproducible ground truth for
 Hollywood-2 built from openly licensed gaze recordings, that makes its positive
@@ -153,6 +162,18 @@ seeds, yet a 60-video holdout could not establish the gain. A larger
 evaluation set, for instance cross-validation over the 600 DHF1K training
 videos, together with a measurement of its cost, would decide whether a second
 encoder is worth running.
+
+\paragraph{Settling the decoder state.} The decoder state was more accurate
+than overlapping windows within the same training runs, at half the encoder
+computation per output frame, but its rule compared it with separately trained
+models, whose spread over three seeds left the outcome open. A test decided by
+comparisons within the same runs, written in advance, would settle whether
+windows that do not overlap, with a state, can replace overlapping ones. The
+computation it saves could pay for a larger input or a larger encoder, and
+because the state is carried forward, the same decoder could serve streaming
+prediction with a delay of at most one window, at one thirty-second of a
+forward pass per output frame instead of the one pass per frame of the causal
+variant.
 
 \paragraph{Adapting the stronger encoder.} Low-rank adaptation was tested only
 with \acrshort{ViT}-L, and full fine-tuning not at all. Whether adaptation helps the larger

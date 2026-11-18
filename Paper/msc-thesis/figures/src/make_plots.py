@@ -10,6 +10,8 @@ Writes into Paper/msc-thesis/figures/:
   qualitative.pdf      DHF1K-val examples (runs/thesis/qualitative.npz, from scripts/thesis_qualitative.py)
   learning_curve.pdf   holdout CC against the number of training videos (runs/review/learning_curve.json, from
                        scripts/learning_curve.py)
+  state_positions.pdf  holdout CC by position in the window for the decoder state (runs/review/p1/probe/, from
+                       scripts/probe_eval.py --positions)
 """
 from __future__ import annotations
 
@@ -215,6 +217,44 @@ def learning_curve(path=None):
     plt.close(fig)
 
 
+def state_positions():
+    """Holdout CC by position in the 16-frame window on the non-overlapping tiling, means of seeds 0-2
+    (runs/review/p1/probe/, from scripts/probe_eval.py --positions; research log section 16). The dashed curve
+    leaves out each video's first window (post hoc), as scripts/p1_first_window.py does."""
+    tpl = "runs/review/p1/probe/p1_s{}_{}.json"
+    if not (ROOT / tpl.format(0, "S_stream")).exists():
+        print("decoder-state probes missing; skipped")
+        return
+
+    def profile(tag, keep=lambda r: True):
+        per_seed = []
+        for s in range(3):
+            rows = json.load(open(ROOT / tpl.format(s, tag)))["positions"]["rows"]  # video, position, frame, cc, nss
+            per_seed.append([np.nanmean([r[3] for r in rows if r[1] == k and keep(r)]) for k in range(16)])
+        return np.mean(per_seed, 0)
+
+    curves = [(profile("R_all16"), "Standard decoder", "#a0a0a0", "-", "o", None),
+              (profile("Rall"), "Standard decoder, loss on all positions", C["vjepa21"], "-", "s", None),
+              (profile("S_stream"), "Decoder state", C["vjepa2"], "-", "^", None),
+              (profile("S_stream", lambda r: r[2] >= 32), "Decoder state, without each video's first window",
+               C["vjepa2"], "--", "^", "white")]
+    fig, ax = plt.subplots(figsize=(TEXTW, 2.5))
+    ax.axvspan(3.5, 11.5, color="black", alpha=0.05, lw=0)
+    ax.text(7.5, 0.503, "positions kept with overlapping windows", ha="center", va="bottom", fontsize=8, color="0.3")
+    x = np.arange(16)
+    for y, label, col, ls, mk, mfc in curves:
+        ax.plot(x, y, ls=ls, marker=mk, ms=3.5, lw=1.3, color=col, mfc=mfc or col, label=label)
+    ax.set_xticks(x)
+    ax.set_xlim(-0.5, 15.5)
+    ax.set_ylim(0.50, 0.61)
+    ax.set_xlabel("Position in the window (sampled frame, 0 = first)")
+    ax.set_ylabel("Holdout CC")
+    ax.grid(alpha=0.25, lw=0.5)
+    ax.legend(frameon=False, loc="lower right", bbox_to_anchor=(1.0, 0.1))
+    fig.savefig(OUT / "state_positions.pdf")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     g1_curves()
@@ -222,4 +262,5 @@ if __name__ == "__main__":
     sigma()
     qualitative()
     learning_curve()
+    state_positions()
     print("figures written to", OUT)
