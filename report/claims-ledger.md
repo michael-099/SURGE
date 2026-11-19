@@ -5,7 +5,9 @@ wording that can be reused in the thesis, the defence and any paper.
 **Sources.**
 - The thesis: `Paper/msc-thesis/main.pdf` at `14d3caf`; table and page numbers refer to it. The decoder-state update
   (2026-11-18) added about four pages from §4.5.9 on, so later pages are now one to four higher; Q19, W15 and X26
-  cite tables and figures of the updated thesis.
+  cite tables and figures of the updated thesis. The RQ5 update (2026-11-19) added a fifth research question, on
+  computational cost, after the results were known (disclosed under "Relation to the original proposal" in §5.8),
+  answered in §5.8 and §6.1 from existing results; it adds no new results. W16 and X27 belong to it.
 - The run outputs in `runs/`.
 - `report/critical-review.md` (codes M, D, m) and `report/sota-advantage-analysis.md`.
 
@@ -135,6 +137,7 @@ DHF1K validation set, the thesis's test set.
 | W13 | The decoder ignores the predictor's error because its information is already in the encoder's features. | Equally consistent with too little training (3 epochs, 540 videos) for the zero-initialised modulation to learn it. | "One reading is …; another is …" |
 | W14 | Sound-source maps fail on conversations because at 7×7 they mark people rather than the speaker. | Matched and rotated maps correlate 0.96, and the peak moves in about half the frames; whether the moved peak is the speaker was not measured. | "in these scenes they marked the people more than the speaker" |
 | W15 | The decoder state closes the positional gap at the boundaries between windows; what remains lies in each video's first window. | Post hoc and descriptive: without each video's first window, positions 0–1 trail 8–9 by 0.003 (0.041 and 0.066 for the standard decoders); with it, by 0.018 (Fig. 5.6). | "An analysis added after the result suggests …" |
+| W16 | Halving the offline cost, with a stride of four or with the decoder state, does not cost accuracy (RQ5). | Both registered outcomes were inconclusive, and no rule tested non-inferiority. Read outside the rules, both 90 % intervals exclude a loss as large as the 0.003 margin: stride 4 (ViT-L) +0.0029, 90 % [−0.0003, +0.0062]; decoder state (ViT-g) +0.0044 against SURGE-D, 90 % [+0.0001, +0.0089]. | "Neither was measurably less accurate"; "the evidence suggests, but does not establish, that the offline cost can be halved without a loss of accuracy" |
 
 ---
 
@@ -168,6 +171,7 @@ DHF1K validation set, the thesis's test set.
 | X24 | "Speaker-aware" or "audio-aware" SURGE-D. | The speaker maps were dropped before training (faces 12–15 px); neither audio module helped. | "Neither a global audio embedding nor sound-source maps improved the visual model; speaker maps could not be built from the released frames." |
 | X25 | "A novel architecture" for SURGE-D or its extensions. | The novelty assessment rates SURGE-D incremental, and none of the five extensions was adopted. | Describe the frozen-encoder model, its controlled evaluation and the pre-registered negative results. |
 | X26 | "The decoder state improves SURGE-D" or "the same accuracy at half the cost". | Its registered comparison with the separately trained SURGE-D was inconclusive (+0.0044 [−0.0009, +0.0098]), and at this spread between seeds equivalence could not be shown. | Q19 wording |
+| X27 | "A quarter of the cost" from combining the stride of four with the decoder state, or the cost question (RQ5) as one planned from the start. | The combination was never run. RQ5 was added after the results were known, and every rule judged accuracy alone; only the timing against SalFoM had a criterion fixed in advance. | "Each halved the offline cost; whether the two combine was not tested." |
 
 ---
 
@@ -185,3 +189,4 @@ DHF1K validation set, the thesis's test set.
 | Q5: surprise information | Flexible spatial prior and SURGE-D's own map in the baseline set; bootstrap including the weight fit | CPU, hours |
 | X18: Hollywood-2 ground truth | Leave-one-observer-out ceiling | CPU |
 | X14, X15: robustness and generalisation | Cut, translation and crop-against-squash tests; zero-shot on LEDOV or the NTIRE 2026 videos | 2–4 GPU-h |
+| W16, X26, X27: halving the cost without a loss | New seeds under a rule written in advance whose primary test is within the same runs (equivalence or non-inferiority against the standard decoder); optionally the decoder state at stride 4 | about 3.5 GPU-h per three seeds (estimate) |

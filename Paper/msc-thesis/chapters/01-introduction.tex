@@ -118,10 +118,14 @@ This study answers the following research questions:
   \item Which design factors determine accuracy when the encoder is frozen: the
     pre-training and scale of the encoder, parameter-efficient adaptation, the
     learned centre prior, deep supervision, static-image co-training, temporal
-    sampling, the amount of training data and ensembling?
+    sampling, the amount of training data, ensembling, a second frozen encoder
+    and a decoder state carried from one window to the next?
   \item How well does the approach transfer to eye-tracking datasets with other
     content and viewing tasks, and does adding the soundtrack improve it on
     audio-visual datasets?
+  \item How much computation does the approach need per output frame compared
+    with SalFoM, and can that cost be reduced further without a loss of
+    accuracy?
 \end{enumerate}
 
 %----------------------------------------------------------------------------

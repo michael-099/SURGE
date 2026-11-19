@@ -1449,12 +1449,9 @@ the margin. Of the extensions tested after the main evaluation, a second frozen
 encoder came closest to a gain: with \acrshort{UMT}-L it raised holdout \acrshort{CC} in
 all six seeds, by $+0.0038$ on average, but the gain could not be told apart
 from zero on the 60-video holdout, and the predictor's error as a decoder input
-brought nothing. How the decoder uses time across windows mattered within the
-same training runs: a decoder
-that carries its state from one window to the next was 0.005 more accurate than
-the standard decoder of the same runs, at half the encoder computation per
-output frame, but its gain over the separately trained SURGE-D could not be
-established. One explanation for the rest is that, with a strong frozen encoder, the small
+brought nothing. A decoder that carries its state from one window to the next
+was 0.005 more accurate than the standard decoder of the same runs, but its
+gain over the separately trained SURGE-D could not be established. One explanation for the rest is that, with a strong frozen encoder, the small
 number of training videos limits further progress: the decoder overfits within
 three epochs (\cref{fig:g1}), and the additions that would increase its
 effective capacity do not help, whereas better features do; the one addition of
@@ -1496,6 +1493,28 @@ datasets therefore probably requires speaker-level information that the
 released data do not support, such as the videos at their original
 resolution.
 
+\paragraph{RQ5: How much computation does the approach need, and can it be
+reduced without a loss of accuracy?} Offline, SURGE-D is cheap because one
+forward pass serves sixteen output frames, not because its encoder is frozen or
+small: the \acrshort{ViT}-g encoder has more than three times the parameters of
+SalFoM's, yet SURGE-D needs about a ninth of SalFoM's encoder computation per
+output frame, and SalFoM, as released, took 22 to 26 times as long per output
+frame, far beyond the factor of two fixed in advance, although the ratio also
+reflects the two implementations (\cref{sec:cost}). The saving does not carry
+over to causal prediction, in which every output frame needs its own pass: the
+causal \acrshort{ViT}-g model needs nearly twice SalFoM's encoder computation,
+although less time. Two changes each halved the offline cost again and raised
+holdout \acrshort{CC} in every seed: a temporal stride of four, tested with
+\acrshort{ViT}-L ($+0.0029$), and a decoder state carried across windows that
+do not overlap, tested with \acrshort{ViT}-g ($+0.0044$ against SURGE-D). Both
+outcomes were inconclusive under their rules. Read outside the rules, the
+90\,\% intervals of both exclude a loss as large as the margin of 0.003, so
+neither change was measurably less accurate than the model it would replace,
+and the state was more accurate than the standard decoder of its own runs. The
+evidence suggests, but does not establish, that the offline cost can be halved
+without a loss of accuracy; whether the two savings combine, to a quarter of
+the cost, was not tested.
+
 \paragraph{Relation to the original proposal.} The final model differs from the
 proposed one in three respects, each decided by a test whose rule was written
 in advance: the
@@ -1507,9 +1526,12 @@ which the branch was premised, and a decoder given the error as an input
 learned to ignore it. The
 proposal's ranking of what drives performance, which placed the encoder first,
 was confirmed. Its expectation that \acrshort{LoRA} would help, based on results with much
-larger training sets, was not. Finally, the five extensions tested after the
+larger training sets, was not. The five extensions tested after the
 main evaluation, aimed at improving the model beyond the proposal, left it
-unchanged, because none met the rule written for it.
+unchanged, because none met the rule written for it. Finally, the fifth
+research question, on computational cost, was added after the results were
+known; only the timing against SalFoM had a criterion fixed in advance, and
+the rules for the stride and the decoder state judged accuracy alone.
 
 %----------------------------------------------------------------------------
 \section{Threats to Validity}\label{sec:threats}

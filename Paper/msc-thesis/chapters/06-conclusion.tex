@@ -37,12 +37,8 @@ future context. With the \acrshort{ViT}-L encoder, the size of SalFoM's, only th
 ensemble was reliably better, offline and under the identical protocol, where
 its margin was 0.017. The gain comes from the \acrshort{V-JEPA}~2 encoder rather
 than from freezing as such, because a frozen \acrshort{UMT}-L encoder with the same
-decoder scored below SalFoM. In offline use, SURGE-D with \acrshort{ViT}-g needs
-about a ninth of SalFoM's encoder computation per output frame and, in the
-released implementations, less than a twentieth of its time; the causal
-variant needs nearly twice the computation but less time. These are
-validation-set results; the official test-set evaluation was pending when the
-thesis was written.
+decoder scored below SalFoM. These are validation-set results; the official
+test-set evaluation was pending when the thesis was written.
 
 \paragraph{RQ2.} The prediction error of the released \acrshort{V-JEPA}~2 predictor
 carries information about where people look, but not in the way that the
@@ -98,6 +94,20 @@ tend not to exploit the audio. Sound-source maps from a localisation model did
 not help on conversations either and hardly depended on the sound, and maps of
 the active speaker could not be built from the released frames, in which faces
 are only 12 to 15 pixels wide.
+
+\paragraph{RQ5.} Because one forward pass serves sixteen output frames,
+offline SURGE-D with \acrshort{ViT}-g needs about a ninth of SalFoM's encoder
+computation per output frame and, as released, less than a twentieth of its
+time, which meets the criterion fixed before the timing by a wide margin. The
+causal variant, which needs one pass per output frame, needs nearly twice
+SalFoM's computation, although less time. A temporal stride of four, tested
+with \acrshort{ViT}-L, and a decoder state carried across windows that do not
+overlap, tested with \acrshort{ViT}-g, each halved the offline cost again and
+raised holdout \acrshort{CC} in every seed, by 0.003 and 0.004 on average;
+neither was measurably less accurate than the model it would replace, but both
+outcomes were inconclusive under their rules. That the offline cost can be
+halved without a loss of accuracy is therefore suggested but not established,
+and whether the two savings combine was not tested.
 
 %----------------------------------------------------------------------------
 \section{Contributions}\label{sec:final-contributions}
@@ -168,8 +178,10 @@ than overlapping windows within the same training runs, at half the encoder
 computation per output frame, but its rule compared it with separately trained
 models, whose spread over three seeds left the outcome open. A test decided by
 comparisons within the same runs, written in advance, would settle whether
-windows that do not overlap, with a state, can replace overlapping ones. The
-computation it saves could pay for a larger input or a larger encoder, and
+windows that do not overlap, with a state, can replace overlapping ones.
+With a stride of four as well, which was not tried, the cost would fall to a
+quarter. The computation it saves could pay for a larger input or a larger
+encoder, and
 because the state is carried forward, the same decoder could serve streaming
 prediction with a delay of at most one window, at one thirty-second of a
 forward pass per output frame instead of the one pass per frame of the causal
